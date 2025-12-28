@@ -4,3 +4,4 @@ alwaysApply: true
 
 - Follow Clean Code Guidelines.
 - Keep the readme, todo and .env.example files updated.
+- Use `import type` while importing any type.

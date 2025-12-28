@@ -1,0 +1,102 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useLogin, useRegister } from '@/lib/query/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+export function Login() {
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const navigate = useNavigate();
+
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isRegister) {
+      await registerMutation.mutateAsync({
+        email,
+        password,
+        name,
+        role: 'member',
+      });
+    } else {
+      await loginMutation.mutateAsync({ email, password });
+    }
+    
+    navigate('/');
+  };
+
+  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const error = loginMutation.error || registerMutation.error;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>{isRegister ? 'Register' : 'Login'}</CardTitle>
+          <CardDescription>
+            {isRegister ? 'Create a new account' : 'Sign in to your account'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Name</label>
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="Your name"
+                />
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="your@email.com"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                minLength={6}
+              />
+            </div>
+            {error && <ErrorDisplay error={error.message} />}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <LoadingSpinner size="sm" /> : isRegister ? 'Register' : 'Login'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              onClick={() => setIsRegister(!isRegister)}
+            >
+              {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

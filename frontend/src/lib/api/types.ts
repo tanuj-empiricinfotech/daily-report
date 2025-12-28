@@ -1,0 +1,89 @@
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'member';
+  team_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Project {
+  id: number;
+  team_id: number;
+  name: string;
+  description: string | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectAssignment {
+  id: number;
+  project_id: number;
+  user_id: number;
+  assigned_at: string;
+}
+
+export interface DailyLog {
+  id: number;
+  user_id: number;
+  project_id: number;
+  date: string;
+  task_description: string;
+  actual_time_spent: number;
+  tracked_time: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+export interface CreateUserDto {
+  email: string;
+  password: string;
+  name: string;
+  role: 'admin' | 'member';
+  team_id?: number | null;
+}
+
+export interface CreateTeamDto {
+  name: string;
+  description?: string;
+}
+
+export interface CreateProjectDto {
+  team_id: number;
+  name: string;
+  description?: string;
+}
+
+export interface CreateLogDto {
+  project_id: number;
+  date: string;
+  task_description: string;
+  actual_time_spent: number;
+  tracked_time: number;
+}
+
+export interface UpdateLogDto {
+  project_id?: number;
+  date?: string;
+  task_description?: string;
+  actual_time_spent?: number;
+  tracked_time?: number;
+}
+
