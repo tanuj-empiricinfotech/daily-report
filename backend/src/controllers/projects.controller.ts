@@ -24,6 +24,18 @@ export class ProjectsController {
     }
   };
 
+  getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const projects = await this.projectsService.getAllProjects();
+      res.json({
+        success: true,
+        data: projects,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getByTeam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);

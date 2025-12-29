@@ -11,6 +11,7 @@ router.use(authenticate);
 router.use(requireAdmin);
 
 router.post('/', createProjectValidator, handleValidationErrors, projectsController.create);
+router.get('/', projectsController.getAll);
 router.get('/team/:teamId', projectsController.getByTeam);
 router.get('/:id', projectsController.getById);
 router.put('/:id', updateProjectValidator, handleValidationErrors, projectsController.update);

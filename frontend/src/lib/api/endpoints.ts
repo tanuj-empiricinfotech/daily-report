@@ -14,7 +14,8 @@ export const endpoints = {
     delete: (id: number) => `${API_BASE}/teams/${id}`,
   },
   projects: {
-    list: (teamId: number) => `${API_BASE}/projects/team/${teamId}`,
+    list: `${API_BASE}/projects`,
+    listByTeam: (teamId: number) => `${API_BASE}/projects/team/${teamId}`,
     create: `${API_BASE}/projects`,
     get: (id: number) => `${API_BASE}/projects/${id}`,
     update: (id: number) => `${API_BASE}/projects/${id}`,
@@ -23,6 +24,9 @@ export const endpoints = {
   users: {
     list: `${API_BASE}/users`,
     getByTeam: (teamId: number) => `${API_BASE}/users/team/${teamId}`,
+    create: `${API_BASE}/users`,
+    update: (id: number) => `${API_BASE}/users/${id}`,
+    delete: (id: number) => `${API_BASE}/users/${id}`,
   },
   assignments: {
     create: `${API_BASE}/assignments`,

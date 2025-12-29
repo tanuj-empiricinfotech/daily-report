@@ -31,11 +31,15 @@ export class UsersRepository extends BaseRepository<User> {
     return result.rows;
   }
 
-  async update(id: number, data: Partial<CreateUserDto>): Promise<User | null> {
+  async update(id: number, data: Partial<CreateUserDto & { password_hash?: string; email?: string }>): Promise<User | null> {
     const updates: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
+    if (data.email !== undefined) {
+      updates.push(`email = $${paramCount++}`);
+      values.push(data.email);
+    }
     if (data.name !== undefined) {
       updates.push(`name = $${paramCount++}`);
       values.push(data.name);
@@ -47,6 +51,10 @@ export class UsersRepository extends BaseRepository<User> {
     if (data.team_id !== undefined) {
       updates.push(`team_id = $${paramCount++}`);
       values.push(data.team_id);
+    }
+    if (data.password_hash !== undefined) {
+      updates.push(`password_hash = $${paramCount++}`);
+      values.push(data.password_hash);
     }
 
     if (updates.length === 0) {

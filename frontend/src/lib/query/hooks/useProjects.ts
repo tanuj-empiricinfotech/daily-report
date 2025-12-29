@@ -10,12 +10,15 @@ export const useProjects = (teamId: number | null) => {
   return useQuery({
     queryKey: ['projects', teamId],
     queryFn: async () => {
-      if (!teamId) return [];
-      const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.list(teamId));
+      if (teamId === null) {
+        const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.list);
+        dispatch(setProjects(response.data.data));
+        return response.data.data;
+      }
+      const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.listByTeam(teamId));
       dispatch(setProjects(response.data.data));
       return response.data.data;
     },
-    enabled: !!teamId,
   });
 };
 

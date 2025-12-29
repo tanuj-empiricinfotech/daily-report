@@ -26,6 +26,10 @@ export class ProjectsService {
     return project;
   }
 
+  async getAllProjects(): Promise<Project[]> {
+    return await this.projectsRepository.findAll();
+  }
+
   async getProjectsByTeamId(teamId: number): Promise<Project[]> {
     return await this.projectsRepository.findByTeamId(teamId);
   }
