@@ -20,14 +20,14 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <Select
-          value={selectedTeamId?.toString() || ''}
-          onValueChange={(val) => dispatch(setSelectedTeam(val ? parseInt(val, 10) : null))}
+          value={selectedTeamId?.toString() || 'all'}
+          onValueChange={(val) => dispatch(setSelectedTeam(val === 'all' ? null : parseInt(val, 10)))}
         >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Select team" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Teams</SelectItem>
+            <SelectItem value="all">All Teams</SelectItem>
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id.toString()}>
                 {team.name}

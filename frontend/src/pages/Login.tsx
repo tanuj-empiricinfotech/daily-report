@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useLogin, useRegister } from '@/lib/query/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,6 +16,14 @@ export function Login() {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, isAdmin } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isAdmin ? '/admin' : '/logs', { replace: true });
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -23,18 +32,24 @@ export function Login() {
     e.preventDefault();
 
     try {
+      let user;
       if (isRegister) {
-        await registerMutation.mutateAsync({
+        user = await registerMutation.mutateAsync({
           email,
           password,
           name,
           role: 'member',
         });
       } else {
-        await loginMutation.mutateAsync({ email, password });
+        user = await loginMutation.mutateAsync({ email, password });
       }
 
-      navigate('/');
+      // Redirect based on user role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/logs');
+      }
     } catch (error) {
       // Error is already handled by the mutation and displayed via error state
       // No need to navigate on error

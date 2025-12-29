@@ -9,21 +9,23 @@ import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { DailyLog } from './pages/DailyLog';
+import { useAuth } from './hooks/useAuth';
+
+function RootRedirect() {
+  const { isAuthenticated, isAdmin } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={isAdmin ? '/admin' : '/logs'} replace />;
+}
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <DailyLog />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<RootRedirect />} />
       <Route
         path="/admin"
         element={

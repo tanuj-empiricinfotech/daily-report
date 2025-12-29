@@ -48,14 +48,14 @@ export function LogsViewer() {
               onChange={(e) => setDate(e.target.value)}
             />
             <Select
-              value={userId?.toString() || ''}
-              onValueChange={(val) => setUserId(val ? parseInt(val, 10) : null)}
+              value={userId?.toString() || 'all'}
+              onValueChange={(val) => setUserId(val === 'all' ? null : parseInt(val, 10))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All users" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All users</SelectItem>
+                <SelectItem value="all">All users</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
                     {user.name}
@@ -64,14 +64,14 @@ export function LogsViewer() {
               </SelectContent>
             </Select>
             <Select
-              value={projectId?.toString() || ''}
-              onValueChange={(val) => setProjectId(val ? parseInt(val, 10) : null)}
+              value={projectId?.toString() || 'all'}
+              onValueChange={(val) => setProjectId(val === 'all' ? null : parseInt(val, 10))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All projects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All projects</SelectItem>
+                <SelectItem value="all">All projects</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id.toString()}>
                     {project.name}
