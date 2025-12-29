@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AssignmentsService } from '../services/assignments.service';
 import { AuthRequest } from '../middleware/auth';
+import { UnauthorizedError } from '../utils/errors';
 
 export class AssignmentsController {
   private assignmentsService: AssignmentsService;
@@ -40,6 +41,17 @@ export class AssignmentsController {
   getUserAssignments = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = parseInt(req.params.userId, 10);
+      const currentUser = req.user;
+
+      if (!currentUser) {
+        return next(new UnauthorizedError('User not authenticated'));
+      }
+
+      // Users can only access their own assignments, admins can access any user's assignments
+      if (currentUser.role !== 'admin' && currentUser.userId !== userId) {
+        return next(new UnauthorizedError('You can only access your own assignments'));
+      }
+
       const assignments = await this.assignmentsService.getUserAssignments(userId);
       res.json({
         success: true,

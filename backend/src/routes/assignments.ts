@@ -8,10 +8,8 @@ const router = Router();
 const assignmentsController = new AssignmentsController();
 
 router.use(authenticate);
-router.use(requireAdmin);
 
-router.post(
-  '/',
+router.post('/', requireAdmin,
   [
     body('project_id').isInt({ min: 1 }).withMessage('Valid project_id is required'),
     body('user_id').isInt({ min: 1 }).withMessage('Valid user_id is required'),
@@ -19,8 +17,7 @@ router.post(
   ],
   assignmentsController.assign
 );
-router.delete(
-  '/',
+router.delete('/', requireAdmin,
   [
     body('project_id').isInt({ min: 1 }).withMessage('Valid project_id is required'),
     body('user_id').isInt({ min: 1 }).withMessage('Valid user_id is required'),
