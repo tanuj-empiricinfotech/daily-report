@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import { useLogin, useRegister } from '@/lib/query/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const loginMutation = useLogin();
@@ -19,19 +21,24 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isRegister) {
-      await registerMutation.mutateAsync({
-        email,
-        password,
-        name,
-        role: 'member',
-      });
-    } else {
-      await loginMutation.mutateAsync({ email, password });
+
+    try {
+      if (isRegister) {
+        await registerMutation.mutateAsync({
+          email,
+          password,
+          name,
+          role: 'member',
+        });
+      } else {
+        await loginMutation.mutateAsync({ email, password });
+      }
+
+      navigate('/');
+    } catch (error) {
+      // Error is already handled by the mutation and displayed via error state
+      // No need to navigate on error
     }
-    
-    navigate('/');
   };
 
   const isLoading = loginMutation.isPending || registerMutation.isPending;
@@ -72,14 +79,29 @@ export function Login() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Password</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  minLength={6}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <IconEyeOff className="h-5 w-5" />
+                  ) : (
+                    <IconEye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
             {error && <ErrorDisplay error={error.message} />}
             <Button type="submit" className="w-full" disabled={isLoading}>
