@@ -22,6 +22,38 @@ export class LogsRepository extends BaseRepository<DailyLog> {
     return result.rows[0];
   }
 
+  async createMany(dataArray: CreateLogDto[], userId: number): Promise<DailyLog[]> {
+    if (dataArray.length === 0) {
+      return [];
+    }
+
+    const values: any[] = [];
+    const placeholders: string[] = [];
+    let paramCount = 1;
+
+    for (const data of dataArray) {
+      placeholders.push(
+        `($${paramCount++}, $${paramCount++}, $${paramCount++}, $${paramCount++}, $${paramCount++}, $${paramCount++})`
+      );
+      values.push(
+        userId,
+        data.project_id,
+        data.date,
+        data.task_description,
+        data.actual_time_spent,
+        data.tracked_time
+      );
+    }
+
+    const result = await query(
+      `INSERT INTO ${this.tableName} (user_id, project_id, date, task_description, actual_time_spent, tracked_time)
+       VALUES ${placeholders.join(', ')}
+       RETURNING *`,
+      values
+    );
+    return result.rows;
+  }
+
   async update(id: number, data: UpdateLogDto, userId: number): Promise<DailyLog | null> {
     const updates: string[] = [];
     const values: any[] = [];

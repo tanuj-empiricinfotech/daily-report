@@ -39,6 +39,20 @@ export const useCreateLog = () => {
   });
 };
 
+export const useCreateLogsBulk = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateLogDto[]) => {
+      const response = await client.post<ApiResponse<DailyLog[]>>(endpoints.logs.createBulk, data);
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+    },
+  });
+};
+
 export const useUpdateLog = () => {
   const queryClient = useQueryClient();
 

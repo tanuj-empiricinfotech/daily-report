@@ -70,3 +70,13 @@ export const useDeleteProject = () => {
   });
 };
 
+export const useMyProjects = () => {
+  return useQuery({
+    queryKey: ['projects', 'my'],
+    queryFn: async () => {
+      const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.getMy);
+      return response.data.data;
+    },
+  });
+};
+

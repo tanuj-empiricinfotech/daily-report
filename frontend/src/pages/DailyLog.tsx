@@ -50,6 +50,10 @@ export function DailyLog() {
           log={editingLog || undefined}
           date={selectedDate}
           onSuccess={handleFormSuccess}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingLog(null);
+          }}
         />
       )}
 

@@ -25,6 +25,29 @@ export class LogsService {
     return await this.logsRepository.create(data, userId);
   }
 
+  async createLogsBulk(dataArray: CreateLogDto[], userId: number): Promise<DailyLog[]> {
+    if (dataArray.length === 0) {
+      throw new BadRequestError('At least one log entry is required');
+    }
+
+    // Validate all entries
+    const projectIds = new Set(dataArray.map(d => d.project_id));
+    for (const projectId of projectIds) {
+      const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(userId, projectId);
+      if (!isAssigned) {
+        throw new ForbiddenError(`You are not assigned to project ${projectId}`);
+      }
+    }
+
+    for (const data of dataArray) {
+      if (data.actual_time_spent < 0 || data.tracked_time < 0) {
+        throw new BadRequestError('Time values must be positive');
+      }
+    }
+
+    return await this.logsRepository.createMany(dataArray, userId);
+  }
+
   async getLogById(id: number, userId: number, isAdmin: boolean): Promise<DailyLog> {
     const log = await this.logsRepository.findById(id);
     if (!log) {

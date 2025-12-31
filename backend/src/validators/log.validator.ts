@@ -26,3 +26,21 @@ export const updateLogValidator = [
     .withMessage('Tracked time must be a positive number'),
 ];
 
+export const createLogsBulkValidator = [
+  body()
+    .isArray({ min: 1 })
+    .withMessage('Request body must be an array with at least one log entry'),
+  body('*.project_id').isInt({ min: 1 }).withMessage('Valid project_id is required for each entry'),
+  body('*.date').isISO8601().withMessage('Valid date is required for each entry'),
+  body('*.task_description')
+    .trim()
+    .notEmpty()
+    .withMessage('Task description is required for each entry'),
+  body('*.actual_time_spent')
+    .isFloat({ min: 0 })
+    .withMessage('Actual time spent must be a positive number for each entry'),
+  body('*.tracked_time')
+    .isFloat({ min: 0 })
+    .withMessage('Tracked time must be a positive number for each entry'),
+];
+

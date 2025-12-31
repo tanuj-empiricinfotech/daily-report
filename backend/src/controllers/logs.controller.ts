@@ -24,6 +24,20 @@ export class LogsController {
     }
   };
 
+  createBulk = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const dataArray: CreateLogDto[] = req.body;
+      const userId = req.user!.userId;
+      const logs = await this.logsService.createLogsBulk(dataArray, userId);
+      res.status(201).json({
+        success: true,
+        data: logs,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getMyLogs = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.userId;

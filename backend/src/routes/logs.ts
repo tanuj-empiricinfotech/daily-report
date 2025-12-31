@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { LogsController } from '../controllers/logs.controller';
 import { authenticate, requireAdmin } from '../middleware/auth';
-import { createLogValidator, updateLogValidator } from '../validators/log.validator';
+import { createLogValidator, updateLogValidator, createLogsBulkValidator } from '../validators/log.validator';
 import { handleValidationErrors } from '../middleware/validation';
 
 const router = Router();
@@ -10,6 +10,7 @@ const logsController = new LogsController();
 router.use(authenticate);
 
 router.post('/', createLogValidator, handleValidationErrors, logsController.create);
+router.post('/bulk', createLogsBulkValidator, handleValidationErrors, logsController.createBulk);
 router.get('/my', logsController.getMyLogs);
 router.get('/team/:teamId', requireAdmin, logsController.getTeamLogs);
 router.get('/:id', logsController.getById);

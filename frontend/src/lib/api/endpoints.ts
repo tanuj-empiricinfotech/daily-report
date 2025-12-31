@@ -16,6 +16,7 @@ export const endpoints = {
   projects: {
     list: `${API_BASE}/projects`,
     listByTeam: (teamId: number) => `${API_BASE}/projects/team/${teamId}`,
+    getMy: `${API_BASE}/projects/my`,
     create: `${API_BASE}/projects`,
     get: (id: number) => `${API_BASE}/projects/${id}`,
     update: (id: number) => `${API_BASE}/projects/${id}`,
@@ -36,6 +37,7 @@ export const endpoints = {
   },
   logs: {
     create: `${API_BASE}/logs`,
+    createBulk: `${API_BASE}/logs/bulk`,
     getMyLogs: `${API_BASE}/logs/my`,
     getTeamLogs: (teamId: number) => `${API_BASE}/logs/team/${teamId}`,
     get: (id: number) => `${API_BASE}/logs/${id}`,
