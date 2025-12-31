@@ -48,5 +48,30 @@ export class ProjectsRepository extends BaseRepository<Project> {
     );
     return result.rows;
   }
+
+  async findByUserId(userId: number): Promise<Project[]> {
+    const result = await query(
+      `SELECT DISTINCT p.*
+       FROM ${this.tableName} p
+       INNER JOIN project_assignments pa ON p.id = pa.project_id
+       WHERE pa.user_id = $1`,
+      [userId]
+    );
+    return result.rows;
+  }
+
+  async findByTeamIdOrUserId(teamId: number | null, userId: number): Promise<Project[]> {
+    if (teamId) {
+      const result = await query(
+        `SELECT DISTINCT p.*
+         FROM ${this.tableName} p
+         LEFT JOIN project_assignments pa ON p.id = pa.project_id
+         WHERE p.team_id = $1 OR pa.user_id = $2`,
+        [teamId, userId]
+      );
+      return result.rows;
+    }
+    return this.findByUserId(userId);
+  }
 }
 

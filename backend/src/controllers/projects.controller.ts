@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { ProjectsService } from '../services/projects.service';
 import { AuthRequest } from '../middleware/auth';
 import { CreateProjectDto } from '../types';
+import { query } from '../db/connection';
 
 export class ProjectsController {
   private projectsService: ProjectsService;
@@ -26,7 +27,16 @@ export class ProjectsController {
 
   getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const projects = await this.projectsService.getAllProjects();
+      const user = req.user!;
+      // Get user's team_id from database
+      const userResult = await query('SELECT team_id FROM users WHERE id = $1', [user.userId]);
+      const userTeamId = userResult.rows[0]?.team_id || null;
+      
+      const projects = await this.projectsService.getAllProjects(
+        user.userId,
+        user.role,
+        userTeamId
+      );
       res.json({
         success: true,
         data: projects,
@@ -39,7 +49,30 @@ export class ProjectsController {
   getByTeam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);
-      const projects = await this.projectsService.getProjectsByTeamId(teamId);
+      const user = req.user!;
+      // Get user's team_id from database
+      const userResult = await query('SELECT team_id FROM users WHERE id = $1', [user.userId]);
+      const userTeamId = userResult.rows[0]?.team_id || null;
+      
+      const projects = await this.projectsService.getProjectsByTeamId(
+        teamId,
+        user.userId,
+        user.role,
+        userTeamId
+      );
+      res.json({
+        success: true,
+        data: projects,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getMyProjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const user = req.user!;
+      const projects = await this.projectsService.getProjectsByUserId(user.userId);
       res.json({
         success: true,
         data: projects,

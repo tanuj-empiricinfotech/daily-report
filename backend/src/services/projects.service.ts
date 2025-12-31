@@ -26,12 +26,34 @@ export class ProjectsService {
     return project;
   }
 
-  async getAllProjects(): Promise<Project[]> {
+  async getAllProjects(userId?: number, userRole?: string, userTeamId?: number | null): Promise<Project[]> {
+    // Admins can see all projects
+    if (userRole === 'admin') {
+      return await this.projectsRepository.findAll();
+    }
+    // Members can only see projects in their team or assigned to them
+    if (userId && userTeamId !== undefined) {
+      return await this.projectsRepository.findByTeamIdOrUserId(userTeamId, userId);
+    }
+    // Fallback: if no user info provided, return all (for backward compatibility with admin-only routes)
     return await this.projectsRepository.findAll();
   }
 
-  async getProjectsByTeamId(teamId: number): Promise<Project[]> {
-    return await this.projectsRepository.findByTeamId(teamId);
+  async getProjectsByTeamId(teamId: number, userId?: number, userRole?: string, userTeamId?: number | null): Promise<Project[]> {
+    // Admins can see all projects in any team
+    if (userRole === 'admin') {
+      return await this.projectsRepository.findByTeamId(teamId);
+    }
+    // Members can only see projects in their own team
+    if (userTeamId !== null && userTeamId === teamId) {
+      return await this.projectsRepository.findByTeamId(teamId);
+    }
+    // Members trying to access other teams' projects get empty array
+    return [];
+  }
+
+  async getProjectsByUserId(userId: number): Promise<Project[]> {
+    return await this.projectsRepository.findByUserId(userId);
   }
 
   async updateProject(id: number, data: Partial<CreateProjectDto>, userId: number): Promise<Project> {
