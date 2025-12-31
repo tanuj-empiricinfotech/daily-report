@@ -92,18 +92,29 @@ export class LogsRepository extends BaseRepository<DailyLog> {
     return result.rows[0] || null;
   }
 
-  async findByUserId(userId: number, date?: string): Promise<DailyLog[]> {
+  async findByUserId(userId: number, date?: string, startDate?: string, endDate?: string): Promise<DailyLog[]> {
+    let sql = `SELECT * FROM ${this.tableName} WHERE user_id = $1`;
+    const values: any[] = [userId];
+    let paramCount = 2;
+
+    // Support both single date (for backward compatibility) and date range
     if (date) {
-      const result = await query(
-        `SELECT * FROM ${this.tableName} WHERE user_id = $1 AND date = $2 ORDER BY created_at DESC`,
-        [userId, date]
-      );
-      return result.rows;
+      sql += ` AND date = $${paramCount++}`;
+      values.push(date);
+    } else if (startDate && endDate) {
+      sql += ` AND date >= $${paramCount++} AND date <= $${paramCount++}`;
+      values.push(startDate, endDate);
+    } else if (startDate) {
+      sql += ` AND date >= $${paramCount++}`;
+      values.push(startDate);
+    } else if (endDate) {
+      sql += ` AND date <= $${paramCount++}`;
+      values.push(endDate);
     }
-    const result = await query(
-      `SELECT * FROM ${this.tableName} WHERE user_id = $1 ORDER BY date DESC, created_at DESC`,
-      [userId]
-    );
+
+    sql += ` ORDER BY date DESC, created_at DESC`;
+
+    const result = await query(sql, values);
     return result.rows;
   }
 
@@ -122,7 +133,7 @@ export class LogsRepository extends BaseRepository<DailyLog> {
     return result.rows;
   }
 
-  async findByTeamId(teamId: number, filters?: { date?: string; userId?: number; projectId?: number }): Promise<DailyLog[]> {
+  async findByTeamId(teamId: number, filters?: { date?: string; startDate?: string; endDate?: string; userId?: number; projectId?: number }): Promise<DailyLog[]> {
     let sql = `
       SELECT dl.* FROM ${this.tableName} dl
       INNER JOIN projects p ON dl.project_id = p.id
@@ -131,9 +142,19 @@ export class LogsRepository extends BaseRepository<DailyLog> {
     const values: any[] = [teamId];
     let paramCount = 2;
 
+    // Support both single date (for backward compatibility) and date range
     if (filters?.date) {
       sql += ` AND dl.date = $${paramCount++}`;
       values.push(filters.date);
+    } else if (filters?.startDate && filters?.endDate) {
+      sql += ` AND dl.date >= $${paramCount++} AND dl.date <= $${paramCount++}`;
+      values.push(filters.startDate, filters.endDate);
+    } else if (filters?.startDate) {
+      sql += ` AND dl.date >= $${paramCount++}`;
+      values.push(filters.startDate);
+    } else if (filters?.endDate) {
+      sql += ` AND dl.date <= $${paramCount++}`;
+      values.push(filters.endDate);
     }
     if (filters?.userId) {
       sql += ` AND dl.user_id = $${paramCount++}`;

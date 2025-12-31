@@ -7,22 +7,28 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { setSelectedTeam } from '@/store/slices/teamsSlice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePicker } from '@/components/ui/DatePicker';
+import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { formatDate } from '@/utils/formatting';
 
 export function LogsViewer() {
   const dispatch = useDispatch();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
-  const [date, setDate] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>(undefined);
   const [userId, setUserId] = useState<number | null>(null);
   const [projectId, setProjectId] = useState<number | null>(null);
   const [teamId, setTeamId] = useState<number | null>(selectedTeamId);
 
+  // Convert date range to strings for API
+  const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
+  const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
+
   const { data: teams = [] } = useTeams();
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(teamId, {
-    date: date || undefined,
+    startDate,
+    endDate,
     userId: userId || undefined,
     projectId: projectId || undefined,
   });
@@ -57,10 +63,10 @@ export function LogsViewer() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-4">
-            <DatePicker
-              label="Date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+            <DateRangePicker
+              label="Date Range"
+              value={dateRange}
+              onChange={setDateRange}
             />
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Team</label>

@@ -61,11 +61,11 @@ export class LogsService {
     return log;
   }
 
-  async getUserLogs(userId: number, date?: string): Promise<DailyLog[]> {
-    return await this.logsRepository.findByUserId(userId, date);
+  async getUserLogs(userId: number, date?: string, startDate?: string, endDate?: string): Promise<DailyLog[]> {
+    return await this.logsRepository.findByUserId(userId, date, startDate, endDate);
   }
 
-  async getTeamLogs(teamId: number, filters?: { date?: string; userId?: number; projectId?: number }): Promise<DailyLog[]> {
+  async getTeamLogs(teamId: number, filters?: { date?: string; startDate?: string; endDate?: string; userId?: number; projectId?: number }): Promise<DailyLog[]> {
     return await this.logsRepository.findByTeamId(teamId, filters);
   }
 

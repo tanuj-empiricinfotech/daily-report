@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { LogFormModal } from '@/components/logs/LogFormModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePicker } from '@/components/ui/DatePicker';
+import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
@@ -11,23 +11,30 @@ import { useMyProjects } from '@/lib/query/hooks/useProjects';
 import { IconPlus } from '@tabler/icons-react';
 
 export function DailyLog() {
-  const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>({
+    from: new Date(),
+    to: new Date(),
+  });
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDate, setEditingDate] = useState<string | null>(null);
 
-  // Fetch logs for the selected date (for display)
-  const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(selectedDate || undefined);
-  // Fetch logs for the editing date (for the modal form) when different from selected date
+  // Convert date range to strings for API
+  const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
+  const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
+
+  // Fetch logs for the selected date range (for display)
+  const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(undefined, startDate, endDate);
+  // Fetch logs for the editing date (for the modal form) when different from selected range
   const { data: editingLogs = [] } = useMyLogs(
-    editingDate && editingDate !== selectedDate ? editingDate : undefined
+    editingDate ? editingDate : undefined
   );
   const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
 
   const filteredLogs = useMemo(() => {
     let filtered = allLogs;
 
-    // Date filter is applied at the backend level via useMyLogs(selectedDate)
+    // Date filter is applied at the backend level via useMyLogs with date range
     // Only apply project filter on frontend since backend doesn't support project filter for user logs
     if (selectedProjectId) {
       filtered = filtered.filter((log) => log.project_id === selectedProjectId);
@@ -37,7 +44,8 @@ export function DailyLog() {
   }, [allLogs, selectedProjectId]);
 
   const handleNewLog = () => {
-    const dateToUse = selectedDate || formatDate(new Date());
+    // Use the start date from range, or today if no range selected
+    const dateToUse = dateRange?.from ? formatDate(dateRange.from) : formatDate(new Date());
     setEditingDate(dateToUse);
     setIsModalOpen(true);
   };
@@ -58,9 +66,9 @@ export function DailyLog() {
     setEditingDate(null);
   };
 
-  // Use editingLogs if editingDate is different from selectedDate, otherwise use allLogs filtered by date
+  // Get logs for the editing date
   const logsForDate = editingDate
-    ? editingDate !== selectedDate
+    ? editingLogs.length > 0
       ? editingLogs
       : allLogs.filter((log) =>
         normalizeDateForComparison(log.date) === normalizeDateForComparison(editingDate)
@@ -83,10 +91,10 @@ export function DailyLog() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
-            <DatePicker
-              label="Date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+            <DateRangePicker
+              label="Date Range"
+              value={dateRange}
+              onChange={setDateRange}
             />
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Project</label>
@@ -124,7 +132,7 @@ export function DailyLog() {
       <LogFormModal
         open={isModalOpen}
         onOpenChange={handleModalClose}
-        date={editingDate || selectedDate || formatDate(new Date())}
+        date={editingDate || (dateRange?.from ? formatDate(dateRange.from) : formatDate(new Date()))}
         existingLogs={logsForDate}
         onSuccess={handleModalSuccess}
       />

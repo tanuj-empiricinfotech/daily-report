@@ -42,7 +42,9 @@ export class LogsController {
     try {
       const userId = req.user!.userId;
       const date = req.query.date as string | undefined;
-      const logs = await this.logsService.getUserLogs(userId, date);
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      const logs = await this.logsService.getUserLogs(userId, date, startDate, endDate);
       res.json({
         success: true,
         data: logs,
@@ -57,6 +59,8 @@ export class LogsController {
       const teamId = parseInt(req.params.teamId, 10);
       const filters = {
         date: req.query.date as string | undefined,
+        startDate: req.query.startDate as string | undefined,
+        endDate: req.query.endDate as string | undefined,
         userId: req.query.userId ? parseInt(req.query.userId as string, 10) : undefined,
         projectId: req.query.projectId ? parseInt(req.query.projectId as string, 10) : undefined,
       };
