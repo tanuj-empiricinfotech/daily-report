@@ -127,6 +127,26 @@ frontend/
 - Docker and Docker Compose
 - npm or yarn
 
+### Quick Start (Run Both Servers)
+
+From the root directory, you can run both backend and frontend servers simultaneously:
+
+1. Install all dependencies (root, backend, and frontend):
+```bash
+npm run install:all
+```
+
+2. Start both servers:
+```bash
+npm run dev
+```
+
+This will start:
+- Backend server on `http://localhost:3000`
+- Frontend server on `http://localhost:5173` (or next available port)
+
+### Individual Setup
+
 ### Backend Setup
 
 1. Navigate to the backend directory:
@@ -273,12 +293,22 @@ VITE_API_URL=http://localhost:3000
 
 ## Scripts
 
-### Backend
+### Root Level (from project root)
+- `npm run dev` - Start both backend and frontend development servers concurrently
+- `npm run dev:backend` - Start only backend development server
+- `npm run dev:frontend` - Start only frontend development server
+- `npm run build` - Build both backend and frontend for production
+- `npm run build:backend` - Build only backend for production
+- `npm run build:frontend` - Build only frontend for production
+- `npm run install:all` - Install dependencies for root, backend, and frontend
+
+### Backend (from backend directory)
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm start` - Start production server
+- `npm run migrate` - Run database migrations
 
-### Frontend
+### Frontend (from frontend directory)
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
