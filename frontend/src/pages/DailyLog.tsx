@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { formatDate } from '@/utils/formatting';
+import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
 import { useMyLogs } from '@/lib/query/hooks/useLogs';
 import { useMyProjects } from '@/lib/query/hooks/useProjects';
 import { IconPlus } from '@tabler/icons-react';
@@ -22,21 +22,50 @@ export function DailyLog() {
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
   const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
 
-  // Fetch logs for the selected date range (for display)
-  const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(undefined, startDate, endDate);
+  // Fetch logs for the selected date range
+  // If no date range is selected, fetch recent logs (last 30 days as fallback)
+  const apiStartDate = startDate || formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const apiEndDate = endDate || formatDate(new Date());
+
+  const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(
+    undefined, 
+    apiStartDate, 
+    apiEndDate
+  );
   const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
 
   const filteredLogs = useMemo(() => {
     let filtered = allLogs;
 
-    // Date filter is applied at the backend level via useMyLogs with date range
-    // Only apply project filter on frontend since backend doesn't support project filter for user logs
+    // Apply date filter on frontend to ensure accuracy (handles timezone issues)
+    if (dateRange?.from && dateRange?.to) {
+      const startDateStr = formatDate(dateRange.from);
+      const endDateStr = formatDate(dateRange.to);
+      filtered = filtered.filter((log) => {
+        const logDateStr = normalizeDateForComparison(log.date);
+        return logDateStr >= startDateStr && logDateStr <= endDateStr;
+      });
+    } else if (dateRange?.from) {
+      const startDateStr = formatDate(dateRange.from);
+      filtered = filtered.filter((log) => {
+        const logDateStr = normalizeDateForComparison(log.date);
+        return logDateStr >= startDateStr;
+      });
+    } else if (dateRange?.to) {
+      const endDateStr = formatDate(dateRange.to);
+      filtered = filtered.filter((log) => {
+        const logDateStr = normalizeDateForComparison(log.date);
+        return logDateStr <= endDateStr;
+      });
+    }
+
+    // Apply project filter
     if (selectedProjectId) {
       filtered = filtered.filter((log) => log.project_id === selectedProjectId);
     }
 
     return filtered;
-  }, [allLogs, selectedProjectId]);
+  }, [allLogs, dateRange, selectedProjectId]);
 
   const handleNewLog = () => {
     navigate('/logs/create');
