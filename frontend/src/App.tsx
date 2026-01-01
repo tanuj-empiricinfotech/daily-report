@@ -9,6 +9,8 @@ import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { DailyLog } from './pages/DailyLog';
+import { CreateLogPage } from './pages/CreateLogPage';
+import { EditLogPage } from './pages/EditLogPage';
 import { useAuth } from './hooks/useAuth';
 
 function RootRedirect() {
@@ -42,6 +44,26 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <DailyLog />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/logs/create"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <CreateLogPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/logs/edit/:id"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <EditLogPage />
             </AppLayout>
           </ProtectedRoute>
         }

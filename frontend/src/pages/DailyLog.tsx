@@ -1,23 +1,22 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogsDataTable } from '@/components/logs/LogsDataTable';
-import { LogFormModal } from '@/components/logs/LogFormModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
+import { formatDate } from '@/utils/formatting';
 import { useMyLogs } from '@/lib/query/hooks/useLogs';
 import { useMyProjects } from '@/lib/query/hooks/useProjects';
 import { IconPlus } from '@tabler/icons-react';
 
 export function DailyLog() {
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>({
     from: new Date(),
     to: new Date(),
   });
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDate, setEditingDate] = useState<string | null>(null);
 
   // Convert date range to strings for API
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
@@ -25,10 +24,6 @@ export function DailyLog() {
 
   // Fetch logs for the selected date range (for display)
   const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(undefined, startDate, endDate);
-  // Fetch logs for the editing date (for the modal form) when different from selected range
-  const { data: editingLogs = [] } = useMyLogs(
-    editingDate ? editingDate : undefined
-  );
   const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
 
   const filteredLogs = useMemo(() => {
@@ -44,36 +39,8 @@ export function DailyLog() {
   }, [allLogs, selectedProjectId]);
 
   const handleNewLog = () => {
-    // Use the start date from range, or today if no range selected
-    const dateToUse = dateRange?.from ? formatDate(dateRange.from) : formatDate(new Date());
-    setEditingDate(dateToUse);
-    setIsModalOpen(true);
+    navigate('/logs/create');
   };
-
-  const handleModalClose = (open: boolean) => {
-    setIsModalOpen(open);
-    if (!open) {
-      setEditingDate(null);
-    }
-  };
-
-  const handleEdit = () => {
-    // Edit is handled by LogsDataTable
-  };
-
-  const handleModalSuccess = () => {
-    setIsModalOpen(false);
-    setEditingDate(null);
-  };
-
-  // Get logs for the editing date
-  const logsForDate = editingDate
-    ? editingLogs.length > 0
-      ? editingLogs
-      : allLogs.filter((log) =>
-        normalizeDateForComparison(log.date) === normalizeDateForComparison(editingDate)
-      )
-    : [];
 
   return (
     <div className="space-y-6">
@@ -126,15 +93,6 @@ export function DailyLog() {
         projects={projects}
         isAdmin={false}
         isLoading={logsLoading || projectsLoading}
-        onEdit={handleEdit}
-      />
-
-      <LogFormModal
-        open={isModalOpen}
-        onOpenChange={handleModalClose}
-        date={editingDate || (dateRange?.from ? formatDate(dateRange.from) : formatDate(new Date()))}
-        existingLogs={logsForDate}
-        onSuccess={handleModalSuccess}
       />
     </div>
   );
