@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LogForm } from '@/components/logs/LogForm';
+import { MultiRowLogForm } from '@/components/logs/MultiRowLogForm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { useMyProjects } from '@/lib/query/hooks/useProjects';
-import { useUpdateLog, useDeleteLog } from '@/lib/query/hooks/useLogs';
+import { useUpdateLog, useDeleteLog, useCreateLogsBulk } from '@/lib/query/hooks/useLogs';
 import client, { endpoints } from '@/lib/api/client';
 import type { DailyLog, ApiResponse, UpdateLogDto, CreateLogDto } from '@/lib/api/types';
 import { IconTrash } from '@tabler/icons-react';
@@ -32,6 +32,7 @@ export function EditLogPage() {
   const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
   const updateLogMutation = useUpdateLog();
   const deleteLogMutation = useDeleteLog();
+  const createLogsBulkMutation = useCreateLogsBulk();
 
   const {
     data: log,
@@ -47,16 +48,31 @@ export function EditLogPage() {
     enabled: !!logId,
   });
 
-  const handleSubmit = async (data: CreateLogDto): Promise<void> => {
-    if (!logId) return;
+  const handleSubmit = async (data: CreateLogDto[]): Promise<void> => {
+    if (!logId || !log) return;
+    if (data.length === 0) {
+      throw new Error('At least one log entry is required');
+    }
+
+    // First entry is always the existing log being edited
+    const existingEntry = data[0];
+
+    // Update the existing log entry
     const updateData: UpdateLogDto = {
-      project_id: data.project_id,
-      date: data.date,
-      task_description: data.task_description,
-      actual_time_spent: data.actual_time_spent,
-      tracked_time: data.tracked_time,
+      project_id: existingEntry.project_id,
+      date: existingEntry.date,
+      task_description: existingEntry.task_description,
+      actual_time_spent: existingEntry.actual_time_spent,
+      tracked_time: existingEntry.tracked_time,
     };
     await updateLogMutation.mutateAsync({ id: logId, data: updateData });
+
+    // Create any additional entries (if user added more rows)
+    const newEntries = data.slice(1);
+    if (newEntries.length > 0) {
+      await createLogsBulkMutation.mutateAsync(newEntries);
+    }
+
     navigate('/logs');
   };
 
@@ -123,13 +139,13 @@ export function EditLogPage() {
         </AlertDialog>
       </div>
 
-      <LogForm
-        initialData={log}
+      <MultiRowLogForm
+        initialData={[log]}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
-        isLoading={updateLogMutation.isPending}
+        isLoading={updateLogMutation.isPending || createLogsBulkMutation.isPending}
         projects={projects}
-        error={updateLogMutation.error as Error | null}
+        error={(updateLogMutation.error || createLogsBulkMutation.error) as Error | null}
       />
     </div>
   );
