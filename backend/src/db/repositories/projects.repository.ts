@@ -73,5 +73,13 @@ export class ProjectsRepository extends BaseRepository<Project> {
     }
     return this.findByUserId(userId);
   }
+
+  async delete(id: number): Promise<boolean> {
+    const result = await query(
+      `DELETE FROM ${this.tableName} WHERE id = $1`,
+      [id]
+    );
+    return result.rowCount !== null && result.rowCount > 0;
+  }
 }
 

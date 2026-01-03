@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTeamLogs } from '@/lib/query/hooks/useLogs';
 import { useUsersByTeam } from '@/lib/query/hooks/useUsers';
 import { useProjects } from '@/lib/query/hooks/useProjects';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate } from '@/utils/formatting';
+import { istToIso } from '@/utils/date';
 
 export function LogsViewer() {
   const dispatch = useDispatch();
@@ -21,14 +22,14 @@ export function LogsViewer() {
   const [projectId, setProjectId] = useState<number | null>(null);
   const [teamId, setTeamId] = useState<number | null>(selectedTeamId);
 
-  // Convert date range to strings for API
+  // Convert date range to IST strings, then to ISO for API
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
   const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
 
   const { data: teams = [] } = useTeams();
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(teamId, {
-    startDate,
-    endDate,
+    startDate: startDate ? istToIso(startDate) : undefined,
+    endDate: endDate ? istToIso(endDate) : undefined,
     userId: userId || undefined,
     projectId: projectId || undefined,
   });
@@ -137,7 +138,6 @@ export function LogsViewer() {
         logs={logs}
         projects={projects}
         users={users}
-        teams={teams}
         isAdmin={true}
         isLoading={logsLoading}
         onEdit={handleEdit}

@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogForm } from './LogForm';
-import type { DailyLog } from '@/lib/api/types';
+import { useMyProjects } from '@/lib/query/hooks/useProjects';
+import { useCreateLog } from '@/lib/query/hooks/useLogs';
+import type { DailyLog, CreateLogDto } from '@/lib/api/types';
 
 interface LogFormModalProps {
   open: boolean;
@@ -17,8 +19,18 @@ export function LogFormModal({
   existingLogs,
   onSuccess,
 }: LogFormModalProps) {
-  const handleSuccess = () => {
+  const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
+  const createLogMutation = useCreateLog();
+
+  const initialData = existingLogs && existingLogs.length > 0 ? existingLogs[0] : undefined;
+
+  const handleSubmit = async (data: CreateLogDto): Promise<void> => {
+    await createLogMutation.mutateAsync(data);
     onSuccess();
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
     onOpenChange(false);
   };
 
@@ -27,14 +39,17 @@ export function LogFormModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {existingLogs && existingLogs.length > 0 ? 'Edit Log Entry' : 'New Log Entry'}
+            {initialData ? 'Edit Log Entry' : 'New Log Entry'}
           </DialogTitle>
         </DialogHeader>
         <LogForm
-          date={date}
-          existingLogs={existingLogs}
-          onSuccess={handleSuccess}
-          onCancel={() => onOpenChange(false)}
+          initialData={initialData}
+          initialDate={date}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          isLoading={createLogMutation.isPending || projectsLoading}
+          projects={projects}
+          error={createLogMutation.error as Error | null}
         />
       </DialogContent>
     </Dialog>

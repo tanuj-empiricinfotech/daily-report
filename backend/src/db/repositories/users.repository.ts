@@ -75,5 +75,13 @@ export class UsersRepository extends BaseRepository<User> {
     );
     return result.rows;
   }
+
+  async delete(id: number): Promise<boolean> {
+    const result = await query(
+      `DELETE FROM ${this.tableName} WHERE id = $1`,
+      [id]
+    );
+    return result.rowCount !== null && result.rowCount > 0;
+  }
 }
 

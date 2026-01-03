@@ -6,6 +6,7 @@ import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
+import { istToIso } from '@/utils/date';
 import { useMyLogs } from '@/lib/query/hooks/useLogs';
 import { useMyProjects } from '@/lib/query/hooks/useProjects';
 import { IconPlus } from '@tabler/icons-react';
@@ -18,14 +19,15 @@ export function DailyLog() {
   });
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
-  // Convert date range to strings for API
+  // Convert date range to IST strings for display and API
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
   const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
 
   // Fetch logs for the selected date range
   // If no date range is selected, fetch recent logs (last 30 days as fallback)
-  const apiStartDate = startDate || formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-  const apiEndDate = endDate || formatDate(new Date());
+  // Convert IST dates to ISO for API calls
+  const apiStartDate = startDate ? istToIso(startDate) : istToIso(formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+  const apiEndDate = endDate ? istToIso(endDate) : istToIso(formatDate(new Date()));
 
   const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(
     undefined, 

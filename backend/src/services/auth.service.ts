@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
 import { UsersRepository } from '../db/repositories/users.repository';
 import { CreateUserDto, User } from '../types';
-import { generateToken, JwtPayload } from '../utils/jwt';
+import { generateToken } from '../utils/jwt';
+import type { JwtPayload } from '../types';
 import { BadRequestError, UnauthorizedError } from '../utils/errors';
 
 export class AuthService {

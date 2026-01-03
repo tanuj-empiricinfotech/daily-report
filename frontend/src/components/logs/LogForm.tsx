@@ -50,7 +50,7 @@ export function LogForm({
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!projectId || projectId === '') {
+    if (typeof projectId === 'string') {
       errors.projectId = 'Project is required';
     }
 

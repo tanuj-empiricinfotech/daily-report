@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { CreateTeamDto } from '@/lib/api/types';
 
 export function TeamManager() {
   const { data: teams = [], isLoading } = useTeams();

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import type { Project, CreateLogDto, DailyLog } from '@/lib/api/types';
 import { formatDate } from '@/utils/formatting';
+import { istToIso } from '@/utils/date';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
@@ -184,7 +185,7 @@ export function MultiRowLogForm({
       )
       .map((row) => ({
         project_id: Number(row.projectId),
-        date: date,
+        date: istToIso(date), // Convert IST input to ISO for API
         task_description: row.taskDescription.trim(),
         actual_time_spent: row.actualTimeSpent,
         tracked_time: row.trackedTime,

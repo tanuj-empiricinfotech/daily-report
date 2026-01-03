@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { DailyLog, Project, User, Team } from '@/lib/api/types';
+import type { DailyLog, Project, User } from '@/lib/api/types';
 import { formatDisplayDate, normalizeDateForComparison } from '@/utils/formatting';
 import { formatDecimalHours } from '@/utils/time';
 import { IconEdit } from '@tabler/icons-react';
@@ -19,7 +19,6 @@ interface LogsDataTableProps {
   logs: DailyLog[];
   projects: Project[];
   users?: User[];
-  teams?: Team[];
   isAdmin?: boolean;
   isLoading?: boolean;
   onEdit?: () => void;
@@ -29,7 +28,6 @@ export function LogsDataTable({
   logs,
   projects,
   users = [],
-  teams = [],
   isAdmin = false,
   isLoading = false,
   onEdit,

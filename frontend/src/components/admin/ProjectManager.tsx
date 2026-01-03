@@ -122,8 +122,6 @@ export function ProjectManager() {
     );
   }
 
-  const selectedTeam = teams.find((t) => t.id === teamId);
-
   return (
     <div className="space-y-6">
       <Card>
