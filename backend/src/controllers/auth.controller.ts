@@ -29,14 +29,30 @@ const getCookieOptions = (req: AuthRequest): CookieOptions => {
   const origin = req.headers.origin;
   const isHttpsOrigin = origin?.startsWith('https://');
   const isProduction = process.env.NODE_ENV === 'production';
-  const isBackendHttps = req.protocol === 'https' || req.secure || process.env.BACKEND_HTTPS === 'true';
 
-  // For HTTPS backend with HTTPS frontend (or production), use secure cookies with sameSite: 'none'
-  // This is required for cross-origin requests from Vercel frontend to Render backend
-  if (isBackendHttps && (isHttpsOrigin || isProduction)) {
+  // Check if backend is HTTPS through multiple methods:
+  // 1. req.protocol === 'https' (works when trust proxy is enabled)
+  // 2. req.secure (Express convenience property)
+  // 3. X-Forwarded-Proto header (fallback for some proxies)
+  // 4. BACKEND_HTTPS env var (manual override)
+  const forwardedProto = req.headers['x-forwarded-proto'] as string;
+  const isBackendHttps =
+    req.protocol === 'https' ||
+    req.secure ||
+    forwardedProto === 'https' ||
+    process.env.BACKEND_HTTPS === 'true';
+
+  // Use HTTPS cookies if:
+  // - Backend is HTTPS AND (origin is HTTPS OR in production mode)
+  // - Or if origin is HTTPS (regardless of backend detection)
+  const useSecureCookies = (isBackendHttps && (isHttpsOrigin || isProduction)) || isHttpsOrigin;
+
+  if (useSecureCookies) {
+    // For HTTPS environments, use secure cookies with sameSite: 'none'
+    // This is required for cross-origin requests from Vercel frontend to Render backend
     return {
       httpOnly: true,
-      secure: true, // FIXED: Must be true for HTTPS
+      secure: true,
       sameSite: 'none',
       maxAge: COOKIE_MAX_AGE_MS,
     };

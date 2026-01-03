@@ -9,11 +9,22 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Constants for allowed origins (following clean code guidelines - avoid magic strings)
-const LOCALHOST_ORIGIN = 'http://localhost:5173';
-const PRODUCTION_FRONTEND_URL = 'https://daily-report-omega.vercel.app';
+/**
+ * Trust proxy configuration
+ * When deployed behind reverse proxies (Render, Heroku, Railway, etc.),
+ * Express needs to trust the X-Forwarded-* headers to correctly detect:
+ * - req.protocol (http vs https)
+ * - req.secure (boolean for HTTPS)
+ * - req.ip (client IP address)
+ *
+ * Set to 1 to trust the first proxy in the chain
+ */
+app.set('trust proxy', 1);
+
+// Environment configuration (following clean code principles - configuration management)
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const LOCALHOST_DEV_URL = 'http://localhost:5173';
 
 // Allowed origin patterns for development tunnels and deployment platforms
 const ALLOWED_ORIGIN_PATTERNS = {
@@ -25,12 +36,10 @@ const ALLOWED_ORIGIN_PATTERNS = {
 /**
  * CORS origin validation function
  * Allows requests from:
- * - localhost development (http://localhost:5173)
- * - Production Vercel deployment (https://daily-report-omega.vercel.app)
- * - Vercel preview deployments
- * - Environment-configured frontend URL
- * - Ngrok tunnels
- * - Pinggy tunnels
+ * - Environment-configured frontend URL (FRONTEND_URL)
+ * - Localhost development (default fallback)
+ * - Vercel deployments (production and preview)
+ * - Development tunnels (ngrok, pinggy)
  * - Requests with no origin (mobile apps, CURL)
  */
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -39,18 +48,13 @@ const corsOrigin = (origin: string | undefined, callback: (err: Error | null, al
     return callback(null, true);
   }
 
-  // Allow localhost development
-  if (origin === LOCALHOST_ORIGIN) {
-    return callback(null, true);
-  }
-
-  // Allow production Vercel URL
-  if (origin === PRODUCTION_FRONTEND_URL) {
-    return callback(null, true);
-  }
-
-  // Allow FRONTEND_URL from environment variable
+  // Allow environment-configured frontend URL
   if (origin === FRONTEND_URL) {
+    return callback(null, true);
+  }
+
+  // Allow localhost development (fallback for dev environment)
+  if (origin === LOCALHOST_DEV_URL) {
     return callback(null, true);
   }
 
@@ -59,7 +63,7 @@ const corsOrigin = (origin: string | undefined, callback: (err: Error | null, al
     return callback(null, true);
   }
 
-  // Allow Vercel preview deployments
+  // Allow Vercel deployments (production and preview)
   if (ALLOWED_ORIGIN_PATTERNS.vercel.test(origin)) {
     return callback(null, true);
   }
