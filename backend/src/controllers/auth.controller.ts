@@ -3,36 +3,52 @@ import { AuthService } from '../services/auth.service';
 import { AuthRequest } from '../middleware/auth';
 import { CreateUserDto } from '../types';
 
+// Constants for cookie configuration (following clean code guidelines)
+const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+interface CookieOptions {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: 'none' | 'lax' | 'strict';
+  maxAge: number;
+}
+
 /**
  * Gets cookie options based on the request origin and backend protocol.
- * Handles both HTTP (localhost) and HTTPS (ngrok, pinggy) origins.
- * 
- * For HTTPS to HTTPS (cross-origin): secure: true, sameSite: 'none'
- * For HTTP to HTTP (localhost): secure: false, sameSite: 'lax'
+ * Handles both HTTP (localhost) and HTTPS (production, Vercel, tunnels) environments.
+ *
+ * For HTTPS environments (production, Vercel, ngrok HTTPS, Render):
+ *   - secure: true (cookies only sent over HTTPS)
+ *   - sameSite: 'none' (allows cross-origin cookies with credentials)
+ *
+ * For HTTP environments (localhost development):
+ *   - secure: false (allows cookies over HTTP)
+ *   - sameSite: 'lax' (CSRF protection for same-site requests)
  */
-const getCookieOptions = (req: AuthRequest) => {
+const getCookieOptions = (req: AuthRequest): CookieOptions => {
   const origin = req.headers.origin;
   const isHttpsOrigin = origin?.startsWith('https://');
   const isProduction = process.env.NODE_ENV === 'production';
-  // Check if backend is HTTPS (works with trust proxy enabled)
   const isBackendHttps = req.protocol === 'https' || req.secure || process.env.BACKEND_HTTPS === 'true';
 
   // For HTTPS backend with HTTPS frontend (or production), use secure cookies with sameSite: 'none'
+  // This is required for cross-origin requests from Vercel frontend to Render backend
   if (isBackendHttps && (isHttpsOrigin || isProduction)) {
     return {
       httpOnly: true,
-      secure: false,
-      sameSite: 'none' as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true, // FIXED: Must be true for HTTPS
+      sameSite: 'none',
+      maxAge: COOKIE_MAX_AGE_MS,
     };
   }
 
   // For HTTP backend (localhost development), use secure: false with sameSite: 'lax'
+  // This provides CSRF protection while allowing cookies in local development
   return {
     httpOnly: true,
     secure: false,
-    sameSite: 'none' as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax',
+    maxAge: COOKIE_MAX_AGE_MS,
   };
 };
 
