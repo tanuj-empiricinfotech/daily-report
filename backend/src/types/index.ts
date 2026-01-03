@@ -48,7 +48,7 @@ export interface DailyLog {
   id: number;
   user_id: number;
   project_id: number;
-  date: Date;
+  date: string;  // Date-only value in YYYY-MM-DD format (timezone-agnostic)
   task_description: string;
   actual_time_spent: number;
   tracked_time: number;

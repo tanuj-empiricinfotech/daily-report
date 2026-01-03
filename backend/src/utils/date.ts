@@ -1,67 +1,77 @@
 /**
- * Utility functions for date conversion between IST and ISO formats
- * IST (Indian Standard Time) is UTC+5:30
+ * Date utility functions
+ *
+ * IMPORTANT: For date-only values (YYYY-MM-DD), we should NOT apply timezone conversions.
+ * Dates represent calendar days and should be timezone-agnostic.
+ *
+ * The database stores dates as PostgreSQL DATE type (date-only, no time component).
+ * These should be stored and retrieved as plain YYYY-MM-DD strings without timezone conversion.
  */
-
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
 
 /**
- * Converts an IST date string (YYYY-MM-DD) to ISO date string (YYYY-MM-DD) in UTC
- * Since we're dealing with date-only values, we need to ensure the date is interpreted
- * in IST timezone and then converted to UTC for storage
+ * Validates and normalizes a date string to YYYY-MM-DD format
+ *
+ * For date-only values, no timezone conversion is applied.
+ * The date string is returned as-is if valid, ensuring calendar dates
+ * remain consistent regardless of timezone.
+ *
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns Normalized date string in YYYY-MM-DD format
  */
-export function istToIso(istDateString: string): string {
-  if (!istDateString) {
-    return istDateString;
+export function normalizeDate(dateString: string): string {
+  if (!dateString) {
+    return dateString;
   }
 
-  // Parse the date string as if it's in IST
-  // Create a date at midnight IST, then convert to UTC
-  const [year, month, day] = istDateString.split('-').map(Number);
-  const istDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-  
-  // Subtract IST offset to get UTC equivalent
-  // If it's 2024-01-01 00:00:00 IST, it's actually 2023-12-31 18:30:00 UTC
-  const utcDate = new Date(istDate.getTime() - IST_OFFSET_MS);
-  
-  // Return as YYYY-MM-DD string
-  return utcDate.toISOString().split('T')[0];
-}
+  // Extract date part if datetime string is provided
+  const datePart = dateString.split('T')[0];
 
-/**
- * Converts an ISO date string (YYYY-MM-DD) in UTC to IST date string (YYYY-MM-DD)
- * Since dates are stored in UTC, we need to convert them back to IST for display
- */
-export function isoToIst(isoDateString: string): string {
-  if (!isoDateString) {
-    return isoDateString;
+  // Validate YYYY-MM-DD format
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  if (!datePattern.test(datePart)) {
+    throw new Error(`Invalid date format: ${dateString}. Expected YYYY-MM-DD format.`);
   }
 
-  // Parse the ISO date string as UTC
-  const [year, month, day] = isoDateString.split('T')[0].split('-').map(Number);
-  const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-  
-  // Add IST offset to get IST equivalent
-  const istDate = new Date(utcDate.getTime() + IST_OFFSET_MS);
-  
-  // Return as YYYY-MM-DD string
-  const istYear = istDate.getUTCFullYear();
-  const istMonth = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-  const istDay = String(istDate.getUTCDate()).padStart(2, '0');
-  
-  return `${istYear}-${istMonth}-${istDay}`;
+  return datePart;
 }
 
 /**
- * Converts an array of IST date strings to ISO date strings
+ * Formats a Date object to YYYY-MM-DD string
+ * Uses the date components in the user's local timezone
+ *
+ * @param date - Date object to format
+ * @returns Date string in YYYY-MM-DD format
  */
-export function istToIsoArray(dates: string[]): string[] {
-  return dates.map(istToIso);
+export function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
- * Converts an array of ISO date strings to IST date strings
+ * Parses a date string (YYYY-MM-DD) to a Date object
+ * The Date object represents the date in the user's local timezone
+ *
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns Date object representing the date in local timezone
  */
-export function isoToIstArray(dates: string[]): string[] {
-  return dates.map(isoToIst);
+export function parseDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Legacy function names kept for backward compatibility
+ * These now simply normalize the date string without timezone conversion
+ */
+
+/** @deprecated Use normalizeDate instead. Kept for backward compatibility. */
+export function istToIso(dateString: string): string {
+  return normalizeDate(dateString);
+}
+
+/** @deprecated Use normalizeDate instead. Kept for backward compatibility. */
+export function isoToIst(dateString: string): string {
+  return normalizeDate(dateString);
 }

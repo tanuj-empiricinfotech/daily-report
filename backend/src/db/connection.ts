@@ -1,7 +1,23 @@
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolConfig, types } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+/**
+ * Configure pg driver to return DATE values as strings instead of Date objects.
+ *
+ * By default, the pg driver converts PostgreSQL DATE columns to JavaScript Date objects,
+ * which include time and timezone components. This causes issues with date-only values:
+ * - A DATE value "2026-01-03" gets converted to a Date object
+ * - When serialized to JSON, it becomes "2026-01-02T18:30:00.000Z" (with timezone offset)
+ * - The calendar date shifts due to timezone conversion
+ *
+ * Solution: Configure pg to return DATE values as plain strings (YYYY-MM-DD format).
+ * This keeps dates timezone-agnostic and prevents unwanted date shifts.
+ *
+ * Type OID 1082 is PostgreSQL's internal type ID for DATE columns.
+ */
+types.setTypeParser(types.builtins.DATE, (val: string) => val);
 
 /**
  * Parses a PostgreSQL connection URL into connection config

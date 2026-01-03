@@ -111,18 +111,14 @@ export class LogsController {
     try {
       const id = parseInt(req.params.id, 10);
       const data: UpdateLogDto = req.body;
-      // Convert IST date to ISO for storage
+      // Normalize date format (validates and extracts YYYY-MM-DD)
       if (data.date) {
         data.date = istToIso(data.date);
       }
       const userId = req.user!.userId;
       const isAdmin = req.user!.role === 'admin';
       const log = await this.logsService.updateLog(id, data, userId, isAdmin);
-      // Convert ISO date back to IST for response
-      if (log.date) {
-        const dateString = log.date instanceof Date ? log.date.toISOString().split('T')[0] : String(log.date);
-        (log as any).date = isoToIst(dateString);
-      }
+      // Date is already a string in YYYY-MM-DD format (no conversion needed)
       res.json({
         success: true,
         data: log,
