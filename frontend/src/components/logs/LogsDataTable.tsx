@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -86,6 +87,31 @@ export function LogsDataTable({
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       });
   }, [logs, getProjectName]);
+
+  /**
+   * Calculate total actual time and tracked time across all logs
+   * Following clean code principles - extracted calculation into separate memoized hook
+   */
+  const totals = useMemo(() => {
+    const totalActualTime = logs.reduce((sum, log) => {
+      const value = typeof log.actual_time_spent === 'string'
+        ? parseFloat(log.actual_time_spent)
+        : log.actual_time_spent;
+      return sum + (isNaN(value) ? 0 : value);
+    }, 0);
+
+    const totalTrackedTime = logs.reduce((sum, log) => {
+      const value = typeof log.tracked_time === 'string'
+        ? parseFloat(log.tracked_time)
+        : log.tracked_time;
+      return sum + (isNaN(value) ? 0 : value);
+    }, 0);
+
+    return {
+      actualTime: totalActualTime,
+      trackedTime: totalTrackedTime,
+    };
+  }, [logs]);
 
   if (isLoading) {
     return (
@@ -181,6 +207,23 @@ export function LogsDataTable({
             }).flat();
           })}
         </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell
+              colSpan={isAdmin ? 4 : 3}
+              className="text-right font-semibold"
+            >
+              Total:
+            </TableCell>
+            <TableCell className="font-semibold">
+              {formatDecimalHours(totals.actualTime)}
+            </TableCell>
+            <TableCell className="font-semibold">
+              {formatDecimalHours(totals.trackedTime)}
+            </TableCell>
+            <TableCell />
+          </TableRow>
+        </TableFooter>
       </Table>
     </div>
   );
