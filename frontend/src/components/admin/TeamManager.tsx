@@ -15,12 +15,14 @@ export function TeamManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    await createMutation.mutateAsync({ name, description });
+    await createMutation.mutateAsync({ name, description, webhook_url: webhookUrl || undefined });
     setName('');
     setDescription('');
+    setWebhookUrl('');
   };
 
   const handleEdit = (id: number) => {
@@ -29,15 +31,17 @@ export function TeamManager() {
       setEditingId(id);
       setName(team.name);
       setDescription(team.description || '');
+      setWebhookUrl(team.webhook_url || '');
     }
   };
 
   const handleUpdate = async () => {
     if (!editingId || !name.trim()) return;
-    await updateMutation.mutateAsync({ id: editingId, data: { name, description } });
+    await updateMutation.mutateAsync({ id: editingId, data: { name, description, webhook_url: webhookUrl || undefined } });
     setEditingId(null);
     setName('');
     setDescription('');
+    setWebhookUrl('');
   };
 
   const handleDelete = async (id: number) => {
@@ -72,6 +76,12 @@ export function TeamManager() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            <Input
+              placeholder="Microsoft Teams Webhook URL (optional)"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              type="url"
+            />
             <Button onClick={editingId ? handleUpdate : handleCreate} disabled={!name.trim()}>
               {editingId ? 'Update Team' : 'Create Team'}
             </Button>
@@ -80,6 +90,7 @@ export function TeamManager() {
                 setEditingId(null);
                 setName('');
                 setDescription('');
+                setWebhookUrl('');
               }}>
                 Cancel
               </Button>
@@ -104,9 +115,17 @@ export function TeamManager() {
                 </div>
               </div>
             </CardHeader>
-            {team.description && (
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{team.description}</p>
+            {(team.description || team.webhook_url) && (
+              <CardContent className="space-y-2">
+                {team.description && (
+                  <p className="text-sm text-muted-foreground">{team.description}</p>
+                )}
+                {team.webhook_url && (
+                  <div className="text-sm">
+                    <span className="font-medium">Teams Webhook:</span>{' '}
+                    <span className="text-muted-foreground truncate block">{team.webhook_url}</span>
+                  </div>
+                )}
               </CardContent>
             )}
           </Card>

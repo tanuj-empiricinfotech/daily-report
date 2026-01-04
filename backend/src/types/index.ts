@@ -15,6 +15,7 @@ export interface Team {
   id: number;
   name: string;
   description: string | null;
+  webhook_url: string | null;
   created_by: number | null;
   created_at: Date;
   updated_at: Date;
@@ -67,6 +68,7 @@ export interface CreateUserDto {
 export interface CreateTeamDto {
   name: string;
   description?: string;
+  webhook_url?: string;
 }
 
 export interface CreateProjectDto {

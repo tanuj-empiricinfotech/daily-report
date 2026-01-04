@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { initializeJobs } from './jobs';
 
 dotenv.config();
 
@@ -96,5 +97,8 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+
+  // Initialize scheduled jobs after server starts
+  initializeJobs();
 });
 
