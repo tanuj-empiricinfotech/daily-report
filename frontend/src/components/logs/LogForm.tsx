@@ -9,6 +9,22 @@ import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import type { DailyLog, Project, CreateLogDto } from '@/lib/api/types';
 import { formatDate } from '@/utils/formatting';
 
+/**
+ * Normalizes time input to HH:MM format before sending to API
+ */
+const normalizeTimeInput = (input: string): string => {
+  const trimmed = input.trim();
+  if (!trimmed) return '0:00';
+  if (trimmed.includes(':')) return trimmed;
+
+  const num = parseInt(trimmed, 10);
+  if (!isNaN(num) && num >= 0) {
+    return `${num}:00`;
+  }
+
+  return trimmed;
+};
+
 interface LogFormProps {
   initialData?: DailyLog;
   initialDate?: string;
@@ -80,8 +96,8 @@ export function LogForm({
         project_id: Number(projectId),
         date,
         task_description: taskDescription.trim(),
-        actual_time_spent: actualTimeSpent,
-        tracked_time: trackedTime,
+        actual_time_spent: normalizeTimeInput(actualTimeSpent),
+        tracked_time: normalizeTimeInput(trackedTime),
       });
     } catch (err) {
       // Error is handled by parent component

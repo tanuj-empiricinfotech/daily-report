@@ -20,6 +20,78 @@ import { istToIso } from '@/utils/date';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Normalizes time input to HH:MM format
+ * - "8" → "8:00"
+ * - "3:30" → "3:30"
+ * - "" → "0:00"
+ */
+const normalizeTimeInput = (input: string): string => {
+  const trimmed = input.trim();
+
+  // Empty input
+  if (!trimmed) return '0:00';
+
+  // Already in HH:MM format
+  if (trimmed.includes(':')) {
+    return trimmed;
+  }
+
+  // Single number - convert to hours
+  const num = parseInt(trimmed, 10);
+  if (!isNaN(num) && num >= 0) {
+    return `${num}:00`;
+  }
+
+  return trimmed;
+};
+
+/**
+ * Validates time format and returns error message if invalid
+ */
+const validateTimeFormat = (input: string): string | undefined => {
+  const trimmed = input.trim();
+
+  // Empty is valid
+  if (!trimmed || trimmed === '0:00') return undefined;
+
+  // Must contain colon for HH:MM format
+  if (!trimmed.includes(':')) {
+    // Check if it's a valid number (will be converted on blur)
+    const num = parseInt(trimmed, 10);
+    if (isNaN(num) || num < 0) {
+      return 'Please enter a valid time (e.g., 3:30 or 3)';
+    }
+    return undefined; // Valid number, will be converted on blur
+  }
+
+  const parts = trimmed.split(':');
+  if (parts.length !== 2) {
+    return 'Invalid time format. Use HH:MM (e.g., 3:30)';
+  }
+
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+
+  if (isNaN(hours) || isNaN(minutes)) {
+    return 'Invalid time. Hours and minutes must be numbers';
+  }
+
+  if (hours < 0) {
+    return 'Hours cannot be negative';
+  }
+
+  if (minutes < 0) {
+    return 'Minutes cannot be negative';
+  }
+
+  if (minutes >= 60) {
+    return 'Invalid time. Minutes must be less than 60';
+  }
+
+  return undefined;
+};
+
 interface LogRow {
   id: string;
   projectId: number | '';
@@ -139,7 +211,16 @@ export function MultiRowLogForm({
         rowError.taskDescription = 'Task description is required';
       }
 
-      // Time validation is handled by backend
+      // Validate time formats
+      const actualTimeError = validateTimeFormat(row.actualTimeSpent);
+      if (actualTimeError) {
+        rowError.actualTimeSpent = actualTimeError;
+      }
+
+      const trackedTimeError = validateTimeFormat(row.trackedTime);
+      if (trackedTimeError) {
+        rowError.trackedTime = trackedTimeError;
+      }
 
       if (Object.keys(rowError).length === 0) {
         hasValidRow = true;
@@ -179,8 +260,8 @@ export function MultiRowLogForm({
         project_id: Number(row.projectId),
         date: istToIso(date), // Convert IST input to ISO for API
         task_description: row.taskDescription.trim(),
-        actual_time_spent: row.actualTimeSpent || '0:00',
-        tracked_time: row.trackedTime || '0:00',
+        actual_time_spent: normalizeTimeInput(row.actualTimeSpent),
+        tracked_time: normalizeTimeInput(row.trackedTime),
       }));
 
     try {
@@ -275,6 +356,10 @@ export function MultiRowLogForm({
                               onChange={(e) =>
                                 updateRow(row.id, { actualTimeSpent: e.target.value })
                               }
+                              onBlur={(e) => {
+                                const normalized = normalizeTimeInput(e.target.value);
+                                updateRow(row.id, { actualTimeSpent: normalized });
+                              }}
                               placeholder="0:00"
                               className={rowErrors.actualTimeSpent ? 'aria-invalid pr-6' : 'pr-6'}
                             />
@@ -296,6 +381,10 @@ export function MultiRowLogForm({
                               onChange={(e) =>
                                 updateRow(row.id, { trackedTime: e.target.value })
                               }
+                              onBlur={(e) => {
+                                const normalized = normalizeTimeInput(e.target.value);
+                                updateRow(row.id, { trackedTime: normalized });
+                              }}
                               placeholder="0:00"
                               className={rowErrors.trackedTime ? 'aria-invalid pr-6' : 'pr-6'}
                             />
