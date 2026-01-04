@@ -51,8 +51,8 @@ export interface DailyLog {
   project_id: number;
   date: string;  // Date-only value in YYYY-MM-DD format (timezone-agnostic)
   task_description: string;
-  actual_time_spent: number;
-  tracked_time: number;
+  actual_time_spent: string;  // Time in "HH:MM" format (e.g., "3:30") or decimal number from DB
+  tracked_time: string;  // Time in "HH:MM" format (e.g., "3:30") or decimal number from DB
   created_at: Date;
   updated_at: Date;
 }
@@ -81,16 +81,16 @@ export interface CreateLogDto {
   project_id: number;
   date: string;
   task_description: string;
-  actual_time_spent: number;
-  tracked_time: number;
+  actual_time_spent: string;  // Time in "HH:MM" format (e.g., "3:30") or empty string for 0
+  tracked_time: string;  // Time in "HH:MM" format (e.g., "3:30") or empty string for 0
 }
 
 export interface UpdateLogDto {
   project_id?: number;
   date?: string;
   task_description?: string;
-  actual_time_spent?: number;
-  tracked_time?: number;
+  actual_time_spent?: string;  // Time in "HH:MM" format (e.g., "3:30") or empty string for 0
+  tracked_time?: string;  // Time in "HH:MM" format (e.g., "3:30") or empty string for 0
 }
 
 export interface JwtPayload {

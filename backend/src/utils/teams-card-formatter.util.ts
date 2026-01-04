@@ -7,10 +7,30 @@ import { TeamsSummaryData, AdaptiveCardPayload, AdaptiveCardElement } from '../t
 import { formatDateIST } from './timezone.util';
 
 /**
- * Format decimal hours to display format (e.g., 4.5 -> "4.5h", 8 -> "8.0h")
+ * Format time value to HH:MM display format
+ * Handles both string (HH:MM) and number (decimal hours) formats for backward compatibility
+ *
+ * @param time - Time as string ("HH:MM") or number (decimal hours)
+ * @returns Formatted time string (e.g., "3:30", "0:45", "12:15")
  */
-function formatHours(hours: number): string {
-  return `${hours.toFixed(1)}h`;
+function formatTime(time: string | number): string {
+  // If it's already a string in HH:MM format, return as-is
+  if (typeof time === 'string') {
+    return time;
+  }
+
+  // If it's a number (decimal hours), convert to HH:MM format
+  // For backward compatibility with old decimal format
+  const hours = Math.floor(time);
+  const minutes = Math.round((time - hours) * 60);
+
+  // Handle edge case where rounding gives us 60 minutes
+  if (minutes === 60) {
+    return `${hours + 1}:00`;
+  }
+
+  const paddedMinutes = minutes.toString().padStart(2, '0');
+  return `${hours}:${paddedMinutes}`;
 }
 
 /**
@@ -48,11 +68,11 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
       // },
       {
         title: 'Total Actual Time',
-        value: formatHours(summary.totalTeamActualTime),
+        value: formatTime(summary.totalTeamActualTime),
       },
       {
         title: 'Total Tracked Time',
-        value: formatHours(summary.totalTeamTrackedTime),
+        value: formatTime(summary.totalTeamTrackedTime),
       },
     ],
     separator: true,
@@ -83,10 +103,16 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
 
     // Display tasks grouped by project
     tasksByProject.forEach((tasks, projectName) => {
-      // Project name
+      // Calculate total tracked time for this project
+      const projectTrackedTime = tasks.reduce((sum, task) => {
+        const time = typeof task.trackedTime === 'string' ? parseFloat(task.trackedTime) : task.trackedTime;
+        return sum + time;
+      }, 0);
+
+      // Project name with total time
       cardBody.push({
         type: 'TextBlock',
-        text: `**${projectName} [${formatHours(tasks.reduce((sum, task) => sum + task.trackedTime, 0))}]**`,
+        text: `**${projectName} [${formatTime(projectTrackedTime)}]**`,
         size: 'medium',
         weight: 'bolder',
         spacing: 'small',

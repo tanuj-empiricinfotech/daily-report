@@ -1,18 +1,26 @@
 import { Input } from './input';
 import { cn } from '@/lib/utils';
-import { parseTimeInput } from '@/utils/time';
+import { useState, useEffect } from 'react';
 
 interface TimeInputProps extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
   label?: string;
-  value: number;
-  onChange: (value: number) => void;
+  value: string;
+  onChange: (value: string) => void;
   error?: string;
 }
 
 export function TimeInput({ label, value, onChange, error, className, ...props }: TimeInputProps) {
+  const [displayValue, setDisplayValue] = useState<string>(value || '0:00');
+
+  // Update display value when external value changes
+  useEffect(() => {
+    setDisplayValue(value || '0:00');
+  }, [value]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const parsed = parseTimeInput(e.target.value);
-    onChange(parsed);
+    const inputValue = e.target.value;
+    setDisplayValue(inputValue);
+    onChange(inputValue);
   };
 
   return (
@@ -24,17 +32,15 @@ export function TimeInput({ label, value, onChange, error, className, ...props }
       )}
       <div className="relative">
         <Input
-          type="number"
-          step="0.01"
-          min="0"
-          value={value || ''}
+          type="text"
+          value={displayValue}
           onChange={handleChange}
-          placeholder="0.00"
-          className={cn(error && 'aria-invalid', className)}
+          placeholder="0:00"
+          className={cn(error && 'aria-invalid', 'pr-6', className)}
           {...props}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-          hours
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+          h
         </span>
       </div>
       {error && (

@@ -41,8 +41,8 @@ export interface DailyLog {
   project_id: number;
   date: string;
   task_description: string;
-  actual_time_spent: number;
-  tracked_time: number;
+  actual_time_spent: string;
+  tracked_time: string;
   created_at: string;
   updated_at: string;
 }
@@ -77,15 +77,15 @@ export interface CreateLogDto {
   project_id: number;
   date: string;
   task_description: string;
-  actual_time_spent: number;
-  tracked_time: number;
+  actual_time_spent: string;
+  tracked_time: string;
 }
 
 export interface UpdateLogDto {
   project_id?: number;
   date?: string;
   task_description?: string;
-  actual_time_spent?: number;
-  tracked_time?: number;
+  actual_time_spent?: string;
+  tracked_time?: string;
 }
 

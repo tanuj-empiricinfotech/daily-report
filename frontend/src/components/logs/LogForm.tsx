@@ -33,8 +33,8 @@ export function LogForm({
     initialData?.date ? formatDate(initialData.date) : initialDate || formatDate(new Date())
   );
   const [taskDescription, setTaskDescription] = useState<string>(initialData?.task_description || '');
-  const [actualTimeSpent, setActualTimeSpent] = useState<number>(initialData?.actual_time_spent || 0);
-  const [trackedTime, setTrackedTime] = useState<number>(initialData?.tracked_time || 0);
+  const [actualTimeSpent, setActualTimeSpent] = useState<string>(initialData?.actual_time_spent || '0:00');
+  const [trackedTime, setTrackedTime] = useState<string>(initialData?.tracked_time || '0:00');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -42,8 +42,8 @@ export function LogForm({
       setProjectId(initialData.project_id);
       setDate(formatDate(initialData.date));
       setTaskDescription(initialData.task_description);
-      setActualTimeSpent(initialData.actual_time_spent);
-      setTrackedTime(initialData.tracked_time);
+      setActualTimeSpent(initialData.actual_time_spent || '0:00');
+      setTrackedTime(initialData.tracked_time || '0:00');
     }
   }, [initialData]);
 
@@ -62,13 +62,7 @@ export function LogForm({
       errors.taskDescription = 'Task description is required';
     }
 
-    if (actualTimeSpent <= 0) {
-      errors.actualTimeSpent = 'Actual time spent must be greater than 0';
-    }
-
-    if (trackedTime <= 0) {
-      errors.trackedTime = 'Tracked time must be greater than 0';
-    }
+    // Time validation is handled by backend
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;

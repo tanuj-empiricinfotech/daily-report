@@ -4,7 +4,7 @@ import { useDeleteLog } from '@/lib/query/hooks/useLogs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { formatDecimalHours } from '@/utils/time';
+import { formatTimeDisplay, sumTimeStrings } from '@/utils/time';
 import { formatDateTime } from '@/utils/formatting';
 import type { DailyLog } from '@/lib/api/types';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
@@ -72,14 +72,8 @@ export function LogList({ date, onEdit }: LogListProps) {
   const projectTotals = Object.entries(logsByProject).reduce(
     (acc, [projectId, projectLogs]) => {
       acc[projectId] = {
-        actualTime: projectLogs.reduce(
-          (sum, log) => sum + log.actual_time_spent,
-          0
-        ),
-        trackedTime: projectLogs.reduce(
-          (sum, log) => sum + log.tracked_time,
-          0
-        ),
+        actualTime: sumTimeStrings(projectLogs.map(log => log.actual_time_spent)),
+        trackedTime: sumTimeStrings(projectLogs.map(log => log.tracked_time)),
       };
       return acc;
     },
@@ -101,13 +95,13 @@ export function LogList({ date, onEdit }: LogListProps) {
                   <div>
                     <span className="text-muted-foreground">Total Actual: </span>
                     <span className="font-medium">
-                      {formatDecimalHours(totals.actualTime)}
+                      {formatTimeDisplay(totals.actualTime)}
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Total Tracked: </span>
                     <span className="font-medium">
-                      {formatDecimalHours(totals.trackedTime)}
+                      {formatTimeDisplay(totals.trackedTime)}
                     </span>
                   </div>
                 </div>
@@ -165,13 +159,13 @@ export function LogList({ date, onEdit }: LogListProps) {
                     <div>
                       <p className="text-muted-foreground">Actual Time</p>
                       <p className="font-medium">
-                        {formatDecimalHours(log.actual_time_spent)}
+                        {formatTimeDisplay(log.actual_time_spent)}
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Tracked Time</p>
                       <p className="font-medium">
-                        {formatDecimalHours(log.tracked_time)}
+                        {formatTimeDisplay(log.tracked_time)}
                       </p>
                     </div>
                   </div>

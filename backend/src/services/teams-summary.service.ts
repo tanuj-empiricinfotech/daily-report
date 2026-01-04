@@ -15,6 +15,22 @@ import {
   TaskSummary
 } from '../types/teams.types';
 import { Team, DailyLog, User, Project } from '../types';
+import { parseTimeToDecimal, formatDecimalToTime } from '../utils/time.util';
+
+/**
+ * Helper function to add time values
+ * Handles both HH:MM string format and decimal number format
+ *
+ * @param time1 - First time value (string or number)
+ * @param time2 - Second time value (string or number)
+ * @returns Sum in HH:MM format
+ */
+function addTimeValues(time1: string | number, time2: string | number): string {
+  const decimal1 = typeof time1 === 'string' ? parseTimeToDecimal(time1) : time1;
+  const decimal2 = typeof time2 === 'string' ? parseTimeToDecimal(time2) : time2;
+  const sum = decimal1 + decimal2;
+  return formatDecimalToTime(sum);
+}
 
 export class TeamsSummaryService {
   private teamsRepository: TeamsRepository;
@@ -80,8 +96,8 @@ export class TeamsSummaryService {
         teamName: team.name,
         date,
         userSummaries: [],
-        totalTeamActualTime: 0,
-        totalTeamTrackedTime: 0,
+        totalTeamActualTime: '0:00',
+        totalTeamTrackedTime: '0:00',
       };
     }
 
@@ -112,8 +128,8 @@ export class TeamsSummaryService {
 
     // Create user summaries
     const userSummaries: UserDailySummary[] = [];
-    let totalTeamActualTime = 0;
-    let totalTeamTrackedTime = 0;
+    let totalTeamActualTime: string = '0:00';
+    let totalTeamTrackedTime: string = '0:00';
 
     userLogsMap.forEach((userLogs, userId) => {
       const user = userMap.get(userId);
@@ -124,26 +140,20 @@ export class TeamsSummaryService {
         const project = projectMap.get(log.project_id);
         const projectName = project?.name || `Unknown Project (ID: ${log.project_id})`;
 
-        const actualTime = typeof log.actual_time_spent === 'string'
-          ? parseFloat(log.actual_time_spent)
-          : log.actual_time_spent;
-
-        const trackedTime = typeof log.tracked_time === 'string'
-          ? parseFloat(log.tracked_time)
-          : log.tracked_time;
-
+        // Time values are now stored as strings in HH:MM format
+        // Return them as-is (string format)
         return {
           projectId: log.project_id,
           projectName,
           taskDescription: log.task_description,
-          actualTime,
-          trackedTime,
+          actualTime: log.actual_time_spent,
+          trackedTime: log.tracked_time,
         };
       });
 
-      // Calculate user totals
-      const totalActualTime = tasks.reduce((sum, task) => sum + task.actualTime, 0);
-      const totalTrackedTime = tasks.reduce((sum, task) => sum + task.trackedTime, 0);
+      // Calculate user totals by adding all task times
+      const totalActualTime = tasks.reduce((sum, task) => addTimeValues(sum, task.actualTime), '0:00');
+      const totalTrackedTime = tasks.reduce((sum, task) => addTimeValues(sum, task.trackedTime), '0:00');
 
       userSummaries.push({
         userId,
@@ -154,8 +164,8 @@ export class TeamsSummaryService {
       });
 
       // Add to team totals
-      totalTeamActualTime += totalActualTime;
-      totalTeamTrackedTime += totalTrackedTime;
+      totalTeamActualTime = addTimeValues(totalTeamActualTime, totalActualTime);
+      totalTeamTrackedTime = addTimeValues(totalTeamTrackedTime, totalTrackedTime);
     });
 
     // Sort user summaries by name

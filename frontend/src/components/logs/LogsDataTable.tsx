@@ -13,7 +13,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { DailyLog, Project, User } from '@/lib/api/types';
 import { formatDisplayDate, normalizeDateForComparison } from '@/utils/formatting';
-import { formatDecimalHours } from '@/utils/time';
+import { formatTimeDisplay, sumTimeStrings } from '@/utils/time';
 import { isDateInPast } from '@/utils/date';
 import { IconEdit, IconLock } from '@tabler/icons-react';
 
@@ -98,23 +98,9 @@ export function LogsDataTable({
    * Following clean code principles - extracted calculation into separate memoized hook
    */
   const totals = useMemo(() => {
-    const totalActualTime = logs.reduce((sum, log) => {
-      const value = typeof log.actual_time_spent === 'string'
-        ? parseFloat(log.actual_time_spent)
-        : log.actual_time_spent;
-      return sum + (isNaN(value) ? 0 : value);
-    }, 0);
-
-    const totalTrackedTime = logs.reduce((sum, log) => {
-      const value = typeof log.tracked_time === 'string'
-        ? parseFloat(log.tracked_time)
-        : log.tracked_time;
-      return sum + (isNaN(value) ? 0 : value);
-    }, 0);
-
     return {
-      actualTime: totalActualTime,
-      trackedTime: totalTrackedTime,
+      actualTime: sumTimeStrings(logs.map(log => log.actual_time_spent)),
+      trackedTime: sumTimeStrings(logs.map(log => log.tracked_time)),
     };
   }, [logs]);
 
@@ -194,8 +180,8 @@ export function LogsDataTable({
                         {log.task_description}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDecimalHours(log.actual_time_spent)}</TableCell>
-                    <TableCell>{formatDecimalHours(log.tracked_time)}</TableCell>
+                    <TableCell>{formatTimeDisplay(log.actual_time_spent)}</TableCell>
+                    <TableCell>{formatTimeDisplay(log.tracked_time)}</TableCell>
                     <TableCell>
                       {!isAdmin && isDateInPast(log.date) ? (
                         <Button
@@ -233,10 +219,10 @@ export function LogsDataTable({
               Total:
             </TableCell>
             <TableCell className="font-semibold">
-              {formatDecimalHours(totals.actualTime)}
+              {formatTimeDisplay(totals.actualTime)}
             </TableCell>
             <TableCell className="font-semibold">
-              {formatDecimalHours(totals.trackedTime)}
+              {formatTimeDisplay(totals.trackedTime)}
             </TableCell>
             <TableCell />
           </TableRow>

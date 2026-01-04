@@ -24,8 +24,8 @@ interface LogRow {
   id: string;
   projectId: number | '';
   taskDescription: string;
-  actualTimeSpent: number;
-  trackedTime: number;
+  actualTimeSpent: string;
+  trackedTime: string;
   logId?: number;
 }
 
@@ -55,12 +55,12 @@ export function MultiRowLogForm({
         id: `log-${log.id}-${index}`,
         projectId: log.project_id,
         taskDescription: log.task_description,
-        actualTimeSpent: log.actual_time_spent,
-        trackedTime: log.tracked_time,
+        actualTimeSpent: log.actual_time_spent || '0:00',
+        trackedTime: log.tracked_time || '0:00',
         logId: log.id,
       }));
     }
-    return [{ id: Date.now().toString(), projectId: '', taskDescription: '', actualTimeSpent: 0, trackedTime: 0 }];
+    return [{ id: Date.now().toString(), projectId: '', taskDescription: '', actualTimeSpent: '0:00', trackedTime: '0:00' }];
   });
 
   React.useEffect(() => {
@@ -71,8 +71,8 @@ export function MultiRowLogForm({
           id: `log-${log.id}-${index}`,
           projectId: log.project_id,
           taskDescription: log.task_description,
-          actualTimeSpent: log.actual_time_spent,
-          trackedTime: log.tracked_time,
+          actualTimeSpent: log.actual_time_spent || '0:00',
+          trackedTime: log.tracked_time || '0:00',
           logId: log.id,
         }))
       );
@@ -90,8 +90,8 @@ export function MultiRowLogForm({
       id: Date.now().toString(),
       projectId: lastRow?.projectId || '',
       taskDescription: '',
-      actualTimeSpent: 0,
-      trackedTime: 0,
+      actualTimeSpent: '0:00',
+      trackedTime: '0:00',
     };
     setRows([...rows, newRow]);
   };
@@ -139,13 +139,7 @@ export function MultiRowLogForm({
         rowError.taskDescription = 'Task description is required';
       }
 
-      if (row.actualTimeSpent <= 0) {
-        rowError.actualTimeSpent = 'Actual time spent must be greater than 0';
-      }
-
-      if (row.trackedTime <= 0) {
-        rowError.trackedTime = 'Tracked time must be greater than 0';
-      }
+      // Time validation is handled by backend
 
       if (Object.keys(rowError).length === 0) {
         hasValidRow = true;
@@ -179,16 +173,14 @@ export function MultiRowLogForm({
       .filter(
         (row) =>
           row.projectId &&
-          row.taskDescription.trim() &&
-          row.actualTimeSpent > 0 &&
-          row.trackedTime > 0
+          row.taskDescription.trim()
       )
       .map((row) => ({
         project_id: Number(row.projectId),
         date: istToIso(date), // Convert IST input to ISO for API
         task_description: row.taskDescription.trim(),
-        actual_time_spent: row.actualTimeSpent,
-        tracked_time: row.trackedTime,
+        actual_time_spent: row.actualTimeSpent || '0:00',
+        tracked_time: row.trackedTime || '0:00',
       }));
 
     try {
@@ -278,14 +270,12 @@ export function MultiRowLogForm({
                         <div className="space-y-1">
                           <div className="relative">
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={row.actualTimeSpent || ''}
+                              type="text"
+                              value={row.actualTimeSpent}
                               onChange={(e) =>
-                                updateRow(row.id, { actualTimeSpent: parseFloat(e.target.value) || 0 })
+                                updateRow(row.id, { actualTimeSpent: e.target.value })
                               }
-                              placeholder="0.00"
+                              placeholder="0:00"
                               className={rowErrors.actualTimeSpent ? 'aria-invalid pr-6' : 'pr-6'}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -301,14 +291,12 @@ export function MultiRowLogForm({
                         <div className="space-y-1">
                           <div className="relative">
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={row.trackedTime || ''}
+                              type="text"
+                              value={row.trackedTime}
                               onChange={(e) =>
-                                updateRow(row.id, { trackedTime: parseFloat(e.target.value) || 0 })
+                                updateRow(row.id, { trackedTime: e.target.value })
                               }
-                              placeholder="0.00"
+                              placeholder="0:00"
                               className={rowErrors.trackedTime ? 'aria-invalid pr-6' : 'pr-6'}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">

@@ -49,9 +49,8 @@ export class LogsService {
       throw new ForbiddenError('You are not assigned to this project');
     }
 
-    if (data.actual_time_spent < 0 || data.tracked_time < 0) {
-      throw new BadRequestError('Time values must be positive');
-    }
+    // Time validation is now handled by the validator middleware
+    // No need to check for negative values as time format is HH:MM string
 
     return await this.logsRepository.create(data, userId);
   }
@@ -75,11 +74,8 @@ export class LogsService {
       }
     }
 
-    for (const data of dataArray) {
-      if (data.actual_time_spent < 0 || data.tracked_time < 0) {
-        throw new BadRequestError('Time values must be positive');
-      }
-    }
+    // Time validation is now handled by the validator middleware
+    // No need to check for negative values as time format is HH:MM string
 
     return await this.logsRepository.createMany(dataArray, userId);
   }
@@ -130,12 +126,8 @@ export class LogsService {
       }
     }
 
-    if (data.actual_time_spent !== undefined && data.actual_time_spent < 0) {
-      throw new BadRequestError('Actual time spent must be positive');
-    }
-    if (data.tracked_time !== undefined && data.tracked_time < 0) {
-      throw new BadRequestError('Tracked time must be positive');
-    }
+    // Time validation is now handled by the validator middleware
+    // No need to check for negative values as time format is HH:MM string
 
     const updated = await this.logsRepository.update(id, data, userId);
     if (!updated) {

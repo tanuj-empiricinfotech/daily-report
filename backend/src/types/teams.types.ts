@@ -8,8 +8,8 @@
 export interface UserDailySummary {
   userId: number;
   userName: string;
-  totalActualTime: number;
-  totalTrackedTime: number;
+  totalActualTime: string | number;  // HH:MM format string or decimal number for backward compatibility
+  totalTrackedTime: string | number;  // HH:MM format string or decimal number for backward compatibility
   tasks: TaskSummary[];
 }
 
@@ -20,8 +20,8 @@ export interface TaskSummary {
   projectId: number;
   projectName: string;
   taskDescription: string;
-  actualTime: number;
-  trackedTime: number;
+  actualTime: string | number;  // HH:MM format string or decimal number for backward compatibility
+  trackedTime: string | number;  // HH:MM format string or decimal number for backward compatibility
 }
 
 /**
@@ -32,8 +32,8 @@ export interface TeamsSummaryData {
   teamName: string;
   date: string; // YYYY-MM-DD format
   userSummaries: UserDailySummary[];
-  totalTeamActualTime: number;
-  totalTeamTrackedTime: number;
+  totalTeamActualTime: string | number;  // HH:MM format string or decimal number for backward compatibility
+  totalTeamTrackedTime: string | number;  // HH:MM format string or decimal number for backward compatibility
 }
 
 /**
