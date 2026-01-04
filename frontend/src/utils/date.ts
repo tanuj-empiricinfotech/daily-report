@@ -85,3 +85,58 @@ export function dateToIstString(date: Date): string {
 export function istStringToDate(dateString: string): Date {
   return parseDate(dateString);
 }
+
+/**
+ * Get the current date in IST timezone as YYYY-MM-DD string
+ *
+ * IST is UTC+5:30, so we add 5 hours and 30 minutes to UTC time
+ * to get the current date in Indian timezone
+ *
+ * @returns Current date in IST as YYYY-MM-DD format
+ */
+export function getCurrentDateIST(): string {
+  const now = new Date();
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(now.getTime() + IST_OFFSET_MS);
+
+  const year = istTime.getUTCFullYear();
+  const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(istTime.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Check if a date is in the past (before current IST date)
+ *
+ * Compares the provided date with the current date in IST timezone
+ *
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns true if the date is before today (IST), false otherwise
+ */
+export function isDateInPast(dateString: string): boolean {
+  const currentDate = getCurrentDateIST();
+  return dateString < currentDate;
+}
+
+/**
+ * Check if a date is today (current IST date)
+ *
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns true if the date is today (IST), false otherwise
+ */
+export function isDateToday(dateString: string): boolean {
+  const currentDate = getCurrentDateIST();
+  return dateString === currentDate;
+}
+
+/**
+ * Check if a date is in the future (after current IST date)
+ *
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns true if the date is after today (IST), false otherwise
+ */
+export function isDateInFuture(dateString: string): boolean {
+  const currentDate = getCurrentDateIST();
+  return dateString > currentDate;
+}

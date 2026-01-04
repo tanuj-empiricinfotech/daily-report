@@ -14,7 +14,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { DailyLog, Project, User } from '@/lib/api/types';
 import { formatDisplayDate, normalizeDateForComparison } from '@/utils/formatting';
 import { formatDecimalHours } from '@/utils/time';
-import { IconEdit } from '@tabler/icons-react';
+import { isDateInPast } from '@/utils/date';
+import { IconEdit, IconLock } from '@tabler/icons-react';
 
 interface LogsDataTableProps {
   logs: DailyLog[];
@@ -46,9 +47,13 @@ export function LogsDataTable({
   }, [users]);
 
   const handleEdit = useCallback((log: DailyLog) => {
+    // Members cannot edit past logs
+    if (!isAdmin && isDateInPast(log.date)) {
+      return;
+    }
     navigate(`/logs/edit/${log.id}`);
     onEdit?.();
-  }, [navigate, onEdit]);
+  }, [navigate, onEdit, isAdmin]);
 
   const groupedLogs = useMemo(() => {
     const grouped = new Map<string, Map<number, DailyLog[]>>();
@@ -192,14 +197,26 @@ export function LogsDataTable({
                     <TableCell>{formatDecimalHours(log.actual_time_spent)}</TableCell>
                     <TableCell>{formatDecimalHours(log.tracked_time)}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(log)}
-                      >
-                        <IconEdit className="size-4 mr-2" />
-                        Edit
-                      </Button>
+                      {!isAdmin && isDateInPast(log.date) ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          title="Cannot edit past logs"
+                        >
+                          <IconLock className="size-4 mr-2" />
+                          Locked
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(log)}
+                        >
+                          <IconEdit className="size-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -19,7 +19,8 @@ export class LogsController {
         data.date = istToIso(data.date);
       }
       const userId = req.user!.userId;
-      const log = await this.logsService.createLog(data, userId);
+      const isAdmin = req.user!.role === 'admin';
+      const log = await this.logsService.createLog(data, userId, isAdmin);
       // Return ISO date (frontend will convert to IST for display)
       res.status(201).json({
         success: true,
@@ -40,7 +41,8 @@ export class LogsController {
         }
       });
       const userId = req.user!.userId;
-      const logs = await this.logsService.createLogsBulk(dataArray, userId);
+      const isAdmin = req.user!.role === 'admin';
+      const logs = await this.logsService.createLogsBulk(dataArray, userId, isAdmin);
       // Return ISO dates (frontend will convert to IST for display)
       res.status(201).json({
         success: true,

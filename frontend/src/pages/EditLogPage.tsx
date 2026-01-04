@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
 import { MultiRowLogForm } from '@/components/logs/MultiRowLogForm';
 import {
   AlertDialog,
@@ -20,12 +21,17 @@ import { useMyProjects } from '@/lib/query/hooks/useProjects';
 import { useUpdateLog, useDeleteLog, useCreateLogsBulk } from '@/lib/query/hooks/useLogs';
 import client, { endpoints } from '@/lib/api/client';
 import type { DailyLog, ApiResponse, UpdateLogDto, CreateLogDto } from '@/lib/api/types';
+import { isDateInPast } from '@/utils/date';
 import { IconTrash } from '@tabler/icons-react';
+import type { RootState } from '@/store/store';
 
 export function EditLogPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const logId = id ? parseInt(id, 10) : null;
+
+  const user = useSelector((state: RootState) => state.auth.user);
+  const isAdmin = user?.role === 'admin';
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -85,6 +91,13 @@ export function EditLogPage() {
     await deleteLogMutation.mutateAsync(logId);
     navigate('/logs');
   };
+
+  // Redirect members if they try to edit a past log
+  useEffect(() => {
+    if (log && !isAdmin && isDateInPast(log.date)) {
+      navigate('/logs');
+    }
+  }, [log, isAdmin, navigate]);
 
   if (logLoading || projectsLoading) {
     return (

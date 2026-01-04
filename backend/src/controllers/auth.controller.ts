@@ -47,9 +47,22 @@ const getCookieOptions = (req: AuthRequest): CookieOptions => {
   // - Or if origin is HTTPS (regardless of backend detection)
   const useSecureCookies = (isBackendHttps && (isHttpsOrigin || isProduction)) || isHttpsOrigin;
 
+  // Debug logging
+  console.log('[Cookie] Configuration:', {
+    origin,
+    isHttpsOrigin,
+    isProduction,
+    protocol: req.protocol,
+    secure: req.secure,
+    forwardedProto,
+    isBackendHttps,
+    useSecureCookies,
+  });
+
   if (useSecureCookies) {
     // For HTTPS environments, use secure cookies with sameSite: 'none'
     // This is required for cross-origin requests from Vercel frontend to Render backend
+    console.log('[Cookie] Using secure cookies (HTTPS)');
     return {
       httpOnly: true,
       secure: true,
@@ -60,6 +73,7 @@ const getCookieOptions = (req: AuthRequest): CookieOptions => {
 
   // For HTTP backend (localhost development), use secure: false with sameSite: 'lax'
   // This provides CSRF protection while allowing cookies in local development
+  console.log('[Cookie] Using non-secure cookies (HTTP)');
   return {
     httpOnly: true,
     secure: false,

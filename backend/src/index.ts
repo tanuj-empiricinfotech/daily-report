@@ -30,7 +30,7 @@ const LOCALHOST_DEV_URL = 'http://localhost:5173';
 // Allowed origin patterns for development tunnels and deployment platforms
 const ALLOWED_ORIGIN_PATTERNS = {
   ngrok: /^https?:\/\/[a-zA-Z0-9-]+\.(ngrok\.io|ngrok-free\.app|ngrok\.app)(:\d+)?$/,
-  vercel: /^https:\/\/daily-report-[a-z0-9-]+\.vercel\.app$/,
+  vercel: /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
   pinggy: /^https?:\/\/[a-zA-Z0-9-]+\..*\.pinggy\.(link|io|online)$/,
 };
 
@@ -46,34 +46,43 @@ const ALLOWED_ORIGIN_PATTERNS = {
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
   // Allow requests with no origin (like mobile apps or curl requests)
   if (!origin) {
+    console.log('[CORS] No origin provided - allowing');
     return callback(null, true);
   }
 
+  console.log(`[CORS] Checking origin: ${origin}`);
+
   // Allow environment-configured frontend URL
   if (origin === FRONTEND_URL) {
+    console.log(`[CORS] Matched FRONTEND_URL: ${FRONTEND_URL}`);
     return callback(null, true);
   }
 
   // Allow localhost development (fallback for dev environment)
   if (origin === LOCALHOST_DEV_URL) {
+    console.log('[CORS] Matched localhost dev URL');
     return callback(null, true);
   }
 
   // Allow any ngrok URL (development tunnels)
   if (ALLOWED_ORIGIN_PATTERNS.ngrok.test(origin)) {
+    console.log('[CORS] Matched ngrok pattern');
     return callback(null, true);
   }
 
   // Allow Vercel deployments (production and preview)
   if (ALLOWED_ORIGIN_PATTERNS.vercel.test(origin)) {
+    console.log('[CORS] Matched Vercel pattern');
     return callback(null, true);
   }
 
   // Allow Pinggy tunnels
   if (ALLOWED_ORIGIN_PATTERNS.pinggy.test(origin)) {
+    console.log('[CORS] Matched Pinggy pattern');
     return callback(null, true);
   }
 
+  console.log(`[CORS] Origin not allowed: ${origin}`);
   callback(new Error('Not allowed by CORS'));
 };
 
