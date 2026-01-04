@@ -42,10 +42,10 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
   cardBody.push({
     type: 'FactSet',
     facts: [
-      {
-        title: 'Team',
-        value: summary.teamName,
-      },
+      // {
+      //   title: 'Team',
+      //   value: summary.teamName,
+      // },
       {
         title: 'Total Actual Time',
         value: formatHours(summary.totalTeamActualTime),
@@ -64,7 +64,8 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
     // User header
     cardBody.push({
       type: 'TextBlock',
-      text: `${userSummary.userName} (${formatHours(userSummary.totalActualTime)} actual, ${formatHours(userSummary.totalTrackedTime)} tracked)`,
+      // text: `${userSummary.userName} (${formatHours(userSummary.totalActualTime)} actual, ${formatHours(userSummary.totalTrackedTime)} tracked)`,
+      text: `${userSummary.userName}`,
       size: 'large',
       weight: 'bolder',
       separator: true,
@@ -85,7 +86,7 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
       // Project name
       cardBody.push({
         type: 'TextBlock',
-        text: `**${projectName}**`,
+        text: `**${projectName} [${formatHours(tasks.reduce((sum, task) => sum + task.trackedTime, 0))}]**`,
         size: 'medium',
         weight: 'bolder',
         spacing: 'small',
@@ -94,7 +95,8 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
 
       // Tasks under this project
       tasks.forEach(task => {
-        const taskText = `• ${task.taskDescription} - ${formatHours(task.actualTime)} (actual) / ${formatHours(task.trackedTime)} (tracked)`;
+        // const taskText = `• ${task.taskDescription} - ${formatHours(task.actualTime)} (actual) / ${formatHours(task.trackedTime)} (tracked)`;
+        const taskText = `${task.taskDescription}`;
         cardBody.push({
           type: 'TextBlock',
           text: taskText,

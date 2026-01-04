@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { TeamsService } from '../services/teams.service';
 import { AuthRequest } from '../middleware/auth';
 import { CreateTeamDto } from '../types';
+import { TeamsDailySummaryJob } from '../jobs/teams-daily-summary.job';
 
 export class TeamsController {
   private teamsService: TeamsService;
@@ -74,6 +75,42 @@ export class TeamsController {
         message: 'Team deleted successfully',
       });
     } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Test endpoint to manually trigger Teams daily summary
+   * Useful for testing webhook configuration and debugging
+   */
+  testDailySummary = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { date, webhookUrl } = req.body;
+
+      if (!webhookUrl) {
+        res.status(400).json({
+          success: false,
+          message: 'webhookUrl is required in request body',
+        });
+        return;
+      }
+
+      console.log('='.repeat(60));
+      console.log('Manual Teams Summary Test - Starting');
+      console.log('='.repeat(60));
+      console.log('Date:', date || 'today');
+      console.log('Webhook URL:', webhookUrl);
+      console.log('='.repeat(60));
+
+      const job = new TeamsDailySummaryJob();
+      await job.execute(date, webhookUrl);
+
+      res.json({
+        success: true,
+        message: 'Daily summary test completed. Check server logs for detailed output.',
+      });
+    } catch (error) {
+      console.error('Test daily summary failed:', error);
       next(error);
     }
   };

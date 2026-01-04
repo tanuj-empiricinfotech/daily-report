@@ -8,7 +8,9 @@
  * '30 15 * * *' = Every day at 15:00 UTC (8:30 PM IST)
  * IST is UTC+5:30, so 8:30 PM IST = 15:00 UTC (20:30 - 5:30 = 15:00)
  */
-export const TEAMS_SUMMARY_CRON_SCHEDULE = '30 15 * * *';
+// export const TEAMS_SUMMARY_CRON_SCHEDULE = '30 15 * * *';
+export const TEAMS_SUMMARY_CRON_SCHEDULE = '* * * * *';
+
 
 /**
  * Timezone for cron scheduler

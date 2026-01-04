@@ -16,5 +16,8 @@ router.get('/:id', teamsController.getById);
 router.put('/:id', updateTeamValidator, handleValidationErrors, teamsController.update);
 router.delete('/:id', teamsController.delete);
 
+// Test endpoint for Teams daily summary
+router.post('/test-summary', teamsController.testDailySummary);
+
 export default router;
 
