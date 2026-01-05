@@ -4,6 +4,7 @@ import { CreateUserDto, User } from '../types';
 import { generateToken } from '../utils/jwt';
 import type { JwtPayload } from '../types';
 import { BadRequestError, UnauthorizedError } from '../utils/errors';
+import { PASSWORD_CONFIG, PASSWORD_ERROR_MESSAGES } from '../config/password.config';
 
 export class AuthService {
   private usersRepository: UsersRepository;
@@ -50,6 +51,26 @@ export class AuthService {
 
     const { password_hash, ...userWithoutPassword } = user;
     return { user: userWithoutPassword, token };
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedError(PASSWORD_ERROR_MESSAGES.CURRENT_INCORRECT);
+    }
+
+    const isSameAsCurrentPassword = await bcrypt.compare(newPassword, user.password_hash);
+    if (isSameAsCurrentPassword) {
+      throw new BadRequestError(PASSWORD_ERROR_MESSAGES.SAME_AS_CURRENT);
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, PASSWORD_CONFIG.BCRYPT_SALT_ROUNDS);
+    await this.usersRepository.update(userId, { password_hash: newPasswordHash });
   }
 }
 

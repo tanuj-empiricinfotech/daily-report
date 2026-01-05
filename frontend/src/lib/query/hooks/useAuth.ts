@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import client, { endpoints } from '../../api/client';
-import type { CreateUserDto, ApiResponse, User } from '../../api/types';
+import type { CreateUserDto, ApiResponse, User, ChangePasswordDto } from '../../api/types';
 import { useDispatch } from 'react-redux';
 import { setUser, clearUser } from '../../../store/slices/authSlice';
 
@@ -47,6 +47,15 @@ export const useLogout = () => {
     onSuccess: () => {
       dispatch(clearUser());
       queryClient.clear();
+    },
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: async (data: ChangePasswordDto) => {
+      const response = await client.put<ApiResponse<null>>(endpoints.auth.changePassword, data);
+      return response.data;
     },
   });
 };

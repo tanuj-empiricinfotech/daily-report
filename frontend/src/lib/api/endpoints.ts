@@ -5,6 +5,7 @@ export const endpoints = {
     register: `${API_BASE}/auth/register`,
     login: `${API_BASE}/auth/login`,
     logout: `${API_BASE}/auth/logout`,
+    changePassword: `${API_BASE}/auth/password`,
   },
   teams: {
     list: `${API_BASE}/teams`,

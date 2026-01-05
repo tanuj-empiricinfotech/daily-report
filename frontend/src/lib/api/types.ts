@@ -89,3 +89,8 @@ export interface UpdateLogDto {
   tracked_time?: string;
 }
 
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
