@@ -12,6 +12,7 @@ import { DailyLog } from './pages/DailyLog';
 import { CreateLogPage } from './pages/CreateLogPage';
 import { EditLogPage } from './pages/EditLogPage';
 import { useAuth } from './hooks/useAuth';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function RootRedirect() {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -75,15 +76,17 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </QueryClientProvider>
-      </PersistGate>
-    </Provider>
+    <ThemeProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <QueryClientProvider client={queryClient}>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </QueryClientProvider>
+        </PersistGate>
+      </Provider>
+    </ThemeProvider>
   );
 }
 

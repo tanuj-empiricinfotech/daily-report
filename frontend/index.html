@@ -1,10 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>vite-app</title>
+    <script>
+      // Prevent flash of wrong theme
+      (function() {
+        const theme = localStorage.getItem('theme') || 'system';
+        const root = document.documentElement;
+        
+        if (theme === 'system') {
+          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          root.classList.toggle('dark', systemPrefersDark);
+          root.classList.toggle('light', !systemPrefersDark);
+        } else {
+          root.classList.toggle('dark', theme === 'dark');
+          root.classList.toggle('light', theme === 'light');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
