@@ -11,6 +11,7 @@
     "build:frontend": "npm run build --prefix frontend",
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "db:migrate": "npm run migrate --prefix backend",
+    "db:seed": "npm run seed --prefix backend",
     "db:reset": "npm run db:reset --prefix backend"
   },
   "devDependencies": {

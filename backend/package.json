@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "ts-node src/db/runMigrations.ts",
+    "seed": "ts-node src/db/runSeeds.ts",
     "db:reset": "ts-node src/db/resetDatabase.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
