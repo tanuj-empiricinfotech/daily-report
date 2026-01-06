@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'react';
 import { IconCalendar, IconClock, IconTrendingUp, IconUsers } from '@tabler/icons-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MetricCard, MetricCardGrid } from '@/components/dashboard/MetricCard';
 import { TimeSeriesChart } from '@/components/dashboard/TimeSeriesChart';
 import { TopProjects } from '@/components/dashboard/TopProjects';
@@ -16,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTeamLogs } from '@/lib/query/hooks/useLogs';
 import { useProjects } from '@/lib/query/hooks/useProjects';
 import { useUsers } from '@/lib/query/hooks/useUsers';
+import { useTeams } from '@/lib/query/hooks/useTeams';
 import type { DailyLog } from '@/lib/api/types';
 import {
   calculateTotalHours,
@@ -44,6 +46,7 @@ type TimeRangeKey = keyof typeof TIME_RANGES;
 export function Analytics() {
   const { user, isAdmin } = useAuth();
   const [selectedRange, setSelectedRange] = useState<TimeRangeKey>('30d');
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(user?.team_id || null);
 
   // Redirect if not admin
   if (!isAdmin) {
@@ -61,15 +64,18 @@ export function Analytics() {
   // Calculate date ranges based on selection
   const { startDate, endDate } = getDateRange(selectedRange);
 
+  // Fetch teams
+  const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
+
   // Fetch data
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(
-    user?.team_id || null,
+    selectedTeamId,
     { startDate, endDate }
   );
   const { data: projects = [], isLoading: projectsLoading } = useProjects(
-    user?.team_id || null
+    selectedTeamId
   );
-  const { data: users = [], isLoading: usersLoading } = useUsers();
+  const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
 
   // Calculate previous period for comparison
   const { startDate: prevStartDate, endDate: prevEndDate } = useMemo(() => {
@@ -162,7 +168,7 @@ export function Analytics() {
     return new Map(users.map((u) => [u.id, u.name]));
   }, [users]);
 
-  const isLoading = logsLoading || projectsLoading || usersLoading;
+  const isLoading = logsLoading || projectsLoading || usersLoading || teamsLoading;
 
   return (
     <div className="space-y-6">
@@ -175,106 +181,145 @@ export function Analytics() {
           </p>
         </div>
 
-        {/* Time Range Selector */}
-        <div className="flex items-center gap-2">
-          <IconCalendar className="h-5 w-5 text-muted-foreground" />
-          <select
-            value={selectedRange}
-            onChange={(e) => setSelectedRange(e.target.value as TimeRangeKey)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {/* Team Selector and Time Range Selector */}
+        <div className="flex items-center gap-4">
+          {/* Team Selector */}
+          <Select
+            value={selectedTeamId?.toString() || undefined}
+            onValueChange={(val) => setSelectedTeamId(val ? parseInt(val, 10) : null)}
           >
-            {Object.entries(TIME_RANGES).map(([key, { label }]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select team" />
+            </SelectTrigger>
+            <SelectContent>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id.toString()}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Time Range Selector */}
+          <div className="flex items-center gap-2">
+            <IconCalendar className="h-5 w-5 text-muted-foreground" />
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value as TimeRangeKey)}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {Object.entries(TIME_RANGES).map(([key, { label }]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
+      {/* Empty State - No Team Selected */}
+      {selectedTeamId === null && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-muted-foreground">
+              Please select a team to view analytics.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* KPI Metrics */}
-      <MetricCardGrid columns={4}>
-        <MetricCard
-          title="Total Hours"
-          value={formatDuration(metrics.totalHours)}
-          change={metrics.hoursChange}
-          description={`${TIME_RANGES[selectedRange].label.toLowerCase()}`}
-          subtitle="vs previous period"
-          icon={<IconClock className="h-5 w-5" />}
-          loading={isLoading}
-        />
-        <MetricCard
-          title="Total Logs"
-          value={metrics.totalLogs}
-          change={metrics.logsChange}
-          description="Work log entries"
-          subtitle="vs previous period"
-          icon={<IconTrendingUp className="h-5 w-5" />}
-          loading={isLoading}
-        />
-        <MetricCard
-          title="Active Members"
-          value={metrics.activeUsers}
-          change={metrics.usersChange}
-          description="Team members logging"
-          subtitle="vs previous period"
-          icon={<IconUsers className="h-5 w-5" />}
-          loading={isLoading}
-        />
-        <MetricCard
-          title="Avg Hours/Member"
-          value={`${metrics.avgHoursPerUser.toFixed(1)}h`}
-          trend="neutral"
-          description="Average per active member"
-          subtitle={`${metrics.activeUsers} active members`}
-          icon={<IconClock className="h-5 w-5" />}
-          loading={isLoading}
-        />
-      </MetricCardGrid>
-
-      {/* Time Series Chart - Full Width */}
-      <TimeSeriesChart
-        title="Hours Logged Over Time"
-        description={`Daily breakdown for ${TIME_RANGES[selectedRange].label.toLowerCase()}`}
-        data={timeSeriesData}
-        height={400}
-        loading={isLoading}
-      />
-
-      {/* Charts Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <TopProjects
-          data={projectChartData}
-          limit={10}
-          height={400}
-          loading={isLoading}
-        />
-
-        <TeamPerformance
-          data={userChartData}
-          limit={10}
-          height={400}
-          loading={isLoading}
-        />
-      </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest work log entries from the team</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RecentActivity
-            logs={logs.slice(0, 20)}
-            projectNames={projectNameMap}
-            userNames={userNameMap}
-            showUser={true}
-            limit={20}
+      {selectedTeamId !== null && (
+        <MetricCardGrid columns={4}>
+          <MetricCard
+            title="Total Hours"
+            value={formatDuration(metrics.totalHours)}
+            change={metrics.hoursChange}
+            description={`${TIME_RANGES[selectedRange].label.toLowerCase()}`}
+            subtitle="vs previous period"
+            icon={<IconClock className="h-5 w-5" />}
             loading={isLoading}
           />
-        </CardContent>
-      </Card>
+          <MetricCard
+            title="Total Logs"
+            value={metrics.totalLogs}
+            change={metrics.logsChange}
+            description="Work log entries"
+            subtitle="vs previous period"
+            icon={<IconTrendingUp className="h-5 w-5" />}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Active Members"
+            value={metrics.activeUsers}
+            change={metrics.usersChange}
+            description="Team members logging"
+            subtitle="vs previous period"
+            icon={<IconUsers className="h-5 w-5" />}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Avg Hours/Member"
+            value={`${metrics.avgHoursPerUser.toFixed(1)}h`}
+            trend="neutral"
+            description="Average per active member"
+            subtitle={`${metrics.activeUsers} active members`}
+            icon={<IconClock className="h-5 w-5" />}
+            loading={isLoading}
+          />
+        </MetricCardGrid>
+      )}
+
+      {/* Time Series Chart - Full Width */}
+      {selectedTeamId !== null && (
+        <TimeSeriesChart
+          title="Hours Logged Over Time"
+          description={`Daily breakdown for ${TIME_RANGES[selectedRange].label.toLowerCase()}`}
+          data={timeSeriesData}
+          height={400}
+          loading={isLoading}
+        />
+      )}
+
+      {/* Charts Grid */}
+      {selectedTeamId !== null && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <TopProjects
+            data={projectChartData}
+            limit={10}
+            height={400}
+            loading={isLoading}
+          />
+
+          <TeamPerformance
+            data={userChartData}
+            limit={10}
+            height={400}
+            loading={isLoading}
+          />
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      {selectedTeamId !== null && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest work log entries from the team</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentActivity
+              logs={logs.slice(0, 20)}
+              projectNames={projectNameMap}
+              userNames={userNameMap}
+              showUser={true}
+              limit={20}
+              loading={isLoading}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

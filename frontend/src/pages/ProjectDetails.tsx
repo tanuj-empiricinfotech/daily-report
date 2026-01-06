@@ -43,7 +43,7 @@ export function ProjectDetails() {
     user?.team_id || null,
     {}
   );
-  const { data: users = [], isLoading: usersLoading } = useUsers();
+  const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
 
   // Redirect if not admin
   if (!isAdmin) {
