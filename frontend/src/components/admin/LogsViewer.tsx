@@ -13,8 +13,10 @@ import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate } from '@/utils/formatting';
 import { istToIso } from '@/utils/date';
+import { useAuth } from '@/hooks/useAuth';
 
 export function LogsViewer() {
+  const { isAdmin } = useAuth();
   const dispatch = useDispatch();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>(undefined);
@@ -26,7 +28,7 @@ export function LogsViewer() {
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
   const endDate = dateRange?.to ? formatDate(dateRange.to) : undefined;
 
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useTeams({ isAdmin });
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(teamId, {
     startDate: startDate ? istToIso(startDate) : undefined,
     endDate: endDate ? istToIso(endDate) : undefined,
@@ -34,7 +36,7 @@ export function LogsViewer() {
     projectId: projectId || undefined,
   });
 
-  const { data: users = [] } = useUsersByTeam(teamId);
+  const { data: users = [] } = useUsersByTeam(teamId, isAdmin);
   const { data: projects = [] } = useProjects(teamId);
 
   const handleTeamChange = (newTeamId: number | null) => {

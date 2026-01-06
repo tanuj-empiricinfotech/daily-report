@@ -4,7 +4,7 @@ import type { Team, CreateTeamDto, ApiResponse } from '../../api/types';
 import { useDispatch } from 'react-redux';
 import { setTeams, addTeam, updateTeam, removeTeam } from '../../../store/slices/teamsSlice';
 
-export const useTeams = () => {
+export const useTeams = ({isAdmin = false}: {isAdmin: boolean}) => {
   const dispatch = useDispatch();
 
   return useQuery({
@@ -14,6 +14,7 @@ export const useTeams = () => {
       dispatch(setTeams(response.data.data));
       return response.data.data;
     },
+    enabled: isAdmin,
   });
 };
 

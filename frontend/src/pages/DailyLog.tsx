@@ -41,7 +41,7 @@ export function DailyLog() {
   const apiEndDate = endDate ? istToIso(endDate) : istToIso(formatDate(new Date()));
 
   // Fetch teams for admins (needed to determine team_id if user doesn't have one)
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useTeams({ isAdmin });
 
   // Determine teamId for admin: use user's team_id if available, otherwise use first team
   const adminTeamId = useMemo(() => {
@@ -66,7 +66,7 @@ export function DailyLog() {
   const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(adminTeamId);
   // Fetch users: for admins, fetch by team; for members, fetch all (for filter dropdown)
   const { data: allUsers = [], isLoading: allUsersLoading } = useUsers(isAdmin);
-  const { data: teamUsers = [], isLoading: teamUsersLoading } = useUsersByTeam(adminTeamId);
+  const { data: teamUsers = [], isLoading: teamUsersLoading } = useUsersByTeam(adminTeamId, isAdmin);
   const users = isAdmin ? teamUsers : allUsers;
   const usersLoading = isAdmin ? teamUsersLoading : allUsersLoading;
 

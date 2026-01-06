@@ -13,7 +13,7 @@ export const useUsers = (enabled: boolean = true) => {
   });
 };
 
-export const useUsersByTeam = (teamId: number | null) => {
+export const useUsersByTeam = (teamId: number | null, isAdmin: boolean | undefined) => {
   return useQuery({
     queryKey: ['users', 'team', teamId],
     queryFn: async () => {
@@ -24,6 +24,7 @@ export const useUsersByTeam = (teamId: number | null) => {
       const response = await client.get<ApiResponse<User[]>>(endpoints.users.getByTeam(teamId));
       return response.data.data;
     },
+    enabled: false
   });
 };
 
