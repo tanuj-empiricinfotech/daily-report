@@ -99,39 +99,6 @@ export function TopBar({ onSearchClick }: TopBarProps) {
 
             {/* Right section - Actions */}
             <div className="flex items-center gap-2">
-                {/* Search button */}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={onSearchClick}
-                >
-                    <IconSearch className="h-4 w-4" />
-                    <span className="text-sm">Search...</span>
-                    <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                        <IconCommand className="h-3 w-3" />K
-                    </kbd>
-                </Button>
-
-                {/* Mobile search */}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden"
-                    onClick={onSearchClick}
-                >
-                    <IconSearch className="h-4 w-4" />
-                    <span className="sr-only">Search</span>
-                </Button>
-
-                {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
-                    <IconBell className="h-4 w-4" />
-                    <span className="sr-only">Notifications</span>
-                    {/* Notification badge */}
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-                </Button>
-
                 {/* Theme Toggle */}
                 <ThemeToggle />
             </div>
