@@ -31,10 +31,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/query/hooks/useUsers';
+import { useUsersWithProjectsByTeam, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/query/hooks/useUsers';
 import { useTeams } from '@/lib/query/hooks/useTeams';
-import { useProjects } from '@/lib/query/hooks/useProjects';
-import type { User, CreateUserDto } from '@/lib/api/types';
+import type { User, CreateUserDto, UserWithProjectsAndTeam } from '@/lib/api/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 
@@ -81,11 +80,18 @@ export function Team() {
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [formData, setFormData] = useState<UserFormData>(INITIAL_FORM_DATA);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(
+    isAdmin ? (user?.team_id || null) : user?.team_id || null
+  );
 
-  // Fetch data
-  const { data: users = [], isLoading: usersLoading } = useUsers();
+  // Determine which team to fetch users for
+  const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
+
+  // Fetch data - single API call for users with projects
+  const { data: users = [], isLoading: usersLoading } = useUsersWithProjectsByTeam(teamIdForQuery, isAdmin);
+  
+  // Fetch teams only for form dropdown and team selector
   const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
 
   // Mutations
   const createUserMutation = useCreateUser();
@@ -103,16 +109,6 @@ export function Team() {
     }
   };
 
-  // Redirect if not admin
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-muted-foreground">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
 
   // Handle dialog open
   const handleCreate = () => {
@@ -201,7 +197,7 @@ export function Team() {
   };
 
   // Table columns
-  const columns = useMemo<Column<User>[]>(
+  const columns = useMemo<Column<UserWithProjectsAndTeam>[]>(
     () => [
       {
         id: 'user',
@@ -256,14 +252,10 @@ export function Team() {
       {
         id: 'team',
         header: 'Team',
-        accessorFn: (row) => {
-          const team = teams.find((t) => t.id === row.team_id);
-          return team?.name || 'No Team';
-        },
+        accessorFn: (row) => row.team_name || 'No Team',
         cell: (row) => {
-          const team = teams.find((t) => t.id === row.team_id);
-          return team ? (
-            <Badge variant="outline">{team.name}</Badge>
+          return row.team_name ? (
+            <Badge variant="outline">{row.team_name}</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No Team</span>
           );
@@ -274,8 +266,7 @@ export function Team() {
         header: 'Assigned Projects',
         enableSorting: false,
         cell: (row) => {
-          // Filter projects by team_id to show only assigned projects
-          const userProjects = projects.filter((p) => p.team_id === row.team_id);
+          const userProjects = row.projects || [];
 
           if (userProjects.length === 0) {
             return <span className="text-muted-foreground text-sm">No projects</span>;
@@ -344,10 +335,10 @@ export function Team() {
         width: '120px',
       },
     ],
-    [teams, projects, user?.id, copiedEmail]
+    [user?.id, copiedEmail]
   );
 
-  const isLoading = usersLoading || teamsLoading || projectsLoading;
+  const isLoading = usersLoading || teamsLoading;
   const mutationError =
     createUserMutation.error ||
     updateUserMutation.error ||
@@ -369,19 +360,49 @@ export function Team() {
         </Button>
       </div>
 
+      {/* Team Selector (Admin only) */}
+      {isAdmin && (
+        <div className="flex items-center gap-4">
+          <Label htmlFor="team-selector">Select Team:</Label>
+          <select
+            id="team-selector"
+            value={selectedTeamId || ''}
+            onChange={(e) =>
+              setSelectedTeamId(e.target.value ? parseInt(e.target.value) : null)
+            }
+            className="flex h-10 w-64 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Select a team</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Error Display */}
       {mutationError && (
         <ErrorDisplay error={(mutationError as Error).message} />
       )}
 
       {/* Team Members Table */}
-      <DataTable
-        data={users}
-        columns={columns}
-        loading={isLoading}
-        emptyMessage="No team members found. Add your first member to get started."
-        getRowId={(row) => row.id.toString()}
-      />
+      {teamIdForQuery === null && isAdmin ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-muted-foreground">Please select a team to view members.</p>
+          </div>
+        </div>
+      ) : (
+        <DataTable
+          data={users}
+          columns={columns}
+          loading={isLoading}
+          emptyMessage="No team members found. Add your first member to get started."
+          getRowId={(row) => row.id.toString()}
+        />
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogMode !== DIALOG_MODE.CLOSED} onOpenChange={handleCloseDialog}>

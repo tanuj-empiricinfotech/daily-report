@@ -8,6 +8,10 @@ const router = Router();
 const usersController = new UsersController();
 
 router.use(authenticate);
+
+// Route accessible to both admins and members (members can only access their own team)
+router.get('/team/:teamId/with-projects', usersController.getByTeamWithProjects);
+
 router.use(requireAdmin);
 
 router.get('/', usersController.getAll);

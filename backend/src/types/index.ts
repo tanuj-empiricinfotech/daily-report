@@ -45,6 +45,16 @@ export interface ProjectAssignment {
   assigned_at: Date;
 }
 
+export interface UserWithProjects extends Omit<User, 'password_hash'> {
+  projects: Array<Omit<Project, 'team_id' | 'created_by'> & {
+    assigned_at: Date;
+  }>;
+}
+
+export interface UserWithProjectsAndTeam extends UserWithProjects {
+  team_name: string | null;
+}
+
 export interface DailyLog {
   id: number;
   user_id: number;

@@ -35,6 +35,30 @@ export interface ProjectAssignment {
   assigned_at: string;
 }
 
+export interface UserWithProjects {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'member';
+  team_id: number | null;
+  created_at: string;
+  updated_at: string;
+  projects: Array<{
+    id: number;
+    name: string;
+    description: string | null;
+    team_id: number;
+    created_by: number;
+    created_at: string;
+    updated_at: string;
+    assigned_at: string;
+  }>;
+}
+
+export interface UserWithProjectsAndTeam extends UserWithProjects {
+  team_name: string | null;
+}
+
 export interface DailyLog {
   id: number;
   user_id: number;

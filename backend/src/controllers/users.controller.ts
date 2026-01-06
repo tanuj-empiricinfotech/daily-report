@@ -3,7 +3,7 @@ import { Response, NextFunction } from 'express';
 import { UsersRepository } from '../db/repositories/users.repository';
 import { AuthRequest } from '../middleware/auth';
 import { CreateUserDto } from '../types';
-import { BadRequestError, NotFoundError } from '../utils/errors';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../utils/errors';
 
 export class UsersController {
   private usersRepository: UsersRepository;
@@ -39,6 +39,28 @@ export class UsersController {
       res.json({
         success: true,
         data: usersWithoutPassword,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getByTeamWithProjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const teamId = parseInt(req.params.teamId, 10);
+      
+      // If user is a member, ensure they can only access their own team
+      if (req.user && req.user.role !== 'admin') {
+        const currentUser = await this.usersRepository.findById(req.user.userId);
+        if (!currentUser || currentUser.team_id !== teamId) {
+          throw new UnauthorizedError('You can only access your own team');
+        }
+      }
+      
+      const users = await this.usersRepository.findAllWithProjectsByTeamId(teamId);
+      res.json({
+        success: true,
+        data: users,
       });
     } catch (error) {
       next(error);
