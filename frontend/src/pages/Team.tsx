@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconMail, IconShield, IconCopy, IconCheck, IconFolder } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
