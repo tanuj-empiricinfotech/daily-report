@@ -5,37 +5,42 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { queryClient } from './lib/query/queryClient';
 import { store, persistor } from './store/store';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AppLayout } from './components/layout/AppLayout';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 import { Login } from './pages/Login';
-import { AdminDashboard } from './pages/AdminDashboard';
+import { Dashboard } from './pages/Dashboard';
 import { DailyLog } from './pages/DailyLog';
 import { CreateLogPage } from './pages/CreateLogPage';
 import { EditLogPage } from './pages/EditLogPage';
+import { Projects } from './pages/Projects';
+import { Team } from './pages/Team';
+import { Analytics } from './pages/Analytics';
+import { Settings } from './pages/Settings';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 function RootRedirect() {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={isAdmin ? '/admin' : '/logs'} replace />;
+  return <Navigate to="/" replace />;
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<RootRedirect />} />
+
+      {/* Protected Routes with Dashboard Layout */}
       <Route
-        path="/admin"
+        path="/"
         element={
-          <ProtectedRoute requireAdmin>
-            <AppLayout>
-              <AdminDashboard />
-            </AppLayout>
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Dashboard />
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -43,9 +48,9 @@ function AppRoutes() {
         path="/logs"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <DashboardLayout>
               <DailyLog />
-            </AppLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -53,9 +58,9 @@ function AppRoutes() {
         path="/logs/create"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <DashboardLayout>
               <CreateLogPage />
-            </AppLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
@@ -63,13 +68,60 @@ function AppRoutes() {
         path="/logs/edit/:id"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <DashboardLayout>
               <EditLogPage />
-            </AppLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Settings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Routes */}
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DashboardLayout>
+              <Projects />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DashboardLayout>
+              <Team />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DashboardLayout>
+              <Analytics />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy admin route redirect */}
+      <Route path="/admin" element={<Navigate to="/" replace />} />
+
+      {/* Catch-all redirect */}
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 }
