@@ -229,15 +229,13 @@ export function Team() {
             </Avatar>
             <div>
               <div className="font-medium">{row.name}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <IconMail className="h-3 w-3" />
-                <span>{row.email}</span>
+              <div className="text-sm text-muted-foreground">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCopyEmail(row.email);
                   }}
-                  className="ml-1 hover:text-foreground transition-colors p-0.5"
+                  className="ml-1 hover:text-foreground transition-colors p-0.5 flex items-center gap-1.5"
                   title="Copy email"
                 >
                   {copiedEmail === row.email ? (
@@ -245,6 +243,7 @@ export function Team() {
                   ) : (
                     <IconCopy className="h-3 w-3" />
                   )}
+                  <span>{row.email}</span>
                 </button>
               </div>
             </div>
@@ -276,6 +275,7 @@ export function Team() {
             <span className="text-muted-foreground text-sm">No Team</span>
           );
         },
+        width: '120px',
       },
       {
         id: 'projects',
@@ -288,8 +288,8 @@ export function Team() {
             return <span className="text-muted-foreground text-sm">No projects</span>;
           }
 
-          // Show max 3 project badges
-          const displayProjects = userProjects.slice(0, 3);
+          // Show max 2 project badges
+          const displayProjects = userProjects.slice(0, 2);
           const remainingCount = userProjects.length - displayProjects.length;
 
           return (
@@ -319,7 +319,7 @@ export function Team() {
             {new Date(row.created_at).toLocaleDateString()}
           </span>
         ),
-        width: '150px',
+        width: '120px',
       },
       {
         id: 'actions',
