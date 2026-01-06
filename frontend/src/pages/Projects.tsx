@@ -6,7 +6,7 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconPlus, IconEdit, IconTrash, IconFolder } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconFolder, IconUsers } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,7 @@ import { useTeams } from '@/lib/query/hooks/useTeams';
 import type { Project, CreateProjectDto } from '@/lib/api/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { AssignUsersModal } from '@/components/admin/AssignUsersModal';
 
 // Constants
 const DIALOG_MODE = {
@@ -66,6 +67,9 @@ export function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [deleteProjectId, setDeleteProjectId] = useState<number | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>(INITIAL_FORM_DATA);
+  const [assignUsersProjectId, setAssignUsersProjectId] = useState<number | null>(null);
+  const [assignUsersProjectName, setAssignUsersProjectName] = useState<string | null>(null);
+  const [assignUsersTeamId, setAssignUsersTeamId] = useState<number | null>(null);
 
   // Fetch data
   const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
@@ -158,6 +162,21 @@ export function Projects() {
     }
   };
 
+  // Handle assign users
+  const handleAssignUsers = (project: Project) => {
+    setAssignUsersProjectId(project.id);
+    setAssignUsersProjectName(project.name);
+    setAssignUsersTeamId(project.team_id);
+  };
+
+  const handleCloseAssignUsersModal = (open: boolean) => {
+    if (!open) {
+      setAssignUsersProjectId(null);
+      setAssignUsersProjectName(null);
+      setAssignUsersTeamId(null);
+    }
+  };
+
   // Table columns
   const columns = useMemo<Column<Project>[]>(
     () => [
@@ -227,6 +246,14 @@ export function Projects() {
               onClick={() => handleEdit(row)}
             >
               <IconEdit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleAssignUsers(row)}
+              title="Assign Users"
+            >
+              <IconUsers className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -381,6 +408,15 @@ export function Projects() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Assign Users Modal */}
+      <AssignUsersModal
+        open={assignUsersProjectId !== null}
+        onOpenChange={handleCloseAssignUsersModal}
+        projectId={assignUsersProjectId}
+        projectName={assignUsersProjectName}
+        teamId={assignUsersTeamId}
+      />
     </div>
   );
 }

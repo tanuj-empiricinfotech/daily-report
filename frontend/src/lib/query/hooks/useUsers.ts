@@ -28,7 +28,7 @@ export const useUsersByTeam = (teamId: number | null, isAdmin: boolean | undefin
   });
 };
 
-export const useUsersWithProjectsByTeam = (teamId: number | null, isAdmin: boolean | undefined) => {
+export const useUsersWithProjectsByTeam = (teamId: number | null) => {
   return useQuery({
     queryKey: ['users', 'team', teamId, 'with-projects'],
     queryFn: async () => {

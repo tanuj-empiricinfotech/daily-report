@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconMail, IconShield, IconCopy, IconCheck } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconMail, IconShield, IconCopy, IconCheck, IconFolder } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,7 @@ import { useTeams } from '@/lib/query/hooks/useTeams';
 import type { User, CreateUserDto, UserWithProjectsAndTeam } from '@/lib/api/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { AssignProjectsModal } from '@/components/admin/AssignProjectsModal';
 
 // Constants
 const DIALOG_MODE = {
@@ -83,13 +84,15 @@ export function Team() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(
     isAdmin ? (user?.team_id || null) : user?.team_id || null
   );
+  const [assignProjectsUserId, setAssignProjectsUserId] = useState<number | null>(null);
+  const [assignProjectsUserName, setAssignProjectsUserName] = useState<string | null>(null);
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
 
   // Fetch data - single API call for users with projects
-  const { data: users = [], isLoading: usersLoading } = useUsersWithProjectsByTeam(teamIdForQuery, isAdmin);
-  
+  const { data: users = [], isLoading: usersLoading } = useUsersWithProjectsByTeam(teamIdForQuery);
+
   // Fetch teams only for form dropdown and team selector
   const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
 
@@ -193,6 +196,19 @@ export function Team() {
       setDeleteUserId(null);
     } catch (error) {
       // Error will be shown via mutation error state
+    }
+  };
+
+  // Handle assign projects
+  const handleAssignProjects = (user: UserWithProjectsAndTeam) => {
+    setAssignProjectsUserId(user.id);
+    setAssignProjectsUserName(user.name);
+  };
+
+  const handleCloseAssignProjectsModal = (open: boolean) => {
+    if (!open) {
+      setAssignProjectsUserId(null);
+      setAssignProjectsUserName(null);
     }
   };
 
@@ -318,6 +334,14 @@ export function Team() {
               onClick={() => handleEdit(row)}
             >
               <IconEdit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleAssignProjects(row)}
+              title="Assign Projects"
+            >
+              <IconFolder className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -545,6 +569,14 @@ export function Team() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Assign Projects Modal */}
+      <AssignProjectsModal
+        open={assignProjectsUserId !== null}
+        onOpenChange={handleCloseAssignProjectsModal}
+        userId={assignProjectsUserId}
+        userName={assignProjectsUserName}
+      />
     </div>
   );
 }

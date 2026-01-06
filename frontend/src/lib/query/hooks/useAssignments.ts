@@ -41,3 +41,14 @@ export const useDeleteAssignment = () => {
   });
 };
 
+export const useProjectAssignments = (projectId: number | null) => {
+  return useQuery({
+    queryKey: ['assignments', 'project', projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const response = await client.get<ApiResponse<ProjectAssignment[]>>(endpoints.assignments.getProjectAssignments(projectId));
+      return response.data.data;
+    },
+    enabled: !!projectId,
+  });
+};
