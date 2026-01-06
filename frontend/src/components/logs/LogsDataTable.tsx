@@ -1,6 +1,5 @@
-import { useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
   Table,
   TableBody,
@@ -10,12 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { DailyLog, Project, User } from '@/lib/api/types';
+import { isDateInPast } from '@/utils/date';
 import { formatDisplayDate, normalizeDateForComparison } from '@/utils/formatting';
 import { formatTimeDisplay, sumTimeStrings } from '@/utils/time';
-import { isDateInPast } from '@/utils/date';
 import { IconEdit, IconLock } from '@tabler/icons-react';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LogsDataTableProps {
   logs: DailyLog[];
@@ -57,7 +57,7 @@ export function LogsDataTable({
 
   const groupedLogs = useMemo(() => {
     const grouped = new Map<string, Map<number, DailyLog[]>>();
-    
+
     logs.forEach((log) => {
       const dateKey = normalizeDateForComparison(log.date);
       if (!grouped.has(dateKey)) {
@@ -76,7 +76,7 @@ export function LogsDataTable({
         const projects = Array.from(projectMap.entries()).map(([projectId, projectLogs]) => ({
           projectId,
           projectName: getProjectName(projectId),
-          logs: projectLogs.sort((a, b) => 
+          logs: projectLogs.sort((a, b) =>
             a.task_description.localeCompare(b.task_description)
           ),
         })).sort((a, b) => a.projectName.localeCompare(b.projectName));
@@ -136,78 +136,126 @@ export function LogsDataTable({
         </TableHeader>
         <TableBody>
           {groupedLogs.map((group) => {
-            let rowIndex = 0;
-            return group.projects.map((project) => {
-              const projectRowSpan = project.logs.length;
-              return project.logs.map((log, taskIndex) => {
-                const isFirstRowInDate = rowIndex === 0;
-                const isFirstTaskInProject = taskIndex === 0;
-                rowIndex++;
-                
-                return (
-                  <TableRow 
-                    key={log.id} 
-                    className={isFirstRowInDate ? 'border-t-2 border-t-border' : ''}
-                  >
-                    {isFirstRowInDate && (
-                      <>
-                        <TableCell
-                          rowSpan={group.totalRows}
-                          className="align-middle font-medium border-r border-r-border"
-                        >
-                          {formatDisplayDate(group.date)}
-                        </TableCell>
-                        {isAdmin && (
-                          <TableCell 
-                            rowSpan={group.totalRows} 
-                            className="align-middle border-r border-r-border"
-                          >
-                            {getUserName(log.user_id)}
-                          </TableCell>
-                        )}
-                      </>
-                    )}
-                    {isFirstTaskInProject && (
-                      <TableCell
-                        rowSpan={projectRowSpan}
-                        className="align-middle font-medium border-r border-r-border bg-muted/30"
-                      >
-                        {project.projectName}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <div className="max-w-md truncate" title={log.task_description}>
-                        {log.task_description}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatTimeDisplay(log.actual_time_spent)}</TableCell>
-                    <TableCell>{formatTimeDisplay(log.tracked_time)}</TableCell>
-                    <TableCell>
-                      {!isAdmin && isDateInPast(log.date) ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled
-                          title="Cannot edit past logs"
-                        >
-                          <IconLock className="size-4 mr-2" />
-                          Locked
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(log)}
-                        >
-                          <IconEdit className="size-4 mr-2" />
-                          Edit
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
+            // Flatten all logs for this date group while maintaining order
+            const flattenedLogs: Array<{ log: DailyLog; projectId: number; projectName: string }> = [];
+            group.projects.forEach((project) => {
+              project.logs.forEach((log) => {
+                flattenedLogs.push({
+                  log,
+                  projectId: project.projectId,
+                  projectName: project.projectName,
+                });
               });
-            }).flat();
+            });
+
+            // Calculate user row spans for consecutive logs with same user_id
+            const userRowSpans = new Map<number, number>();
+            let currentUserId: number | null = null;
+            let currentUserStartIndex = 0;
+
+            flattenedLogs.forEach((item, index) => {
+              if (item.log.user_id !== currentUserId) {
+                // End of previous user group, set rowSpan
+                if (currentUserId !== null) {
+                  userRowSpans.set(currentUserStartIndex, index - currentUserStartIndex);
+                }
+                // Start new user group
+                currentUserId = item.log.user_id;
+                currentUserStartIndex = index;
+              }
+            });
+            // Set rowSpan for last user group
+            if (currentUserId !== null) {
+              userRowSpans.set(currentUserStartIndex, flattenedLogs.length - currentUserStartIndex);
+            }
+
+            // Calculate project row spans
+            const projectRowSpans = new Map<number, number>();
+            let currentProjectId: number | null = null;
+            let currentProjectStartIndex = 0;
+
+            flattenedLogs.forEach((item, index) => {
+              if (item.projectId !== currentProjectId) {
+                if (currentProjectId !== null) {
+                  projectRowSpans.set(currentProjectStartIndex, index - currentProjectStartIndex);
+                }
+                currentProjectId = item.projectId;
+                currentProjectStartIndex = index;
+              }
+            });
+            if (currentProjectId !== null) {
+              projectRowSpans.set(currentProjectStartIndex, flattenedLogs.length - currentProjectStartIndex);
+            }
+
+            return flattenedLogs.map((item, index) => {
+              const { log, projectName } = item;
+              const isFirstRowInDate = index === 0;
+              const isFirstRowForUser = userRowSpans.has(index);
+              const isFirstRowForProject = projectRowSpans.has(index);
+              const userRowSpan = userRowSpans.get(index) || 1;
+              const projectRowSpan = projectRowSpans.get(index) || 1;
+
+              return (
+                <TableRow
+                  key={log.id}
+                  className={isFirstRowInDate ? 'border-t-2 border-t-border' : ''}
+                >
+                  {isFirstRowInDate && (
+                    <TableCell
+                      rowSpan={flattenedLogs.length}
+                      className="align-middle font-medium border-r border-r-border"
+                    >
+                      {formatDisplayDate(group.date)}
+                    </TableCell>
+                  )}
+                  {isAdmin && isFirstRowForUser && (
+                    <TableCell
+                      rowSpan={userRowSpan}
+                      className="align-middle border-r border-r-border"
+                    >
+                      {getUserName(log.user_id)}
+                    </TableCell>
+                  )}
+                  {isFirstRowForProject && (
+                    <TableCell
+                      rowSpan={projectRowSpan}
+                      className="align-middle font-medium border-r border-r-border bg-muted/30"
+                    >
+                      {projectName}
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <div className="max-w-md truncate" title={log.task_description}>
+                      {log.task_description}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatTimeDisplay(log.actual_time_spent)}</TableCell>
+                  <TableCell>{formatTimeDisplay(log.tracked_time)}</TableCell>
+                  <TableCell>
+                    {!isAdmin && isDateInPast(log.date) ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled
+                        title="Cannot edit past logs"
+                      >
+                        <IconLock className="size-4 mr-2" />
+                        Locked
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(log)}
+                      >
+                        <IconEdit className="size-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            });
           })}
         </TableBody>
         <TableFooter>

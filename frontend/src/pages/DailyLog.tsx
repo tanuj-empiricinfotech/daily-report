@@ -10,7 +10,8 @@ import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
 import { istToIso } from '@/utils/date';
 import { useMyLogs, useTeamLogs } from '@/lib/query/hooks/useLogs';
 import { useMyProjects, useProjects } from '@/lib/query/hooks/useProjects';
-import { useUsers } from '@/lib/query/hooks/useUsers';
+import { useUsers, useUsersByTeam } from '@/lib/query/hooks/useUsers';
+import { useTeams } from '@/lib/query/hooks/useTeams';
 import { useAuth } from '@/hooks/useAuth';
 import { IconPlus } from '@tabler/icons-react';
 
@@ -39,6 +40,17 @@ export function DailyLog() {
   const apiStartDate = startDate ? istToIso(startDate) : istToIso(formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
   const apiEndDate = endDate ? istToIso(endDate) : istToIso(formatDate(new Date()));
 
+  // Fetch teams for admins (needed to determine team_id if user doesn't have one)
+  const { data: teams = [] } = useTeams();
+
+  // Determine teamId for admin: use user's team_id if available, otherwise use first team
+  const adminTeamId = useMemo(() => {
+    if (!isAdmin) return null;
+    if (user?.team_id) return user.team_id;
+    if (teams.length > 0) return teams[0].id;
+    return null;
+  }, [isAdmin, user?.team_id, teams]);
+
   // Fetch data based on user role
   const { data: myLogs = [], isLoading: myLogsLoading } = useMyLogs(
     undefined,
@@ -47,12 +59,16 @@ export function DailyLog() {
     !isAdmin
   );
   const { data: teamLogs = [], isLoading: teamLogsLoading } = useTeamLogs(
-    isAdmin && user?.team_id ? user.team_id : null,
+    adminTeamId,
     { startDate: apiStartDate, endDate: apiEndDate }
   );
   const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
-  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(user?.team_id || null);
-  const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
+  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(adminTeamId);
+  // Fetch users: for admins, fetch by team; for members, fetch all (for filter dropdown)
+  const { data: allUsers = [], isLoading: allUsersLoading } = useUsers(isAdmin);
+  const { data: teamUsers = [], isLoading: teamUsersLoading } = useUsersByTeam(adminTeamId);
+  const users = isAdmin ? teamUsers : allUsers;
+  const usersLoading = isAdmin ? teamUsersLoading : allUsersLoading;
 
   // Use the appropriate data based on role
   const allLogs = isAdmin ? teamLogs : myLogs;
@@ -202,6 +218,7 @@ export function DailyLog() {
       <LogsDataTable
         logs={filteredLogs}
         projects={projects}
+        users={users}
         isAdmin={isAdmin}
         isLoading={logsLoading || projectsLoading}
       />
