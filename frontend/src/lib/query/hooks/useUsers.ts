@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client, { endpoints } from '../../api/client';
 import type { User, ApiResponse, CreateUserDto } from '../../api/types';
 
-export const useUsers = () => {
+export const useUsers = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
       const response = await client.get<ApiResponse<User[]>>(endpoints.users.list);
       return response.data.data;
     },
+    enabled,
   });
 };
 

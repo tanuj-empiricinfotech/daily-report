@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client, { endpoints } from '../../api/client';
 import type { DailyLog, CreateLogDto, UpdateLogDto, ApiResponse } from '../../api/types';
 
-export const useMyLogs = (date?: string, startDate?: string, endDate?: string) => {
+export const useMyLogs = (date?: string, startDate?: string, endDate?: string, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['logs', 'my', date, startDate, endDate],
     queryFn: async () => {
@@ -13,6 +13,7 @@ export const useMyLogs = (date?: string, startDate?: string, endDate?: string) =
       const response = await client.get<ApiResponse<DailyLog[]>>(endpoints.logs.getMyLogs, { params });
       return response.data.data;
     },
+    enabled,
   });
 };
 

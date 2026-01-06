@@ -12,6 +12,7 @@ import { DailyLog } from './pages/DailyLog';
 import { CreateLogPage } from './pages/CreateLogPage';
 import { EditLogPage } from './pages/EditLogPage';
 import { Projects } from './pages/Projects';
+import { ProjectDetails } from './pages/ProjectDetails';
 import { Team } from './pages/Team';
 import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
@@ -92,6 +93,16 @@ function AppRoutes() {
           <ProtectedRoute requireAdmin>
             <DashboardLayout>
               <Projects />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DashboardLayout>
+              <ProjectDetails />
             </DashboardLayout>
           </ProtectedRoute>
         }

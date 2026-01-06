@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconMail, IconShield } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconMail, IconShield, IconCopy, IconCheck } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/query/hooks/useUsers';
 import { useTeams } from '@/lib/query/hooks/useTeams';
+import { useProjects } from '@/lib/query/hooks/useProjects';
 import type { User, CreateUserDto } from '@/lib/api/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
@@ -79,15 +80,28 @@ export function Team() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [formData, setFormData] = useState<UserFormData>(INITIAL_FORM_DATA);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Fetch data
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: teams = [], isLoading: teamsLoading } = useTeams();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
 
   // Mutations
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+
+  // Copy email to clipboard
+  const handleCopyEmail = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy email:', error);
+    }
+  };
 
   // Redirect if not admin
   if (!isAdmin) {
@@ -203,9 +217,23 @@ export function Team() {
             </Avatar>
             <div>
               <div className="font-medium">{row.name}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <IconMail className="h-3 w-3" />
-                {row.email}
+                <span>{row.email}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyEmail(row.email);
+                  }}
+                  className="ml-1 hover:text-foreground transition-colors p-0.5"
+                  title="Copy email"
+                >
+                  {copiedEmail === row.email ? (
+                    <IconCheck className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <IconCopy className="h-3 w-3" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -240,6 +268,39 @@ export function Team() {
             <span className="text-muted-foreground text-sm">No Team</span>
           );
         },
+      },
+      {
+        id: 'projects',
+        header: 'Assigned Projects',
+        enableSorting: false,
+        cell: (row) => {
+          // Filter projects by team_id to show only assigned projects
+          const userProjects = projects.filter((p) => p.team_id === row.team_id);
+
+          if (userProjects.length === 0) {
+            return <span className="text-muted-foreground text-sm">No projects</span>;
+          }
+
+          // Show max 3 project badges
+          const displayProjects = userProjects.slice(0, 3);
+          const remainingCount = userProjects.length - displayProjects.length;
+
+          return (
+            <div className="flex flex-wrap gap-1">
+              {displayProjects.map((project) => (
+                <Badge key={project.id} variant="secondary" className="text-xs">
+                  {project.name}
+                </Badge>
+              ))}
+              {remainingCount > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{remainingCount}
+                </Badge>
+              )}
+            </div>
+          );
+        },
+        width: '250px',
       },
       {
         id: 'created_at',
@@ -284,10 +345,10 @@ export function Team() {
         width: '120px',
       },
     ],
-    [teams, user?.id]
+    [teams, projects, user?.id, copiedEmail]
   );
 
-  const isLoading = usersLoading || teamsLoading;
+  const isLoading = usersLoading || teamsLoading || projectsLoading;
   const mutationError =
     createUserMutation.error ||
     updateUserMutation.error ||

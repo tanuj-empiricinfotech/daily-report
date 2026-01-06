@@ -20,7 +20,7 @@ import { TopProjects } from '@/components/dashboard/TopProjects';
 import { TeamPerformance } from '@/components/dashboard/TeamPerformance';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyLogs, useTeamLogs } from '@/lib/query/hooks/useLogs';
-import { useProjects } from '@/lib/query/hooks/useProjects';
+import { useMyProjects, useProjects } from '@/lib/query/hooks/useProjects';
 import { useUsers } from '@/lib/query/hooks/useUsers';
 import type { DailyLog } from '@/lib/api/types';
 import {
@@ -43,17 +43,31 @@ export function Dashboard() {
     const { startDate, endDate } = getDateRange('30d');
 
     // Fetch data based on role
-    const { data: myLogs = [], isLoading: myLogsLoading } = useMyLogs(undefined, startDate, endDate);
+    const { data: myLogs = [], isLoading: myLogsLoading } = useMyLogs(
+        undefined,
+        startDate,
+        endDate,
+        !isAdmin
+    );
     const { data: teamLogs = [], isLoading: teamLogsLoading } = useTeamLogs(
         isAdmin && user?.team_id ? user.team_id : null,
         { startDate, endDate }
     );
-    const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
-    const { data: users = [], isLoading: usersLoading } = useUsers();
 
-    // Use team logs for admins, my logs for members
+    // Fetch projects based on role
+    const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
+    const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(
+        isAdmin && user?.team_id ? user.team_id : null
+    );
+
+    // Fetch users only for admin
+    const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
+
+    // Use appropriate data based on role
     const logs = isAdmin ? teamLogs : myLogs;
     const logsLoading = isAdmin ? teamLogsLoading : myLogsLoading;
+    const projects = isAdmin ? allProjects : myProjects;
+    const projectsLoading = isAdmin ? allProjectsLoading : myProjectsLoading;
 
     // Calculate previous period date range
     const { startDate: prevStartDate, endDate: prevEndDate } = useMemo(() => {

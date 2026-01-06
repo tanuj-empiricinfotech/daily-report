@@ -4,20 +4,30 @@ import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Button } from '@/components/ui/button';
 import { formatDate, normalizeDateForComparison } from '@/utils/formatting';
 import { istToIso } from '@/utils/date';
-import { useMyLogs } from '@/lib/query/hooks/useLogs';
-import { useMyProjects } from '@/lib/query/hooks/useProjects';
+import { useMyLogs, useTeamLogs } from '@/lib/query/hooks/useLogs';
+import { useMyProjects, useProjects } from '@/lib/query/hooks/useProjects';
+import { useUsers } from '@/lib/query/hooks/useUsers';
+import { useAuth } from '@/hooks/useAuth';
 import { IconPlus } from '@tabler/icons-react';
 
 export function DailyLog() {
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>({
     from: new Date(),
     to: new Date(),
   });
+
+  // Single project filter for members
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+
+  // Multi-select filters for admins
+  const [selectedProjectIds, setSelectedProjectIds] = useState<(string | number)[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<(string | number)[]>([]);
 
   // Convert date range to IST strings for display and API
   const startDate = dateRange?.from ? formatDate(dateRange.from) : undefined;
@@ -29,12 +39,26 @@ export function DailyLog() {
   const apiStartDate = startDate ? istToIso(startDate) : istToIso(formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
   const apiEndDate = endDate ? istToIso(endDate) : istToIso(formatDate(new Date()));
 
-  const { data: allLogs = [], isLoading: logsLoading } = useMyLogs(
-    undefined, 
-    apiStartDate, 
-    apiEndDate
+  // Fetch data based on user role
+  const { data: myLogs = [], isLoading: myLogsLoading } = useMyLogs(
+    undefined,
+    apiStartDate,
+    apiEndDate,
+    !isAdmin
   );
-  const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
+  const { data: teamLogs = [], isLoading: teamLogsLoading } = useTeamLogs(
+    isAdmin && user?.team_id ? user.team_id : null,
+    { startDate: apiStartDate, endDate: apiEndDate }
+  );
+  const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
+  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(user?.team_id || null);
+  const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
+
+  // Use the appropriate data based on role
+  const allLogs = isAdmin ? teamLogs : myLogs;
+  const projects = isAdmin ? allProjects : myProjects;
+  const logsLoading = isAdmin ? teamLogsLoading : myLogsLoading;
+  const projectsLoading = isAdmin ? allProjectsLoading : myProjectsLoading;
 
   const filteredLogs = useMemo(() => {
     let filtered = allLogs;
@@ -61,17 +85,45 @@ export function DailyLog() {
       });
     }
 
-    // Apply project filter
-    if (selectedProjectId) {
-      filtered = filtered.filter((log) => log.project_id === selectedProjectId);
+    // Apply filters based on role
+    if (isAdmin) {
+      // Admin: Multi-select project filter
+      if (selectedProjectIds.length > 0) {
+        filtered = filtered.filter((log) =>
+          selectedProjectIds.includes(log.project_id)
+        );
+      }
+
+      // Admin: Multi-select user filter
+      if (selectedUserIds.length > 0) {
+        filtered = filtered.filter((log) =>
+          selectedUserIds.includes(log.user_id)
+        );
+      }
+    } else {
+      // Member: Single project filter
+      if (selectedProjectId) {
+        filtered = filtered.filter((log) => log.project_id === selectedProjectId);
+      }
     }
 
     return filtered;
-  }, [allLogs, dateRange, selectedProjectId]);
+  }, [allLogs, dateRange, isAdmin, selectedProjectId, selectedProjectIds, selectedUserIds]);
 
   const handleNewLog = () => {
     navigate('/logs/create');
   };
+
+  // Transform data for multi-select
+  const projectOptions = useMemo(
+    () => projects.map((project) => ({ value: project.id, label: project.name })),
+    [projects]
+  );
+
+  const userOptions = useMemo(
+    () => users.map((user) => ({ value: user.id, label: user.name })),
+    [users]
+  );
 
   return (
     <div className="space-y-6">
@@ -88,41 +140,69 @@ export function DailyLog() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <DateRangePicker
-              label="Date Range"
-              value={dateRange}
-              onChange={setDateRange}
-            />
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Project</label>
-              <Select
-                value={selectedProjectId?.toString() || 'all'}
-                onValueChange={(value) =>
-                  setSelectedProjectId(value === 'all' ? null : parseInt(value, 10))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All projects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All projects</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id.toString()}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {isAdmin ? (
+            // Admin filters with multi-select
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <DateRangePicker
+                label="Date Range"
+                value={dateRange}
+                onChange={setDateRange}
+              />
+              <MultiSelect
+                label="Projects"
+                placeholder="All projects"
+                options={projectOptions}
+                value={selectedProjectIds}
+                onChange={setSelectedProjectIds}
+                loading={projectsLoading}
+              />
+              <MultiSelect
+                label="Team Members"
+                placeholder="All members"
+                options={userOptions}
+                value={selectedUserIds}
+                onChange={setSelectedUserIds}
+                loading={usersLoading}
+              />
             </div>
-          </div>
+          ) : (
+            // Member filters with single-select
+            <div className="grid grid-cols-2 gap-4">
+              <DateRangePicker
+                label="Date Range"
+                value={dateRange}
+                onChange={setDateRange}
+              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Project</label>
+                <Select
+                  value={selectedProjectId?.toString() || 'all'}
+                  onValueChange={(value) =>
+                    setSelectedProjectId(value === 'all' ? null : parseInt(value, 10))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All projects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All projects</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <LogsDataTable
         logs={filteredLogs}
         projects={projects}
-        isAdmin={false}
+        isAdmin={isAdmin}
         isLoading={logsLoading || projectsLoading}
       />
     </div>

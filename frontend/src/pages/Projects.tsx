@@ -5,6 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconPlus, IconEdit, IconTrash, IconFolder } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
@@ -59,6 +60,7 @@ const INITIAL_FORM_DATA: ProjectFormData = {
 };
 
 export function Projects() {
+  const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [dialogMode, setDialogMode] = useState<DialogMode>(DIALOG_MODE.CLOSED);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -165,10 +167,13 @@ export function Projects() {
         accessorFn: (row) => row.name,
         enableSorting: true,
         cell: (row) => (
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/projects/${row.id}`)}
+            className="flex items-center gap-2 hover:text-primary transition-colors text-left w-full"
+          >
             <IconFolder className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{row.name}</span>
-          </div>
+            <span className="font-medium hover:underline">{row.name}</span>
+          </button>
         ),
       },
       {
@@ -235,7 +240,7 @@ export function Projects() {
         width: '120px',
       },
     ],
-    [teams]
+    [teams, navigate]
   );
 
   const isLoading = projectsLoading || teamsLoading;
