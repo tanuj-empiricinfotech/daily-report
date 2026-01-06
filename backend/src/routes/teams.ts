@@ -16,6 +16,9 @@ router.get('/:id', teamsController.getById);
 router.put('/:id', updateTeamValidator, handleValidationErrors, teamsController.update);
 router.delete('/:id', teamsController.delete);
 
+// Trigger Teams daily summary (same workflow as CRON job)
+router.post('/trigger-daily-summary', teamsController.triggerDailySummary);
+
 // Test endpoint for Teams daily summary
 router.post('/test-summary', teamsController.testDailySummary);
 

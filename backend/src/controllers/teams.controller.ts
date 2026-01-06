@@ -114,5 +114,42 @@ export class TeamsController {
       next(error);
     }
   };
+
+  /**
+   * Trigger Teams daily summary workflow
+   * This endpoint triggers the same workflow as the CRON job
+   * Can be used to manually send daily summaries to Teams
+   *
+   * @param date - Optional date (YYYY-MM-DD) to generate summary for. Defaults to current IST date
+   * @param webhookUrl - Optional webhook URL override. Defaults to TEAMS_WEBHOOK_URL environment variable
+   */
+  triggerDailySummary = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { date, webhookUrl } = req.body;
+
+      console.log('='.repeat(60));
+      console.log('API Triggered Teams Daily Summary - Starting');
+      console.log('='.repeat(60));
+      console.log('Date:', date || 'current IST date');
+      console.log('Webhook URL:', webhookUrl || 'from environment (TEAMS_WEBHOOK_URL)');
+      console.log('Triggered by:', req.user?.email || 'unknown');
+      console.log('='.repeat(60));
+
+      const job = new TeamsDailySummaryJob();
+      await job.execute(date, webhookUrl);
+
+      res.json({
+        success: true,
+        message: 'Daily summary workflow triggered successfully. Check server logs for detailed output.',
+        data: {
+          date: date || 'current IST date',
+          webhookSource: webhookUrl ? 'request body' : 'environment variable',
+        },
+      });
+    } catch (error) {
+      console.error('Trigger daily summary failed:', error);
+      next(error);
+    }
+  };
 }
 
