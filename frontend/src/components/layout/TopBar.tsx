@@ -4,12 +4,6 @@
  */
 
 import { useLocation } from 'react-router-dom';
-import {
-    IconSearch,
-    IconBell,
-    IconCommand,
-} from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -63,11 +57,7 @@ function getBreadcrumbs(pathname: string): { label: string; path: string; isLast
     return breadcrumbs;
 }
 
-interface TopBarProps {
-    onSearchClick?: () => void;
-}
-
-export function TopBar({ onSearchClick }: TopBarProps) {
+export function TopBar() {
     const location = useLocation();
     const breadcrumbs = getBreadcrumbs(location.pathname);
 
