@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useAuth } from '@/hooks/useAuth';
 
 export function TeamManager() {
-  const { data: teams = [], isLoading } = useTeams();
+  const { isAdmin } = useAuth();
+  const { data: teams = [], isLoading } = useTeams({ isAdmin });
   const createMutation = useCreateTeam();
   const updateMutation = useUpdateTeam();
   const deleteMutation = useDeleteTeam();

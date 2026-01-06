@@ -84,7 +84,7 @@ export function Team() {
 
   // Fetch data
   const { data: users = [], isLoading: usersLoading } = useUsers();
-  const { data: teams = [], isLoading: teamsLoading } = useTeams();
+  const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
   const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
 
   // Mutations
@@ -335,9 +335,8 @@ export function Team() {
               disabled={row.id === user?.id}
             >
               <IconTrash
-                className={`h-4 w-4 ${
-                  row.id === user?.id ? 'text-muted-foreground' : 'text-destructive'
-                }`}
+                className={`h-4 w-4 ${row.id === user?.id ? 'text-muted-foreground' : 'text-destructive'
+                  }`}
               />
             </Button>
           </div>

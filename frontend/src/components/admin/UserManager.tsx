@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserCardProps {
   user: User;
@@ -134,10 +135,11 @@ function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProp
 }
 
 export function UserManager() {
+  const { isAdmin } = useAuth();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
-  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId);
+  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, isAdmin);
   const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId);
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useTeams({ isAdmin });
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();

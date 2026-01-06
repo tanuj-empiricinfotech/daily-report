@@ -24,13 +24,13 @@ export const useUsersByTeam = (teamId: number | null, isAdmin: boolean | undefin
       const response = await client.get<ApiResponse<User[]>>(endpoints.users.getByTeam(teamId));
       return response.data.data;
     },
-    enabled: false
+    enabled: !!isAdmin
   });
 };
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: CreateUserDto) => {
       const response = await client.post<ApiResponse<User>>(endpoints.users.create, data);
@@ -44,7 +44,7 @@ export const useCreateUser = () => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<CreateUserDto> }) => {
       const response = await client.put<ApiResponse<User>>(endpoints.users.update(id), data);
@@ -58,7 +58,7 @@ export const useUpdateUser = () => {
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: number) => {
       const response = await client.delete<ApiResponse<void>>(endpoints.users.delete(id));

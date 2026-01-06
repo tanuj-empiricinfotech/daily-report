@@ -69,7 +69,7 @@ export function Projects() {
 
   // Fetch data
   const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
-  const { data: teams = [], isLoading: teamsLoading } = useTeams();
+  const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
 
   // Mutations
   const createProjectMutation = useCreateProject();

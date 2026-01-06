@@ -56,7 +56,7 @@ function DeleteProjectDialog({ project, onConfirm }: DeleteProjectDialogProps) {
 
 export function ProjectManager() {
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useTeams({ isAdmin: true });
   const { data: projects = [], isLoading } = useProjects(selectedTeamId);
   const createMutation = useCreateProject();
   const updateMutation = useUpdateProject();

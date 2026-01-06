@@ -8,9 +8,11 @@ import { ProjectManager } from '@/components/admin/ProjectManager';
 import { UserManager } from '@/components/admin/UserManager';
 import { LogsViewer } from '@/components/admin/LogsViewer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/hooks/useAuth';
 
 export function AdminDashboard() {
-  const { data: teams = [] } = useTeams();
+  const { isAdmin } = useAuth();
+  const { data: teams = [] } = useTeams({ isAdmin });
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<'teams' | 'projects' | 'users' | 'logs'>('teams');
