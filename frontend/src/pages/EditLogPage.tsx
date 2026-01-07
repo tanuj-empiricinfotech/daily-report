@@ -14,13 +14,11 @@ import { Button } from '@/components/ui/button';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
-import client, { endpoints } from '@/lib/api/client';
-import type { ApiResponse, CreateLogDto, DailyLog, UpdateLogDto } from '@/lib/api/types';
-import { useCreateLogsBulk, useDeleteLog, useUpdateLog } from '@/lib/query/hooks/useLogs';
+import type { CreateLogDto, UpdateLogDto } from '@/lib/api/types';
+import { useCreateLogsBulk, useDeleteLog, useLog, useUpdateLog } from '@/lib/query/hooks/useLogs';
 import { useProjects } from '@/lib/query/hooks/useProjects';
 import { isDateInPast } from '@/utils/date';
 import { IconTrash } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -38,19 +36,7 @@ export function EditLogPage() {
   const deleteLogMutation = useDeleteLog();
   const createLogsBulkMutation = useCreateLogsBulk();
 
-  const {
-    data: log,
-    isLoading: logLoading,
-    error: logError,
-  } = useQuery<DailyLog>({
-    queryKey: ['log', logId],
-    queryFn: async () => {
-      if (!logId) throw new Error('Log ID is required');
-      const response = await client.get<ApiResponse<DailyLog>>(endpoints.logs.get(logId));
-      return response.data.data;
-    },
-    enabled: !!logId,
-  });
+  const { data: log, isLoading: logLoading, error: logError } = useLog(logId);
 
   const handleSubmit = async (data: CreateLogDto[]): Promise<void> => {
     if (!logId || !log) return;

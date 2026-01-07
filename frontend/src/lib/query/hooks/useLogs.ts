@@ -29,6 +29,18 @@ export const useTeamLogs = (teamId: number | null, filters?: { date?: string; st
   });
 };
 
+export const useLog = (logId: number | null) => {
+  return useQuery({
+    queryKey: ['log', logId],
+    queryFn: async () => {
+      if (!logId) throw new Error('Log ID is required');
+      const response = await client.get<ApiResponse<DailyLog>>(endpoints.logs.get(logId));
+      return response.data.data;
+    },
+    enabled: !!logId,
+  });
+};
+
 export const useCreateLog = () => {
   const queryClient = useQueryClient();
 
