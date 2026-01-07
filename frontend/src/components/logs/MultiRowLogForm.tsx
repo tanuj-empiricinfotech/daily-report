@@ -19,6 +19,8 @@ import { formatDate } from '@/utils/formatting';
 import { istToIso } from '@/utils/date';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useUsers } from '@/lib/query/hooks/useUsers';
 
 /**
  * Normalizes time input to HH:MM format
@@ -118,6 +120,9 @@ export function MultiRowLogForm({
   error,
   initialData,
 }: MultiRowLogFormProps) {
+  const { isAdmin } = useAuth();
+  const { data: users = [] } = useUsers(isAdmin);
+
   const [date, setDate] = React.useState<string>(
     initialData && initialData.length > 0 ? formatDate(initialData[0].date) : formatDate(new Date())
   );
@@ -271,11 +276,29 @@ export function MultiRowLogForm({
     }
   };
 
+  console.log('initialData', initialData);
+
+  // Get user name if admin is editing another user's log
+  const userId = initialData?.[0]?.user_id;
+  const user = userId ? users.find((u) => u.id === userId) : null;
+  const userName = user?.name;
+
+  // Determine title based on role and context
+  const getTitle = () => {
+    if (!initialData) {
+      return 'Create Log Entry';
+    }
+    if (isAdmin && userName) {
+      return `Edit Log Entry for ${userName}`;
+    }
+    return 'Edit Log Entry';
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>{initialData ? 'Edit Log Entry' : 'Create Log Entry'}</CardTitle>
+          <CardTitle>{getTitle()}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && <ErrorDisplay error={error} />}
