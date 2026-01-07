@@ -276,8 +276,6 @@ export function MultiRowLogForm({
     }
   };
 
-  console.log('initialData', initialData);
-
   // Get user name if admin is editing another user's log
   const userId = initialData?.[0]?.user_id;
   const user = userId ? users.find((u) => u.id === userId) : null;
