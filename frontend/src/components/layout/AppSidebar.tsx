@@ -12,7 +12,6 @@ import {
     IconUsers,
     IconSettings,
     IconLogout,
-    IconMail,
     IconPlus,
 } from '@tabler/icons-react';
 import {
@@ -145,9 +144,6 @@ export function AppSidebar() {
                                 <IconPlus className="h-4 w-4" />
                                 <span>Quick Create</span>
                             </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <IconMail className="h-4 w-4" />
                         </Button>
                     </div>
                 )}
