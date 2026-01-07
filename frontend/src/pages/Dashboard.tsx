@@ -56,9 +56,7 @@ export function Dashboard() {
 
     // Fetch projects based on role
     const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
-    const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(
-        isAdmin && user?.team_id ? user.team_id : null
-    );
+    const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(isAdmin && user?.team_id ? user.team_id : null, isAdmin);
 
     // Fetch users only for admin
     const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);

@@ -68,13 +68,8 @@ export function Analytics() {
   const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
 
   // Fetch data
-  const { data: logs = [], isLoading: logsLoading } = useTeamLogs(
-    selectedTeamId,
-    { startDate, endDate }
-  );
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(
-    selectedTeamId
-  );
+  const { data: logs = [], isLoading: logsLoading } = useTeamLogs(selectedTeamId, { startDate, endDate });
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId, isAdmin);
   const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
 
   // Calculate previous period for comparison

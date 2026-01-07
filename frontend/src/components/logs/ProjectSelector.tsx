@@ -18,9 +18,9 @@ interface ProjectSelectorProps {
 }
 
 export function ProjectSelector({ value, onChange, error }: ProjectSelectorProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
-  const { data: projects = [] } = useProjects(selectedTeamId);
+  const { data: projects = [] } = useProjects(selectedTeamId, isAdmin);
   const { data: assignments = [] } = useUserAssignments(user?.id || null);
 
   const assignedProjectIds = new Set(assignments.map((a) => a.project_id));

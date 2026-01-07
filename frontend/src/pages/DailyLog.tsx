@@ -63,7 +63,7 @@ export function DailyLog() {
     { startDate: apiStartDate, endDate: apiEndDate }
   );
   const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
-  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(adminTeamId);
+  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(adminTeamId, isAdmin);
   // Fetch users: for admins, fetch by team; for members, fetch all (for filter dropdown)
   const { data: allUsers = [], isLoading: allUsersLoading } = useUsers(isAdmin);
   const { data: teamUsers = [], isLoading: teamUsersLoading } = useUsersByTeam(adminTeamId, isAdmin);

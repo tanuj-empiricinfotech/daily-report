@@ -138,7 +138,7 @@ export function UserManager() {
   const { isAdmin } = useAuth();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
   const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, isAdmin);
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId);
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId, isAdmin);
   const { data: teams = [] } = useTeams({ isAdmin });
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();

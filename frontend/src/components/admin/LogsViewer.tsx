@@ -37,7 +37,7 @@ export function LogsViewer() {
   });
 
   const { data: users = [] } = useUsersByTeam(teamId, isAdmin);
-  const { data: projects = [] } = useProjects(teamId);
+  const { data: projects = [] } = useProjects(teamId, isAdmin);
 
   const handleTeamChange = (newTeamId: number | null) => {
     setTeamId(newTeamId);
