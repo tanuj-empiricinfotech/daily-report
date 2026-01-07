@@ -1,7 +1,3 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { useSelector } from 'react-redux';
 import { MultiRowLogForm } from '@/components/logs/MultiRowLogForm';
 import {
   AlertDialog,
@@ -15,27 +11,29 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
-import { useMyProjects } from '@/lib/query/hooks/useProjects';
-import { useUpdateLog, useDeleteLog, useCreateLogsBulk } from '@/lib/query/hooks/useLogs';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useAuth } from '@/hooks/useAuth';
 import client, { endpoints } from '@/lib/api/client';
-import type { DailyLog, ApiResponse, UpdateLogDto, CreateLogDto } from '@/lib/api/types';
+import type { ApiResponse, CreateLogDto, DailyLog, UpdateLogDto } from '@/lib/api/types';
+import { useCreateLogsBulk, useDeleteLog, useUpdateLog } from '@/lib/query/hooks/useLogs';
+import { useProjects } from '@/lib/query/hooks/useProjects';
 import { isDateInPast } from '@/utils/date';
 import { IconTrash } from '@tabler/icons-react';
-import type { RootState } from '@/store/store';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function EditLogPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const logId = id ? parseInt(id, 10) : null;
 
-  const user = useSelector((state: RootState) => state.auth.user);
-  const isAdmin = user?.role === 'admin';
+  const { user, isAdmin } = useAuth();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { data: projects = [], isLoading: projectsLoading } = useMyProjects();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null, isAdmin);
   const updateLogMutation = useUpdateLog();
   const deleteLogMutation = useDeleteLog();
   const createLogsBulkMutation = useCreateLogsBulk();

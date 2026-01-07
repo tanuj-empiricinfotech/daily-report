@@ -4,21 +4,24 @@ import type { Project, CreateProjectDto, ApiResponse } from '../../api/types';
 import { useDispatch } from 'react-redux';
 import { setProjects, addProject, updateProject, removeProject } from '../../../store/slices/projectsSlice';
 
-export const useProjects = (teamId: number | null) => {
+export const useProjects = (teamId: number | null, isAdmin?: boolean) => {
   const dispatch = useDispatch();
 
   return useQuery({
     queryKey: ['projects', teamId],
     queryFn: async () => {
-      if (teamId === null) {
+      if (isAdmin) {
         const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.list);
         dispatch(setProjects(response.data.data));
         return response.data.data;
       }
-      const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.listByTeam(teamId));
-      dispatch(setProjects(response.data.data));
-      return response.data.data;
+      if (teamId !== null && !isAdmin) {
+        const response = await client.get<ApiResponse<Project[]>>(endpoints.projects.getMy);
+        dispatch(setProjects(response.data.data));
+        return response.data.data;
+      }
     },
+    enabled: !!(isAdmin || teamId),
   });
 };
 
