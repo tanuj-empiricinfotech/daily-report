@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   IconPalette,
   IconNotebook,
@@ -7,6 +7,7 @@ import {
   IconSparkles,
   IconCheck,
 } from '@tabler/icons-react';
+import { useThrottler } from '@tanstack/react-pacer';
 import { Card } from './ui/card';
 import { useTheme } from '../contexts/ThemeContext';
 import { THEMES, type ThemeName } from '../lib/theme-config';
@@ -27,20 +28,39 @@ export function ThemeSelector() {
   const isTouchDevice =
     'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  const handleMouseEnter = (theme: ThemeName) => {
-    if (isTouchDevice) return;
-    setPreviewTheme(theme);
-
+  // Throttled function to update theme preview
+  const applyThemePreview = useCallback((theme: ThemeName) => {
     const root = document.documentElement;
     if (theme === 'default') {
       delete root.dataset.theme;
     } else {
       root.dataset.theme = theme;
     }
+    setPreviewTheme(theme);
+  }, []);
+
+  // Create throttler with 120ms wait time, leading edge for immediate feedback
+  const throttler = useThrottler(applyThemePreview, {
+    wait: 1000,
+    leading: true,
+    trailing: true,
+  });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      throttler.cancel();
+    };
+  }, [throttler]);
+
+  const handleMouseEnter = (theme: ThemeName) => {
+    if (isTouchDevice) return;
+    throttler.maybeExecute(theme);
   };
 
   const handleMouseLeave = () => {
     if (isTouchDevice) return;
+    throttler.cancel();
     setPreviewTheme(null);
 
     const root = document.documentElement;
@@ -52,6 +72,7 @@ export function ThemeSelector() {
   };
 
   const handleClick = (theme: ThemeName) => {
+    throttler.cancel();
     setPreviewTheme(null);
     setThemeName(theme);
   };
