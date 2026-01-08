@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useLogout } from '@/lib/query/hooks/useAuth';
+import { GitHubLink } from './GitHubLink';
 
 // Navigation items - Main section
 const mainNavItems = [
@@ -226,6 +227,9 @@ export function AppSidebar() {
 
             {/* Footer - User Profile */}
             <SidebarFooter className="border-t border-sidebar-border pt-4">
+                {/* GitHub Link */}
+                <GitHubLink />
+
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>
