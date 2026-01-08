@@ -5,6 +5,7 @@
 
 import type { DailyLog } from '@/lib/api/types';
 import { generateDateRange } from './analytics';
+import { parseTimeInput } from '@/utils/time';
 
 export interface ChartDataPoint {
     date: string;
@@ -56,10 +57,10 @@ export function transformLogsToTimeSeries(
         const existing = dataMap.get(dateKey);
         if (existing) {
             const actual = typeof log.actual_time_spent === 'string'
-                ? parseFloat(log.actual_time_spent)
+                ? parseTimeInput(log.actual_time_spent)
                 : log.actual_time_spent;
             const tracked = typeof log.tracked_time === 'string'
-                ? parseFloat(log.tracked_time)
+                ? parseTimeInput(log.tracked_time)
                 : log.tracked_time;
 
             existing.hours += actual;
@@ -95,7 +96,7 @@ export function transformLogsToProjectChart(
 
     for (const log of logs) {
         const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
 
         const existing = projectHours.get(log.project_id) || 0;
@@ -141,7 +142,7 @@ export function transformLogsToUserChart(
 
     for (const log of logs) {
         const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
 
         const existing = userHours.get(log.user_id) || 0;

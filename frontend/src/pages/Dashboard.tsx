@@ -18,6 +18,7 @@ import { TimeSeriesChart } from '@/components/dashboard/TimeSeriesChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TopProjects } from '@/components/dashboard/TopProjects';
 import { TeamPerformance } from '@/components/dashboard/TeamPerformance';
+import { TeamHoursSection } from '@/components/dashboard/TeamHoursSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyLogs, useTeamLogs } from '@/lib/query/hooks/useLogs';
 import { useMyProjects, useProjects } from '@/lib/query/hooks/useProjects';
@@ -286,6 +287,14 @@ export function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {/* Team Hours Tracking - Admin Only */}
+            {isAdmin && (
+                <TeamHoursSection
+                    defaultTeamId={user?.team_id || null}
+                    loading={logsLoading || usersLoading}
+                />
+            )}
         </div>
     );
 }

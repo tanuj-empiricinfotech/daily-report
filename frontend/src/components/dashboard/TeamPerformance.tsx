@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { generateChartColors } from '@/lib/theme';
+import { getUserInitials } from '@/utils/analytics';
 import type { UserChartData } from '@/utils/chart';
 
 const MIN_CHART_HEIGHT = 200;
@@ -36,17 +37,6 @@ interface TeamPerformanceProps {
   loading?: boolean;
   /** Additional className */
   className?: string;
-}
-
-/**
- * Get user initials for avatar fallback
- */
-function getUserInitials(name: string): string {
-  const parts = name.trim().split(' ');
-  if (parts.length === 1) {
-    return parts[0].substring(0, 2).toUpperCase();
-  }
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 export function TeamPerformance({

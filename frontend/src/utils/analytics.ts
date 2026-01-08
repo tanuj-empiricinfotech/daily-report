@@ -4,6 +4,7 @@
  */
 
 import type { DailyLog } from '@/lib/api/types';
+import { parseTimeInput } from '@/utils/time';
 
 /**
  * Calculate percentage change between two values
@@ -66,7 +67,7 @@ export function aggregateByDate(
 
         const existing = grouped.get(dateKey) || { totalHours: 0, logs: [] };
         const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
 
         existing.totalHours += hours;
@@ -89,7 +90,7 @@ export function aggregateByProject(
         const projectId = log.project_id;
         const existing = grouped.get(projectId) || { totalHours: 0, logs: [] };
         const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
 
         existing.totalHours += hours;
@@ -111,9 +112,9 @@ export function aggregateByUser(
     for (const log of logs) {
         const userId = log.user_id;
         const existing = grouped.get(userId) || { totalHours: 0, logs: [] };
-        const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
-            : log.actual_time_spent;
+        const hours = typeof log.tracked_time === 'string'
+            ? parseTimeInput(log.tracked_time)
+            : log.tracked_time;
 
         existing.totalHours += hours;
         existing.logs.push(log);
@@ -129,7 +130,7 @@ export function aggregateByUser(
 export function calculateTotalHours(logs: DailyLog[]): number {
     return logs.reduce((total, log) => {
         const hours = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
         return total + hours;
     }, 0);
@@ -149,10 +150,10 @@ export function calculateTimeVariance(logs: DailyLog[]): {
 
     for (const log of logs) {
         const actual = typeof log.actual_time_spent === 'string'
-            ? parseFloat(log.actual_time_spent)
+            ? parseTimeInput(log.actual_time_spent)
             : log.actual_time_spent;
         const tracked = typeof log.tracked_time === 'string'
-            ? parseFloat(log.tracked_time)
+            ? parseTimeInput(log.tracked_time)
             : log.tracked_time;
 
         actualTotal += actual;
@@ -306,4 +307,26 @@ export function calculateAverageHoursPerDay(
 
     const divisor = days || uniqueDays || 1;
     return totalHours / divisor;
+}
+
+/**
+ * Get current date in YYYY-MM-DD format (local timezone)
+ * Utility for default date in filters
+ */
+export function getCurrentDate(): string {
+    return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Get user initials for avatar fallback
+ * Extracted from TeamPerformance component to follow DRY principle
+ * @example getUserInitials("John Doe") => "JD"
+ * @example getUserInitials("Alice") => "AL"
+ */
+export function getUserInitials(name: string): string {
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) {
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }

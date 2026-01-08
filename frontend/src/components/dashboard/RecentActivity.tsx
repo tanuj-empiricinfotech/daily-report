@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatDuration, formatDateDisplay } from '@/utils/analytics';
+import { parseTimeInput } from '@/utils/time';
 import type { DailyLog } from '@/lib/api/types';
 
 interface RecentActivityProps {
@@ -102,7 +103,7 @@ export function RecentActivity({
                             const projectName = projectNames.get(log.project_id) || 'Unknown Project';
                             const userName = userNames.get(log.user_id) || 'User';
                             const hours = typeof log.actual_time_spent === 'string'
-                                ? parseFloat(log.actual_time_spent)
+                                ? parseTimeInput(log.actual_time_spent)
                                 : log.actual_time_spent;
                             const logDate = typeof log.date === 'string'
                                 ? log.date.split('T')[0]
