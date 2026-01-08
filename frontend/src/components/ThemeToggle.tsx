@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function ThemeToggle() {
-    const { theme, setTheme } = useTheme();
+    const { mode, setMode } = useTheme();
 
     return (
         <DropdownMenu>
@@ -21,20 +21,20 @@ export function ThemeToggle() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme('light')}>
+                <DropdownMenuItem onClick={() => setMode('light')}>
                     <IconSun className="mr-2 h-4 w-4" />
                     <span>Light</span>
-                    {theme === 'light' && <span className="ml-auto">✓</span>}
+                    {mode === 'light' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                <DropdownMenuItem onClick={() => setMode('dark')}>
                     <IconMoon className="mr-2 h-4 w-4" />
                     <span>Dark</span>
-                    {theme === 'dark' && <span className="ml-auto">✓</span>}
+                    {mode === 'dark' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('system')}>
+                <DropdownMenuItem onClick={() => setMode('system')}>
                     <IconDeviceDesktop className="mr-2 h-4 w-4" />
                     <span>System</span>
-                    {theme === 'system' && <span className="ml-auto">✓</span>}
+                    {mode === 'system' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

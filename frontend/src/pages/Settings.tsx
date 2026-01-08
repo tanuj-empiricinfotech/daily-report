@@ -5,14 +5,18 @@
  */
 
 import { useState } from 'react';
-import { IconKey, IconUser, IconMail, IconShield } from '@tabler/icons-react';
+import { IconKey, IconUser, IconMail, IconShield, IconSun, IconMoon, IconDeviceDesktop } from '@tabler/icons-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
+import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/lib/utils';
 
 /**
  * Get user initials for avatar
@@ -23,6 +27,48 @@ function getUserInitials(name: string): string {
     return parts[0].substring(0, 2).toUpperCase();
   }
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/**
+ * Mode Toggle Component
+ * Allows switching between light, dark, and system color modes
+ */
+function ModeToggle() {
+  const { mode, setMode } = useTheme();
+
+  const modes = [
+    { value: 'light' as const, label: 'Light', icon: IconSun },
+    { value: 'dark' as const, label: 'Dark', icon: IconMoon },
+    { value: 'system' as const, label: 'System', icon: IconDeviceDesktop },
+  ];
+
+  return (
+    <div className="inline-flex rounded-md shadow-sm" role="group">
+      {modes.map((modeOption) => {
+        const Icon = modeOption.icon;
+        const isActive = mode === modeOption.value;
+
+        return (
+          <Button
+            key={modeOption.value}
+            type="button"
+            variant={isActive ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMode(modeOption.value)}
+            className={cn(
+              'gap-2',
+              modeOption.value === 'light' && 'rounded-r-none',
+              modeOption.value === 'system' && 'rounded-l-none',
+              modeOption.value === 'dark' && 'rounded-none border-l-0 border-r-0'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {modeOption.label}
+          </Button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function Settings() {
@@ -189,24 +235,27 @@ export function Settings() {
         </CardContent>
       </Card>
 
-      {/* Preferences */}
+      {/* Appearance */}
       <Card>
         <CardHeader>
-          <CardTitle>Preferences</CardTitle>
+          <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Customize your experience
+            Customize the look and feel of your dashboard
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Theme</p>
-                <p className="text-sm text-muted-foreground">
-                  Managed via the theme toggle in the navbar
-                </p>
-              </div>
-            </div>
+        <CardContent className="space-y-6">
+          {/* Color Mode Toggle */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Color Mode</Label>
+            <ModeToggle />
+          </div>
+
+          <Separator />
+
+          {/* Theme Selector */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Theme</Label>
+            <ThemeSelector />
           </div>
         </CardContent>
       </Card>
