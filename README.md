@@ -8,54 +8,79 @@ This platform enables teams to track daily work logs with support for multiple t
 
 ## Features
 
-### Authentication
+### Authentication & Security
 - JWT-based authentication with HTTP-only cookies
 - Role-based access control (admin/member)
 - Secure password hashing with bcryptjs
 - Session management with automatic token handling
+- Password change functionality
+- Rate limiting for sensitive operations
 
 ### Team Management
 - Multiple teams support
 - Team-based data isolation
 - Team member assignments
 - Projects scoped to teams
+- Microsoft Teams integration for daily summaries
 
 ### Admin Features
-- Create and manage teams
-- Create, edit, and delete projects (team-scoped)
-- View team members
-- Assign team members to projects
-- View all daily logs with filtering by date, user, project, and team
+- **Dashboard**: Analytics overview with KPI metrics, charts, and trends
+- **Team Management**: Create, edit, and delete teams
+- **Project Management**: Create, edit, and delete projects (team-scoped)
+- **User Management**: View team members and assign them to projects
+- **Logs Viewer**: View all team logs with advanced filtering (date, user, project, team)
+- **Analytics**: Advanced analytics with time series charts, project performance, and team metrics
+- **Projects Page**: Detailed project view with time tracking and member assignments
+- **Team Page**: Comprehensive team management interface
 
 ### Team Member Features
-- View assigned projects (from their team)
-- Log daily work with:
+- **Dashboard**: Personal dashboard with time tracking metrics and recent activity
+- **Daily Logs**: View and manage daily work logs
+- **Project View**: View assigned projects (from their team)
+- **Log Creation**: Log daily work with:
   - Project selection (only assigned projects)
   - Task description
   - Actual time spent (decimal hours)
   - Tracked time (decimal hours)
-- View and edit own logs for any date
-- View logs by date with summary
+  - Bulk log creation support
+- **Log Management**: View and edit own logs for any date
+- **Date Filtering**: View logs by date with summary
+
+### Additional Features
+- **Theme Support**: Light, dark, and system theme modes
+- **Settings Page**: User profile management and preferences
+- **Responsive Design**: Modern UI with shadcn/ui components
+- **Scheduled Jobs**: Automated daily team summaries sent to Microsoft Teams
+- **Error Handling**: Comprehensive error boundaries and error display
+- **Data Visualization**: Charts and graphs for analytics (Recharts)
 
 ## Tech Stack
 
 ### Backend
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
-- **Database**: PostgreSQL (Dockerized)
+- **Database**: PostgreSQL 16 (Dockerized)
 - **Authentication**: JWT with HTTP-only cookies
 - **Validation**: express-validator
 - **Password Hashing**: bcryptjs
+- **Scheduling**: node-cron for automated jobs
+- **HTTP Client**: axios (for Teams webhooks)
+- **Rate Limiting**: express-rate-limit
 
 ### Frontend
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
-- **State Management**: Redux Toolkit
-- **Data Fetching**: TanStack Query (React Query)
-- **HTTP Client**: Axios
-- **Routing**: React Router
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS
+- **State Management**: 
+  - Redux Toolkit with Redux Persist
+  - TanStack Query (React Query) for server state
+- **HTTP Client**: Axios (with cookie support)
+- **Routing**: React Router v6
+- **UI Components**: shadcn/ui (built on Radix UI)
+- **Styling**: Tailwind CSS v4
+- **Charts**: Recharts for data visualization
+- **Icons**: Tabler Icons React
+- **Date Handling**: date-fns
+- **Tables**: TanStack Table for advanced data tables
 
 ## Architecture
 
@@ -84,18 +109,30 @@ backend/
 frontend/
   src/
     pages/                     # Page components
+      - Dashboard.tsx          # Main dashboard (role-based)
+      - DailyLog.tsx           # Daily logs page
+      - Analytics.tsx          # Advanced analytics (admin)
+      - Projects.tsx           # Projects management (admin)
+      - ProjectDetails.tsx    # Project details page
+      - Team.tsx              # Team management page
+      - Settings.tsx          # User settings
+      - Login.tsx             # Authentication
     components/
-      admin/                   # Admin dashboard components
-      logs/                    # Daily logging components
-      layout/                  # Layout components
-      ui/                      # Reusable UI components
+      admin/                  # Admin dashboard components
+      auth/                   # Authentication components
+      dashboard/              # Dashboard widgets
+      layout/                 # Layout components (Navbar, Sidebar, etc.)
+      logs/                   # Daily logging components
+      ui/                     # Reusable UI components (shadcn/ui)
     store/
-      slices/                  # Redux slices
+      slices/                 # Redux slices (auth, teams, projects)
     lib/
-      api/                     # API client and endpoints
-      query/                   # TanStack Query hooks
-    hooks/                     # Custom React hooks
-    utils/                     # Utility functions
+      api/                    # API client and endpoints
+      query/                  # TanStack Query hooks
+      theme.ts                # Theme configuration
+    hooks/                    # Custom React hooks
+    contexts/                 # React contexts (ThemeContext)
+    utils/                    # Utility functions (date, time, analytics, chart)
 ```
 
 ## Database Schema
@@ -179,7 +216,7 @@ docker-compose up -d
 
 6. Run database migrations:
 ```bash
-# Migration commands will be added here
+npm run db:migrate
 ```
 
 7. Start the development server:
@@ -271,9 +308,14 @@ This project follows clean code principles:
 ### Logs
 - `GET /api/logs` - Get logs (members: own logs, admin: all team logs)
 - `POST /api/logs` - Create log entry
+- `POST /api/logs/bulk` - Create multiple log entries
 - `GET /api/logs/:id` - Get log by ID
 - `PUT /api/logs/:id` - Update log entry
 - `DELETE /api/logs/:id` - Delete log entry
+- `GET /api/logs/team/:teamId` - Get team logs (admin only, with filters)
+
+### Authentication (Additional)
+- `POST /api/auth/change-password` - Change user password (authenticated)
 
 ## Environment Variables
 
@@ -284,6 +326,7 @@ JWT_SECRET=your-secret-key-here
 PORT=3000
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173
+TEAMS_WEBHOOK_URL=your-teams-webhook-url (optional, for daily summaries)
 ```
 
 ### Frontend (.env)
@@ -301,6 +344,9 @@ VITE_API_URL=http://localhost:3000
 - `npm run build:backend` - Build only backend for production
 - `npm run build:frontend` - Build only frontend for production
 - `npm run install:all` - Install dependencies for root, backend, and frontend
+- `npm run db:migrate` - Run database migrations
+- `npm run db:seed` - Seed database with initial data
+- `npm run db:reset` - Reset database (drop and recreate)
 
 ### Backend (from backend directory)
 - `npm run dev` - Start development server

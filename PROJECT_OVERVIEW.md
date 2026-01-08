@@ -56,6 +56,32 @@ The platform solves the problem of tracking daily work activities across multipl
 - View and filter own logs by date range and project
 - Edit and delete own log entries
 - Date range picker for log filtering
+- Personal analytics with time tracking metrics
+
+### 7. **Analytics & Reporting**
+- **Dashboard**: Role-based dashboard with KPI metrics (total hours, projects, trends)
+- **Advanced Analytics**: Admin-only analytics page with:
+  - Time series charts showing work patterns over time
+  - Top projects by hours logged
+  - Team performance metrics
+  - Recent activity feed
+  - Customizable date ranges (7d, 30d, 90d, 180d, 365d)
+- **Project Details**: Detailed project view with time tracking and member assignments
+- **Data Visualization**: Interactive charts using Recharts
+
+### 8. **Microsoft Teams Integration**
+- Automated daily summary reports sent to Microsoft Teams channels
+- Scheduled cron job runs daily at 8:30 PM IST
+- Team-based summaries with project breakdowns
+- Configurable webhook URLs per team
+- Summary includes total hours, project distribution, and member contributions
+
+### 9. **Theme & UI Enhancements**
+- **Theme Support**: Light, dark, and system theme modes
+- **Settings Page**: User profile management, password change, theme preferences
+- **Modern UI**: shadcn/ui components with Tailwind CSS
+- **Responsive Design**: Mobile-friendly layout with sidebar navigation
+- **Error Boundaries**: Graceful error handling with React error boundaries
 
 ---
 
@@ -293,23 +319,31 @@ User can now log time for this project
 - **Validation**: express-validator
 - **Database Client**: pg (PostgreSQL client)
 - **Environment**: dotenv
+- **Scheduling**: node-cron for automated jobs
+- **HTTP Client**: axios (for Teams webhooks)
+- **Rate Limiting**: express-rate-limit
 
 ### Frontend
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
 - **State Management**: 
-  - Redux Toolkit (for auth, teams, projects state)
+  - Redux Toolkit with Redux Persist (for auth, teams, projects state)
   - TanStack Query (React Query) for server state
 - **HTTP Client**: Axios (with cookie support)
 - **Routing**: React Router v6
 - **UI Components**: shadcn/ui (built on Radix UI)
-- **Styling**: Tailwind CSS
-- **Date Handling**: Custom utilities for IST/ISO conversion
+- **Styling**: Tailwind CSS v4
+- **Charts**: Recharts for data visualization
+- **Icons**: Tabler Icons React
+- **Date Handling**: date-fns and custom utilities for IST/ISO conversion
+- **Tables**: TanStack Table for advanced data tables
+- **Theme**: Custom theme context with system preference detection
 
 ### Infrastructure
 - **Database**: Docker Compose with PostgreSQL
 - **Development**: Concurrently for running both servers
 - **Package Management**: npm
+- **Jobs**: Automated cron jobs for scheduled tasks
 
 ---
 
@@ -395,6 +429,9 @@ projects (1) ──< (many) daily_logs
 - `DELETE /api/logs/:id` - Delete log entry
 - `GET /api/logs/team/:teamId` - Get team logs (admin only, with filters)
 
+### Authentication Endpoints (Additional)
+- `POST /api/auth/change-password` - Change user password (authenticated, rate-limited)
+
 ---
 
 ## Key Components & Responsibilities
@@ -417,8 +454,16 @@ projects (1) ──< (many) daily_logs
 - **ProjectsService**: Project business logic, team scoping
 - **AssignmentsService**: Assignment logic, validation
 - **LogsService**: Log business logic, authorization checks, validation
+- **TeamsSummaryService**: Generates daily team summaries with project breakdowns
+- **TeamsNotificationService**: Sends summaries to Microsoft Teams webhooks
 
 **Responsibility**: Business logic, validation, authorization rules
+
+#### **Jobs** (`backend/src/jobs/`)
+- **TeamsDailySummaryJob**: Cron job that runs daily at 8:30 PM IST to send team summaries
+- **initializeJobs()**: Initializes all scheduled jobs on server startup
+
+**Responsibility**: Scheduled task execution, automated notifications
 
 #### **Controllers** (`backend/src/controllers/`)
 - Handle HTTP requests and responses
@@ -438,11 +483,17 @@ projects (1) ──< (many) daily_logs
 ### Frontend Components
 
 #### **Pages** (`frontend/src/pages/`)
-- **Login.tsx**: Authentication page
-- **AdminDashboard.tsx**: Main admin interface with tabs
-- **DailyLog.tsx**: Member's log viewing page
-- **CreateLogPage.tsx**: Create new log entry
+- **Login.tsx**: Authentication page with register/login toggle
+- **Dashboard.tsx**: Role-based dashboard with KPI metrics and charts
+- **AdminDashboard.tsx**: Main admin interface with tabs (legacy, redirects to Dashboard)
+- **DailyLog.tsx**: Member's log viewing page with date filtering
+- **CreateLogPage.tsx**: Create new log entry (single or bulk)
 - **EditLogPage.tsx**: Edit existing log entry
+- **Analytics.tsx**: Advanced analytics page (admin only) with charts and metrics
+- **Projects.tsx**: Projects management page (admin only)
+- **ProjectDetails.tsx**: Detailed project view with time tracking
+- **Team.tsx**: Team management page (admin only)
+- **Settings.tsx**: User settings and preferences
 
 #### **Admin Components** (`frontend/src/components/admin/`)
 - **TeamManager.tsx**: CRUD operations for teams
@@ -459,8 +510,17 @@ projects (1) ──< (many) daily_logs
 
 #### **State Management**
 - **Redux Slices**: `authSlice.ts`, `teamsSlice.ts`, `projectsSlice.ts`
+- **Redux Persist**: Persists auth and teams state to localStorage
 - **TanStack Query Hooks**: Custom hooks for API calls with caching
-- **Custom Hooks**: `useAuth.ts`, `useDebounce.ts`
+- **Custom Hooks**: `useAuth.ts`, `useDebounce.ts`, `use-mobile.ts`
+- **Contexts**: `ThemeContext.tsx` for theme management
+
+#### **Dashboard Components** (`frontend/src/components/dashboard/`)
+- **MetricCard.tsx**: Reusable metric card component with trend indicators
+- **TimeSeriesChart.tsx**: Time series chart for work patterns
+- **TopProjects.tsx**: Top projects by hours chart
+- **TeamPerformance.tsx**: Team performance metrics chart
+- **RecentActivity.tsx**: Recent activity feed component
 
 ---
 
@@ -542,13 +602,34 @@ The system handles timezone conversion between IST (Indian Standard Time) and IS
 
 ---
 
-## Future Enhancements (From TODO.md)
+## Recent Enhancements
+
+### Completed Features
+- ✅ **Dashboard**: Role-based dashboard with KPI metrics and charts
+- ✅ **Analytics Page**: Advanced analytics with time series charts and team metrics
+- ✅ **Projects Page**: Comprehensive project management interface
+- ✅ **Project Details**: Detailed project view with time tracking
+- ✅ **Team Page**: Enhanced team management interface
+- ✅ **Settings Page**: User profile and preferences management
+- ✅ **Theme Support**: Light, dark, and system theme modes
+- ✅ **Microsoft Teams Integration**: Automated daily summaries
+- ✅ **Scheduled Jobs**: Cron jobs for automated tasks
+- ✅ **Error Boundaries**: React error boundaries for graceful error handling
+- ✅ **Password Management**: Change password functionality
+- ✅ **Bulk Log Creation**: Support for creating multiple log entries at once
+- ✅ **Advanced Data Tables**: TanStack Table integration with sorting and filtering
+- ✅ **Data Visualization**: Recharts integration for analytics
+
+## Future Enhancements
 
 - Enhanced UI components and utilities
 - Additional validation and error handling
 - Performance optimizations
-- Testing infrastructure
+- Testing infrastructure (unit tests, integration tests)
 - Documentation improvements
+- Export functionality (CSV, PDF reports)
+- Email notifications
+- Mobile app support
 
 ---
 

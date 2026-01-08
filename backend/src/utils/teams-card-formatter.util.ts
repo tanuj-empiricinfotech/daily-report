@@ -5,6 +5,7 @@
 
 import { TeamsSummaryData, AdaptiveCardPayload, AdaptiveCardElement } from '../types/teams.types';
 import { formatDateIST } from './timezone.util';
+import { parseTimeToDecimal, formatDecimalToTime } from './time.util';
 
 /**
  * Format time value to HH:MM display format
@@ -56,41 +57,22 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
     weight: 'bolder',
     color: 'accent',
     wrap: true,
-  });
-
-  // Team name and total hours
-  cardBody.push({
-    type: 'FactSet',
-    facts: [
-      // {
-      //   title: 'Team',
-      //   value: summary.teamName,
-      // },
-      {
-        title: 'Total Actual Time',
-        value: formatTime(summary.totalTeamActualTime),
-      },
-      {
-        title: 'Total Tracked Time',
-        value: formatTime(summary.totalTeamTrackedTime),
-      },
-    ],
-    separator: true,
-    spacing: 'medium',
+    width: 'stretch',
   });
 
   // User sections
-  summary.userSummaries.forEach((userSummary, index) => {
+  summary.userSummaries.forEach((userSummary, _index) => {
     // User header
     cardBody.push({
       type: 'TextBlock',
       // text: `${userSummary.userName} (${formatHours(userSummary.totalActualTime)} actual, ${formatHours(userSummary.totalTrackedTime)} tracked)`,
       text: `${userSummary.userName}`,
-      size: 'large',
+      size: 'medium',
       weight: 'bolder',
       separator: true,
-      spacing: 'medium',
+      spacing: 'default',
       wrap: true,
+      width: 'stretch',
     });
 
     // User's tasks grouped by project
@@ -104,19 +86,38 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
     // Display tasks grouped by project
     tasksByProject.forEach((tasks, projectName) => {
       // Calculate total tracked time for this project
-      const projectTrackedTime = tasks.reduce((sum, task) => {
-        const time = typeof task.trackedTime === 'string' ? parseFloat(task.trackedTime) : task.trackedTime;
-        return sum + time;
+      // Convert each task's trackedTime to decimal hours, sum them, then format back to HH:MM
+      const projectTrackedTimeDecimal = tasks.reduce((sum, task) => {
+        const timeDecimal = typeof task.trackedTime === 'string'
+          ? parseTimeToDecimal(task.trackedTime)
+          : task.trackedTime;
+        return sum + timeDecimal;
       }, 0);
 
+      // Format the total back to HH:MM string format
+      const projectTrackedTime = formatDecimalToTime(projectTrackedTimeDecimal);
+
+      // Project tracked time if not 0
+      if (projectTrackedTime !== "0:00") {
+        cardBody.push({
+          type: 'TextBlock',
+          text: `Tracked Time: ${projectTrackedTime}`,
+          size: 'medium',
+          weight: 'default',
+          spacing: 'small',
+          wrap: true,
+          width: 'stretch',
+        });
+      }
       // Project name with total time
       cardBody.push({
         type: 'TextBlock',
-        text: `**${projectName} [${formatTime(projectTrackedTime)}]**`,
+        text: `${projectName}`,
         size: 'medium',
-        weight: 'bolder',
+        weight: 'default',
         spacing: 'small',
         wrap: true,
+        width: 'stretch',
       });
 
       // Tasks under this project
@@ -128,10 +129,33 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
           text: taskText,
           spacing: 'none',
           wrap: true,
+          width: 'stretch',
         });
       });
     });
   });
+
+  // Team name and total hours
+  // cardBody.push({
+  //   type: 'FactSet',
+  //   facts: [
+  //     // {
+  //     //   title: 'Team',
+  //     //   value: summary.teamName,
+  //     // },
+  //     {
+  //       title: 'Total Actual Time',
+  //       value: formatTime(summary.totalTeamActualTime),
+  //     },
+  //     {
+  //       title: 'Total Tracked Time',
+  //       value: formatTime(summary.totalTeamTrackedTime),
+  //     },
+  //   ],
+  //   separator: true,
+  //   spacing: 'medium',
+  //   width: 'stretch',
+  // });
 
   // Footer
   cardBody.push({
@@ -142,9 +166,12 @@ export function formatTeamsSummaryCard(summary: TeamsSummaryData): AdaptiveCardP
     separator: true,
     spacing: 'medium',
     wrap: true,
+    width: 'stretch',
+    weight: 'lighter',
   });
 
   // Construct the Adaptive Card payload
+  // All elements have width: 'stretch' to ensure full width usage
   const payload: AdaptiveCardPayload = {
     type: 'message',
     attachments: [

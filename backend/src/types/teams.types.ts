@@ -70,6 +70,7 @@ export interface TextBlock {
   wrap?: boolean;
   separator?: boolean;
   spacing?: 'none' | 'small' | 'default' | 'medium' | 'large' | 'extraLarge';
+  width?: 'auto' | 'stretch' | number;
 }
 
 export interface FactSet {
@@ -80,6 +81,7 @@ export interface FactSet {
   }>;
   separator?: boolean;
   spacing?: 'none' | 'small' | 'default' | 'medium' | 'large' | 'extraLarge';
+  width?: 'auto' | 'stretch' | number;
 }
 
 export interface Container {
@@ -87,6 +89,7 @@ export interface Container {
   items: AdaptiveCardElement[];
   separator?: boolean;
   spacing?: 'none' | 'small' | 'default' | 'medium' | 'large' | 'extraLarge';
+  width?: 'auto' | 'stretch' | number;
 }
 
 export interface ColumnSet {
