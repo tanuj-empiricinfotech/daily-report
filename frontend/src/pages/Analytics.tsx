@@ -34,6 +34,7 @@ import { generateChartColors } from '@/lib/theme';
 
 // Time range options
 const TIME_RANGES = {
+  '1d': { label: 'Last 1 Days', days: 1 },
   '7d': { label: 'Last 7 Days', days: 7 },
   '30d': { label: 'Last 30 Days', days: 30 },
   '90d': { label: 'Last 90 Days', days: 90 },

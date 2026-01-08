@@ -171,7 +171,7 @@ export function calculateTimeVariance(logs: DailyLog[]): {
  * Get date range strings for filtering
  * Supports multiple time range formats
  */
-export function getDateRange(range: '7d' | '30d' | '90d' | '180d' | '365d' | '3m' | 'custom'): {
+export function getDateRange(range: '1d' | '7d' | '30d' | '90d' | '180d' | '365d' | '3m' | 'custom'): {
     startDate: string;
     endDate: string;
 } {
@@ -179,6 +179,9 @@ export function getDateRange(range: '7d' | '30d' | '90d' | '180d' | '365d' | '3m
     const startDate = new Date();
 
     switch (range) {
+        case '1d':
+            startDate.setDate(startDate.getDate() - 1);
+            break;
         case '7d':
             startDate.setDate(startDate.getDate() - 7);
             break;
