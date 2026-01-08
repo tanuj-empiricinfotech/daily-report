@@ -1,7 +1,7 @@
 {
   "name": "daily-report",
   "version": "1.0.0",
-  "private": true,
+  "license": "ISC",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:backend": "npm run dev --prefix backend",

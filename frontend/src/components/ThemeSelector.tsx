@@ -102,7 +102,7 @@ export function ThemeSelector() {
             onClick={() => handleClick(theme.name as ThemeName)}
           >
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
+              <div className="shrink-0 mt-0.5">
                 <Icon className="w-5 h-5 text-primary" />
               </div>
 
@@ -112,7 +112,7 @@ export function ThemeSelector() {
                     {theme.label}
                   </h3>
                   {isActive && (
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <div className="shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                       <IconCheck className="w-3 h-3 text-primary-foreground" />
                     </div>
                   )}

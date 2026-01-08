@@ -1,10 +1,40 @@
 # Daily Work Logging Platform
 
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](#contributing)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/tanuj-empiricinfotech/daily-report)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-green.svg)](https://daily-report-omega.vercel.app)
+
 A comprehensive daily work logging platform with authentication, project management, team member assignments, and time tracking (actual time vs tracked time) using PostgreSQL, Express.js backend, and React frontend with shadcn/ui.
+
+> **Note**: This project is open source and welcomes contributions! See our [Contributing Guidelines](#contributing) to get started.
+>
+> **🔗 Links**: 
+> - **Repository**: [GitHub](https://github.com/tanuj-empiricinfotech/daily-report)
+> - **Live Demo**: [daily-report-omega.vercel.app](https://daily-report-omega.vercel.app)
 
 ## Overview
 
 This platform enables teams to track daily work logs with support for multiple teams, projects, and team members. It provides separate interfaces for administrators and team members, with role-based access control and team-scoped data isolation.
+
+## Vision
+
+### For Administrators
+Empower team leaders and project managers with comprehensive insights into how their teams spend time. The platform helps organize projects, track hours effectively, and make data-driven decisions about resource allocation and project planning.
+
+**Future Enhancements:**
+- **AI Analytics & Summarization**: Leverage artificial intelligence to analyze project data and automatically generate case studies, project summaries, and insights
+- **Predictive Analytics**: Forecast project timelines and resource needs based on historical data
+- **Automated Reporting**: Generate comprehensive reports and presentations with AI assistance
+
+### For Developers
+Provide developers with personal insights into their work patterns, helping them understand where they spend their time over weeks, months, and years. This visibility enables better time management and professional growth tracking.
+
+**Future Enhancements:**
+- **AI-Powered Analysis**: Use AI to analyze work patterns and provide personalized insights
+- **Yearly Wrap**: Automatically generate year-end summaries highlighting achievements, skills developed, and projects completed
+- **Resume Assistance**: AI-powered tools to help write experience sections, professional summaries, and project descriptions for resumes
+- **Career Insights**: Get recommendations on skill development and career growth based on logged work patterns
 
 ## Features
 
@@ -53,6 +83,38 @@ This platform enables teams to track daily work logs with support for multiple t
 - **Scheduled Jobs**: Automated daily team summaries sent to Microsoft Teams
 - **Error Handling**: Comprehensive error boundaries and error display
 - **Data Visualization**: Charts and graphs for analytics (Recharts)
+
+## Roadmap
+
+We're continuously working on improving the platform. Here's what's coming next:
+
+### 🎯 Phase 1: Enhanced Analytics (Current)
+- ✅ Time tracking and basic analytics
+- ✅ Team and project insights
+- ✅ Microsoft Teams integration
+
+### 🤖 Phase 2: AI-Powered Features (Planned)
+
+#### For Administrators
+- **AI Analytics & Summarization**: Automatically analyze project data and generate comprehensive case studies
+- **Project Insights**: AI-driven recommendations for project optimization and resource allocation
+- **Automated Reporting**: Generate executive summaries and presentations with AI assistance
+- **Predictive Analytics**: Forecast project timelines and identify potential bottlenecks
+
+#### For Developers
+- **AI-Powered Yearly Wrap**: Automatically generate year-end summaries highlighting achievements, skills, and growth
+- **Resume Builder**: AI assistance for writing experience sections, professional summaries, and project descriptions
+- **Career Insights**: Personalized recommendations for skill development based on logged work patterns
+- **Work Pattern Analysis**: Deep insights into productivity patterns, time allocation, and skill development over time
+
+### 🚀 Phase 3: Advanced Features (Future)
+- Export capabilities (PDF, CSV, Excel)
+- Mobile applications
+- Advanced integrations (Slack, Jira, etc.)
+- Customizable dashboards and reports
+- Team collaboration features
+
+**Contributions welcome!** If you're interested in helping build any of these features, check out our [Contributing Guidelines](#contributing).
 
 ## Tech Stack
 
@@ -360,7 +422,168 @@ VITE_API_URL=http://localhost:3000
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
 
+## Support
+
+Need help? Here are some ways to get support:
+
+- **Documentation**: Check this README and the codebase documentation
+- **Issues**: Search existing [GitHub Issues](https://github.com/tanuj-empiricinfotech/daily-report/issues) for similar problems
+- **Report Bugs**: [Open a new issue](https://github.com/tanuj-empiricinfotech/daily-report/issues/new) with detailed information about the problem
+- **Feature Requests**: [Open an issue](https://github.com/tanuj-empiricinfotech/daily-report/issues/new) to discuss new features or improvements
+- **Questions**: Open a discussion or issue for questions
+
+## Contributing
+
+We welcome contributions from the open source community! This document provides guidelines and instructions for contributing to this project.
+
+### Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/your-username/daily-report.git
+   cd daily-report
+   ```
+3. **Add the upstream remote**:
+   ```bash
+   git remote add upstream https://github.com/tanuj-empiricinfotech/daily-report.git
+   ```
+4. **Create a branch** for your feature or bugfix:
+   ```bash
+   git checkout -b feature/your-feature-name
+   # or
+   git checkout -b fix/your-bugfix-name
+   ```
+
+### Development Workflow
+
+1. **Set up the development environment** following the [Setup Instructions](#setup-instructions)
+2. **Make your changes** following our [Development Guidelines](#development-guidelines)
+3. **Test your changes**:
+   - Ensure the backend server runs without errors
+   - Ensure the frontend builds and runs correctly
+   - Test your specific changes thoroughly
+   - Run linting: `npm run lint` (in frontend directory)
+4. **Commit your changes** with clear, descriptive commit messages:
+   ```bash
+   git commit -m "feat: add new feature description"
+   git commit -m "fix: resolve bug description"
+   git commit -m "docs: update documentation"
+   git commit -m "refactor: improve code structure"
+   ```
+5. **Keep your branch updated**:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+6. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+7. **Create a Pull Request** on GitHub
+
+### Code Style Guidelines
+
+This project follows clean code principles. Please ensure your contributions adhere to:
+
+- **DRY (Don't Repeat Yourself)**: Extract repeated logic into reusable functions/components
+- **Single Responsibility**: Each function/component should have one clear purpose
+- **Type Safety**: Use TypeScript types throughout, avoid `any` type
+- **Meaningful Names**: Use descriptive variable and function names
+- **Small Functions**: Keep functions focused and under 20 lines when possible
+- **Error Handling**: Handle errors explicitly with meaningful messages
+- **Comments**: Write self-documenting code; comment only when explaining "why"
+- **Import Types**: Use `import type` for TypeScript type imports
+
+#### TypeScript Guidelines
+
+- Always use `import type` for type-only imports
+- Avoid using `any` type; use `unknown` or proper types instead
+- Use interfaces for object shapes
+- Leverage TypeScript's type inference where appropriate
+
+#### Code Formatting
+
+- Follow existing code style and indentation
+- Use consistent naming conventions (camelCase for variables/functions, PascalCase for components)
+- Keep lines under 120 characters when possible
+
+### Pull Request Process
+
+1. **Before submitting a PR**:
+   - Ensure your code follows the project's code style
+   - Update documentation if needed (README, API docs, etc.)
+   - Add or update tests if applicable
+   - Ensure all existing tests pass
+   - Update `.env.example` if you've added new environment variables
+
+2. **PR Title and Description**:
+   - Use clear, descriptive titles
+   - Describe what changes you made and why
+   - Reference any related issues
+   - Include screenshots for UI changes
+
+3. **PR Review**:
+   - Maintainers will review your PR
+   - Address any feedback or requested changes
+   - Keep discussions constructive and respectful
+
+### Reporting Issues
+
+When reporting bugs or requesting features:
+
+1. **Check existing issues** to avoid duplicates
+2. **Use clear, descriptive titles**
+3. **Provide detailed information**:
+   - Steps to reproduce (for bugs)
+   - Expected vs actual behavior
+   - Environment details (OS, Node version, etc.)
+   - Screenshots if applicable
+   - Error messages or logs
+
+### Types of Contributions
+
+We welcome various types of contributions:
+
+- **Bug Fixes**: Fix existing issues or bugs
+- **New Features**: Add new functionality (please discuss major features in an issue first)
+- **Documentation**: Improve README, code comments, or API documentation
+- **Code Refactoring**: Improve code structure without changing functionality
+- **Performance Improvements**: Optimize existing code
+- **UI/UX Improvements**: Enhance the user interface and experience
+- **Testing**: Add or improve tests
+
+### Development Setup for Contributors
+
+1. Follow the [Setup Instructions](#setup-instructions) to get the project running
+2. Familiarize yourself with the [Architecture](#architecture) section
+3. Review the [Development Guidelines](#development-guidelines)
+4. Check the [API Endpoints](#api-endpoints) to understand the backend structure
+
+### Questions?
+
+- Open an issue for questions or discussions
+- Check existing issues and discussions
+- Review the codebase and documentation
+
+### Code of Conduct
+
+- Be respectful and inclusive
+- Welcome newcomers and help them get started
+- Focus on constructive feedback
+- Respect different viewpoints and experiences
+
+Thank you for contributing to Daily Work Logging Platform! 🎉
+
 ## License
 
-ISC
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+
+ISC License is a permissive open source license that allows you to:
+- Use the software commercially
+- Modify the software
+- Distribute the software
+- Use the software privately
+
+The only requirement is to include the original copyright notice and license text.
 
