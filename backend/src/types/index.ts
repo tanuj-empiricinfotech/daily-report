@@ -88,6 +88,7 @@ export interface CreateProjectDto {
 }
 
 export interface CreateLogDto {
+  user_id?: number;  // Optional - if provided (admin only), create log for this user
   project_id: number;
   date: string;
   task_description: string;

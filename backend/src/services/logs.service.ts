@@ -1,5 +1,6 @@
 import { LogsRepository } from '../db/repositories/logs.repository';
 import { AssignmentsRepository } from '../db/repositories/assignments.repository';
+import { UsersRepository } from '../db/repositories/users.repository';
 import { DailyLog, CreateLogDto, UpdateLogDto } from '../types';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors';
 import { getCurrentDateIST, isDateInPast, isDateToday } from '../utils/date';
@@ -7,10 +8,12 @@ import { getCurrentDateIST, isDateInPast, isDateToday } from '../utils/date';
 export class LogsService {
   private logsRepository: LogsRepository;
   private assignmentsRepository: AssignmentsRepository;
+  private usersRepository: UsersRepository;
 
   constructor() {
     this.logsRepository = new LogsRepository();
     this.assignmentsRepository = new AssignmentsRepository();
+    this.usersRepository = new UsersRepository();
   }
 
   /**
@@ -40,44 +43,101 @@ export class LogsService {
     }
   }
 
-  async createLog(data: CreateLogDto, userId: number, isAdmin: boolean = false): Promise<DailyLog> {
+  /**
+   * Validate admin creating logs for another user
+   * Only admins can create logs for other users
+   *
+   * @param authenticatedUserId - ID of the authenticated user
+   * @param isAdmin - Whether the authenticated user is an admin
+   * @param targetUserId - Optional target user ID (for admin creating logs for others)
+   * @returns The user ID to use for creating the log
+   * @throws ForbiddenError if non-admin tries to create logs for another user
+   * @throws NotFoundError if target user doesn't exist
+   */
+  private async validateAdminCreatingForUser(
+    authenticatedUserId: number,
+    isAdmin: boolean,
+    targetUserId?: number
+  ): Promise<number> {
+    // If no target user specified, use authenticated user
+    if (!targetUserId) {
+      return authenticatedUserId;
+    }
+
+    // Only admins can create logs for other users
+    if (!isAdmin) {
+      throw new ForbiddenError('Only admins can create logs for other users');
+    }
+
+    // If admin is creating for themselves (explicitly), allow it
+    if (targetUserId === authenticatedUserId) {
+      return authenticatedUserId;
+    }
+
+    // Verify target user exists
+    const targetUser = await this.usersRepository.findById(targetUserId);
+    if (!targetUser) {
+      throw new NotFoundError(`User with ID ${targetUserId} not found`);
+    }
+
+    return targetUserId;
+  }
+
+  async createLog(
+    data: CreateLogDto,
+    authenticatedUserId: number,
+    isAdmin: boolean = false,
+    targetUserId?: number
+  ): Promise<DailyLog> {
+    // Validate admin creating for another user and get the effective user ID
+    const effectiveUserId = await this.validateAdminCreatingForUser(authenticatedUserId, isAdmin, targetUserId);
+
     // Validate date access for members
     this.validateDateAccess(data.date, isAdmin, 'create');
 
-    const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(userId, data.project_id);
+    // Check if the effective user is assigned to the project
+    const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(effectiveUserId, data.project_id);
     if (!isAssigned) {
-      throw new ForbiddenError('You are not assigned to this project');
+      throw new ForbiddenError('User is not assigned to this project');
     }
 
     // Time validation is now handled by the validator middleware
     // No need to check for negative values as time format is HH:MM string
 
-    return await this.logsRepository.create(data, userId);
+    return await this.logsRepository.create(data, effectiveUserId);
   }
 
-  async createLogsBulk(dataArray: CreateLogDto[], userId: number, isAdmin: boolean = false): Promise<DailyLog[]> {
+  async createLogsBulk(
+    dataArray: CreateLogDto[],
+    authenticatedUserId: number,
+    isAdmin: boolean = false,
+    targetUserId?: number
+  ): Promise<DailyLog[]> {
     if (dataArray.length === 0) {
       throw new BadRequestError('At least one log entry is required');
     }
+
+    // Validate admin creating for another user and get the effective user ID
+    const effectiveUserId = await this.validateAdminCreatingForUser(authenticatedUserId, isAdmin, targetUserId);
 
     // Validate date access for each log entry
     for (const data of dataArray) {
       this.validateDateAccess(data.date, isAdmin, 'create');
     }
 
-    // Validate all entries
+    // Validate all entries - check if effective user is assigned to all projects
     const projectIds = new Set(dataArray.map(d => d.project_id));
     for (const projectId of projectIds) {
-      const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(userId, projectId);
+      const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(effectiveUserId, projectId);
       if (!isAssigned) {
-        throw new ForbiddenError(`You are not assigned to project ${projectId}`);
+        throw new ForbiddenError(`User is not assigned to project ${projectId}`);
       }
     }
 
     // Time validation is now handled by the validator middleware
     // No need to check for negative values as time format is HH:MM string
 
-    return await this.logsRepository.createMany(dataArray, userId);
+    return await this.logsRepository.createMany(dataArray, effectiveUserId);
   }
 
   async getLogById(id: number, userId: number, isAdmin: boolean): Promise<DailyLog> {

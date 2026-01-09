@@ -103,6 +103,7 @@ export interface CreateLogDto {
   task_description: string;
   actual_time_spent: string;
   tracked_time: string;
+  user_id?: number; // Optional - for admins to create logs for other users
 }
 
 export interface UpdateLogDto {

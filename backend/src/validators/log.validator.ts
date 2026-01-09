@@ -25,6 +25,7 @@ const validateTimeFormat = (value: string) => {
 };
 
 export const createLogValidator = [
+  body('user_id').optional().isInt({ min: 1 }).withMessage('user_id must be a positive integer'),
   body('project_id').isInt({ min: 1 }).withMessage('Valid project_id is required'),
   body('date').isISO8601().withMessage('Valid date is required'),
   body('task_description').trim().notEmpty().withMessage('Task description is required'),
@@ -54,6 +55,7 @@ export const createLogsBulkValidator = [
   body()
     .isArray({ min: 1 })
     .withMessage('Request body must be an array with at least one log entry'),
+  body('*.user_id').optional().isInt({ min: 1 }).withMessage('user_id must be a positive integer'),
   body('*.project_id').isInt({ min: 1 }).withMessage('Valid project_id is required for each entry'),
   body('*.date').isISO8601().withMessage('Valid date is required for each entry'),
   body('*.task_description')

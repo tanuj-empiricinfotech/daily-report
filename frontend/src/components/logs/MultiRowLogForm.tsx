@@ -21,6 +21,8 @@ import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/lib/query/hooks/useUsers';
+import { useUsersWithProjectsByTeam } from '@/lib/query/hooks/useUsers';
+import type { UserWithProjectsAndTeam } from '@/lib/api/types';
 
 /**
  * Normalizes time input to HH:MM format
@@ -120,8 +122,37 @@ export function MultiRowLogForm({
   error,
   initialData,
 }: MultiRowLogFormProps) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { data: users = [] } = useUsers(isAdmin);
+
+  // Fetch users with their projects for admin user selection
+  // If admin has no team_id, they should still be able to see all users
+  const teamId = user?.team_id ?? null;
+  const { data: usersWithProjects = [], isLoading: isLoadingUsers } = useUsersWithProjectsByTeam(teamId);
+
+  // For admins: use users with their assigned projects if available (from team data)
+  // As a fallback (admin with no team), use all users with all projects
+  const availableUsers = React.useMemo(() => {
+    // If we have team data with users and their projects, use it
+    if (usersWithProjects.length > 0) {
+      return usersWithProjects;
+    }
+
+    // Fallback for admins without team data: show all users with all available projects
+    // This means when an admin selects a user, they'll see all projects (not filtered by user)
+    if (isAdmin && users.length > 0) {
+      return users.map(u => ({
+        ...u,
+        team_name: null,
+        projects: projects, // All projects available
+      }));
+    }
+
+    return [];
+  }, [isAdmin, usersWithProjects, users, projects]);
+
+  // State for selected user (admin only, when creating logs for others)
+  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
 
   const [date, setDate] = React.useState<string>(
     initialData && initialData.length > 0 ? formatDate(initialData[0].date) : formatDate(new Date())
@@ -155,8 +186,26 @@ export function MultiRowLogForm({
       );
     }
   }, [initialData]);
+
+  // Filter projects based on selected user (for admins creating logs for others)
+  const filteredProjects = React.useMemo(() => {
+    // If no user is selected or not admin, use all projects passed from parent
+    if (!isAdmin || !selectedUserId || initialData) {
+      return projects;
+    }
+
+    // Find the selected user and return their assigned projects
+    const selectedUser = availableUsers.find((u) => u.id === selectedUserId);
+    if (!selectedUser) {
+      return [];
+    }
+
+    return selectedUser.projects;
+  }, [isAdmin, selectedUserId, availableUsers, projects, initialData]);
+
   const [validationErrors, setValidationErrors] = React.useState<{
     date?: string;
+    user?: string;
     rows?: Record<string, Record<string, string>>;
     general?: string;
   }>({});
@@ -196,10 +245,15 @@ export function MultiRowLogForm({
   };
 
   const validate = (): boolean => {
-    const errors: { date?: string; rows?: Record<string, Record<string, string>>; general?: string } = {};
+    const errors: { date?: string; user?: string; rows?: Record<string, Record<string, string>>; general?: string } = {};
 
     if (!date) {
       errors.date = 'Date is required';
+    }
+
+    // Validate user selection for admins creating new logs
+    if (isAdmin && !initialData && !selectedUserId) {
+      errors.user = 'Please select a user';
     }
 
     const rowErrors: Record<string, Record<string, string>> = {};
@@ -267,6 +321,8 @@ export function MultiRowLogForm({
         task_description: row.taskDescription.trim(),
         actual_time_spent: normalizeTimeInput(row.actualTimeSpent),
         tracked_time: normalizeTimeInput(row.trackedTime),
+        // Include user_id if admin is creating log for another user
+        ...(isAdmin && selectedUserId ? { user_id: selectedUserId } : {}),
       }));
 
     try {
@@ -277,9 +333,9 @@ export function MultiRowLogForm({
   };
 
   // Get user name if admin is editing another user's log
-  const userId = initialData?.[0]?.user_id;
-  const user = userId ? users.find((u) => u.id === userId) : null;
-  const userName = user?.name;
+  const logOwnerId = initialData?.[0]?.user_id;
+  const logOwner = logOwnerId ? users.find((u) => u.id === logOwnerId) : null;
+  const userName = logOwner?.name;
 
   // Determine title based on role and context
   const getTitle = () => {
@@ -300,6 +356,42 @@ export function MultiRowLogForm({
         </CardHeader>
         <CardContent className="space-y-4">
           {error && <ErrorDisplay error={error} />}
+
+          {/* User selector - only for admins creating new logs */}
+          {isAdmin && !initialData && (
+            <div className="space-y-2">
+              <label htmlFor="user-select" className="text-sm font-medium">
+                Select User
+              </label>
+              <Select
+                value={selectedUserId?.toString() || ''}
+                onValueChange={(value) => {
+                  const userId = parseInt(value, 10);
+                  setSelectedUserId(userId);
+                  // Clear user validation error
+                  if (validationErrors.user) {
+                    setValidationErrors({ ...validationErrors, user: undefined });
+                  }
+                  // Reset project selections when user changes
+                  setRows(rows.map((row) => ({ ...row, projectId: '' })));
+                }}
+              >
+                <SelectTrigger id="user-select" className={cn(validationErrors.user ? 'aria-invalid' : '')}>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.map((userWithProjects) => (
+                    <SelectItem key={userWithProjects.id} value={userWithProjects.id.toString()}>
+                      {userWithProjects.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {validationErrors.user && (
+                <p className="text-sm text-destructive">{validationErrors.user}</p>
+              )}
+            </div>
+          )}
 
           <DatePicker
             label="Date"
@@ -339,7 +431,7 @@ export function MultiRowLogForm({
                               <SelectValue placeholder="Select project" />
                             </SelectTrigger>
                             <SelectContent>
-                              {projects.map((project) => (
+                              {filteredProjects.map((project) => (
                                 <SelectItem key={project.id} value={project.id.toString()}>
                                   {project.name}
                                 </SelectItem>
