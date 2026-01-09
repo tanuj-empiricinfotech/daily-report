@@ -78,7 +78,9 @@ export const useUpdateLog = () => {
       return response.data.data;
     },
     onSuccess: () => {
+      // Invalidate both the list queries and the individual log query
       queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['log'] });
     },
   });
 };
@@ -92,7 +94,9 @@ export const useDeleteLog = () => {
       return id;
     },
     onSuccess: () => {
+      // Invalidate both the list queries and the individual log query
       queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['log'] });
     },
   });
 };
