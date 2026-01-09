@@ -16,11 +16,12 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import type { CreateLogDto, UpdateLogDto } from '@/lib/api/types';
 import { useCreateLogsBulk, useDeleteLog, useLog, useUpdateLog } from '@/lib/query/hooks/useLogs';
-import { useProjects } from '@/lib/query/hooks/useProjects';
+import { useProjects, useMyProjects } from '@/lib/query/hooks/useProjects';
 import { isDateInPast } from '@/utils/date';
 import { IconTrash } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useUsersWithProjectsByTeam } from '@/lib/query/hooks/useUsers';
 
 export function EditLogPage() {
   const navigate = useNavigate();
@@ -31,12 +32,43 @@ export function EditLogPage() {
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null, isAdmin);
   const updateLogMutation = useUpdateLog();
   const deleteLogMutation = useDeleteLog();
   const createLogsBulkMutation = useCreateLogsBulk();
 
   const { data: log, isLoading: logLoading, error: logError } = useLog(logId);
+
+  // Fetch users with projects to get the log owner's assigned projects
+  const teamId = user?.team_id ?? null;
+  const { data: usersWithProjects = [] } = useUsersWithProjectsByTeam(teamId);
+
+  // Fetch all projects (for admin's own logs or fallback)
+  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects(teamId, isAdmin);
+  const { data: myProjects = [], isLoading: myProjectsLoading } = useMyProjects();
+
+  // Determine which projects to show based on who owns the log
+  const projects = useMemo(() => {
+    if (!log) return [];
+
+    // If user is editing their own log, use their projects
+    if (log.user_id === user?.id) {
+      return isAdmin ? allProjects : myProjects;
+    }
+
+    // If admin is editing another user's log, show that user's assigned projects
+    if (isAdmin && log.user_id !== user?.id) {
+      const logOwner = usersWithProjects.find((u) => u.id === log.user_id);
+      if (logOwner) {
+        return logOwner.projects;
+      }
+      // Fallback to all projects if we can't find the user's projects
+      return allProjects;
+    }
+
+    return [];
+  }, [log, user?.id, isAdmin, usersWithProjects, allProjects, myProjects]);
+
+  const projectsLoading = allProjectsLoading || myProjectsLoading;
 
   const handleSubmit = async (data: CreateLogDto[]): Promise<void> => {
     if (!logId || !log) return;
@@ -58,9 +90,15 @@ export function EditLogPage() {
     await updateLogMutation.mutateAsync({ id: logId, data: updateData });
 
     // Create any additional entries (if user added more rows)
+    // When admin is editing another user's log, new entries should be created for that user
     const newEntries = data.slice(1);
     if (newEntries.length > 0) {
-      await createLogsBulkMutation.mutateAsync(newEntries);
+      // If admin is editing another user's log, include user_id in new entries
+      const entriesWithUser = isAdmin && log.user_id !== user?.id
+        ? newEntries.map(entry => ({ ...entry, user_id: log.user_id }))
+        : newEntries;
+
+      await createLogsBulkMutation.mutateAsync(entriesWithUser);
     }
 
     navigate('/logs');

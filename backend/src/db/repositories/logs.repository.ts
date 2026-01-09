@@ -84,9 +84,9 @@ export class LogsRepository extends BaseRepository<DailyLog> {
       return this.findById(id);
     }
 
-    values.push(id, userId);
+    values.push(id);
     const result = await query(
-      `UPDATE ${this.tableName} SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`,
+      `UPDATE ${this.tableName} SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
       values
     );
     return result.rows[0] || null;
@@ -172,9 +172,11 @@ export class LogsRepository extends BaseRepository<DailyLog> {
   }
 
   async delete(id: number, userId: number): Promise<boolean> {
+    // Note: userId parameter kept for backwards compatibility but not used in WHERE clause
+    // Authorization is handled at the service layer
     const result = await query(
-      `DELETE FROM ${this.tableName} WHERE id = $1 AND user_id = $2`,
-      [id, userId]
+      `DELETE FROM ${this.tableName} WHERE id = $1`,
+      [id]
     );
     return result.rowCount !== null && result.rowCount > 0;
   }

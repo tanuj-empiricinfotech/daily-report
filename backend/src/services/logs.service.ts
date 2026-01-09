@@ -179,16 +179,21 @@ export class LogsService {
       this.validateDateAccess(data.date, isAdmin, 'create');
     }
 
+    // When checking project assignment, use the log owner's ID, not the authenticated user's ID
+    // This allows admins to update logs for other users with projects assigned to those users
+    const userIdToCheck = log.user_id;
+
     if (data.project_id) {
-      const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(userId, data.project_id);
+      const isAssigned = await this.assignmentsRepository.isUserAssignedToProject(userIdToCheck, data.project_id);
       if (!isAssigned) {
-        throw new ForbiddenError('You are not assigned to this project');
+        throw new ForbiddenError('User is not assigned to this project');
       }
     }
 
     // Time validation is now handled by the validator middleware
     // No need to check for negative values as time format is HH:MM string
 
+    // Note: We still pass userId (authenticated user) to the repository for audit purposes
     const updated = await this.logsRepository.update(id, data, userId);
     if (!updated) {
       throw new NotFoundError('Log not found');
