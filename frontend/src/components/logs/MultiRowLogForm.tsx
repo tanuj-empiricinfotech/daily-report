@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/lib/query/hooks/useUsers';
 import { useUsersWithProjectsByTeam } from '@/lib/query/hooks/useUsers';
-import type { UserWithProjectsAndTeam } from '@/lib/api/types';
 
 /**
  * Normalizes time input to HH:MM format
@@ -128,7 +127,7 @@ export function MultiRowLogForm({
   // Fetch users with their projects for admin user selection
   // If admin has no team_id, they should still be able to see all users
   const teamId = user?.team_id ?? null;
-  const { data: usersWithProjects = [], isLoading: isLoadingUsers } = useUsersWithProjectsByTeam(teamId);
+  const { data: usersWithProjects = [] } = useUsersWithProjectsByTeam(teamId);
 
   // For admins: use users with their assigned projects if available (from team data)
   // As a fallback (admin with no team), use all users with all projects
