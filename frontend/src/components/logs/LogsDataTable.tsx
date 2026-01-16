@@ -16,6 +16,35 @@ import { formatTimeDisplay, sumTimeStrings } from '@/utils/time';
 import { IconEdit, IconLock } from '@tabler/icons-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ColumnVisibilityMenu } from './ColumnVisibilityMenu';
+import { useColumnVisibility, type ColumnId } from '@/hooks/useColumnVisibility';
+
+interface ColumnConfig {
+  id: ColumnId;
+  label: string;
+  required: boolean;
+  adminOnly?: boolean;
+}
+
+const COLUMN_CONFIGS: ColumnConfig[] = [
+  { id: 'date', label: 'Date', required: true },
+  { id: 'user', label: 'User', required: false, adminOnly: true },
+  { id: 'project', label: 'Project', required: false },
+  { id: 'task', label: 'Task Description', required: false },
+  { id: 'actualTime', label: 'Actual Time', required: false },
+  { id: 'trackedTime', label: 'Tracked Time', required: false },
+  { id: 'actions', label: 'Actions', required: true },
+];
+
+const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = [
+  'date',
+  'user',
+  'project',
+  'task',
+  'actualTime',
+  'trackedTime',
+  'actions',
+];
 
 interface LogsDataTableProps {
   logs: DailyLog[];
@@ -35,6 +64,10 @@ export function LogsDataTable({
   onEdit,
 }: LogsDataTableProps) {
   const navigate = useNavigate();
+
+  const { visibleColumns, toggleColumn, isColumnVisible } = useColumnVisibility({
+    defaultVisibleColumns: DEFAULT_VISIBLE_COLUMNS,
+  });
 
   const getProjectName = useCallback((projectId: number): string => {
     const project = projects.find((p) => p.id === projectId);
@@ -104,6 +137,18 @@ export function LogsDataTable({
     };
   }, [logs]);
 
+  /**
+   * Calculate the number of visible columns before the "Total" cell in footer
+   * Following clean code principles - extracted calculation into separate function
+   */
+  const footerColspan = useMemo(() => {
+    const columnsBeforeTotal = ['date', 'user', 'project', 'task'] as ColumnId[];
+    return columnsBeforeTotal.filter((colId) => {
+      if (colId === 'user' && !isAdmin) return false;
+      return visibleColumns.has(colId);
+    }).length;
+  }, [visibleColumns, isAdmin]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -121,17 +166,26 @@ export function LogsDataTable({
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <ColumnVisibilityMenu
+          visibleColumns={visibleColumns}
+          onToggleColumn={toggleColumn}
+          isAdmin={isAdmin}
+          availableColumns={COLUMN_CONFIGS}
+        />
+      </div>
+      <div className="rounded-md border">
+        <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[15%]">Date</TableHead>
-            {isAdmin && <TableHead className="w-[15%]">User</TableHead>}
-            <TableHead className="w-[20%]">Project</TableHead>
-            <TableHead className="w-[35%]">Task Description</TableHead>
-            <TableHead className="w-[10%]">Actual Time</TableHead>
-            <TableHead className="w-[10%]">Tracked Time</TableHead>
-            <TableHead className="w-[10%]">Actions</TableHead>
+            {isColumnVisible('date') && <TableHead className="w-[15%]">Date</TableHead>}
+            {isAdmin && isColumnVisible('user') && <TableHead className="w-[15%]">User</TableHead>}
+            {isColumnVisible('project') && <TableHead className="w-[20%]">Project</TableHead>}
+            {isColumnVisible('task') && <TableHead className="w-[35%]">Task Description</TableHead>}
+            {isColumnVisible('actualTime') && <TableHead className="w-[10%]">Actual Time</TableHead>}
+            {isColumnVisible('trackedTime') && <TableHead className="w-[10%]">Tracked Time</TableHead>}
+            {isColumnVisible('actions') && <TableHead className="w-[10%]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -200,7 +254,7 @@ export function LogsDataTable({
                   key={log.id}
                   className={isFirstRowInDate ? 'border-t-2 border-t-border' : ''}
                 >
-                  {isFirstRowInDate && (
+                  {isColumnVisible('date') && isFirstRowInDate && (
                     <TableCell
                       rowSpan={flattenedLogs.length}
                       className="align-middle font-medium border-r border-r-border"
@@ -208,7 +262,7 @@ export function LogsDataTable({
                       {formatDisplayDate(group.date)}
                     </TableCell>
                   )}
-                  {isAdmin && isFirstRowForUser && (
+                  {isAdmin && isColumnVisible('user') && isFirstRowForUser && (
                     <TableCell
                       rowSpan={userRowSpan}
                       className="align-middle border-r border-r-border"
@@ -216,7 +270,7 @@ export function LogsDataTable({
                       {getUserName(log.user_id)}
                     </TableCell>
                   )}
-                  {isFirstRowForProject && (
+                  {isColumnVisible('project') && isFirstRowForProject && (
                     <TableCell
                       rowSpan={projectRowSpan}
                       className="align-middle font-medium border-r border-r-border bg-muted/30"
@@ -224,35 +278,43 @@ export function LogsDataTable({
                       {projectName}
                     </TableCell>
                   )}
-                  <TableCell>
-                    <div className="max-w-md truncate" title={log.task_description}>
-                      {log.task_description}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatTimeDisplay(log.actual_time_spent)}</TableCell>
-                  <TableCell>{formatTimeDisplay(log.tracked_time)}</TableCell>
-                  <TableCell>
-                    {!isAdmin && isDateInPast(log.date) ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled
-                        title="Cannot edit past logs"
-                      >
-                        <IconLock className="size-4 mr-2" />
-                        Locked
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(log)}
-                      >
-                        <IconEdit className="size-4 mr-2" />
-                        Edit
-                      </Button>
-                    )}
-                  </TableCell>
+                  {isColumnVisible('task') && (
+                    <TableCell>
+                      <div className="max-w-md truncate" title={log.task_description}>
+                        {log.task_description}
+                      </div>
+                    </TableCell>
+                  )}
+                  {isColumnVisible('actualTime') && (
+                    <TableCell>{formatTimeDisplay(log.actual_time_spent)}</TableCell>
+                  )}
+                  {isColumnVisible('trackedTime') && (
+                    <TableCell>{formatTimeDisplay(log.tracked_time)}</TableCell>
+                  )}
+                  {isColumnVisible('actions') && (
+                    <TableCell>
+                      {!isAdmin && isDateInPast(log.date) ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          title="Cannot edit past logs"
+                        >
+                          <IconLock className="size-4 mr-2" />
+                          Locked
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(log)}
+                        >
+                          <IconEdit className="size-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             });
@@ -261,21 +323,26 @@ export function LogsDataTable({
         <TableFooter>
           <TableRow>
             <TableCell
-              colSpan={isAdmin ? 4 : 3}
+              colSpan={footerColspan}
               className="text-right font-semibold"
             >
               Total:
             </TableCell>
-            <TableCell className="font-semibold">
-              {formatTimeDisplay(totals.actualTime)}
-            </TableCell>
-            <TableCell className="font-semibold">
-              {formatTimeDisplay(totals.trackedTime)}
-            </TableCell>
-            <TableCell />
+            {isColumnVisible('actualTime') && (
+              <TableCell className="font-semibold">
+                {formatTimeDisplay(totals.actualTime)}
+              </TableCell>
+            )}
+            {isColumnVisible('trackedTime') && (
+              <TableCell className="font-semibold">
+                {formatTimeDisplay(totals.trackedTime)}
+              </TableCell>
+            )}
+            {isColumnVisible('actions') && <TableCell />}
           </TableRow>
         </TableFooter>
       </Table>
+    </div>
     </div>
   );
 }
