@@ -72,7 +72,7 @@ export function Projects() {
   const [assignUsersTeamId, setAssignUsersTeamId] = useState<number | null>(null);
 
   // Fetch data
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null);
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null, isAdmin);
   const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
 
   // Mutations
