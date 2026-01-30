@@ -8,7 +8,7 @@
  * '30 14 * * *' = Every day at 14:30 UTC (8:00 PM IST)
  * IST is UTC+5:30, so 8:00 PM IST = 14:30 UTC (20:00 - 5:30 = 14:30)
  */
-export const TEAMS_SUMMARY_CRON_SCHEDULE = '30 16 * * *'; // 8:00 PM IST = 14:30 UTC
+export const TEAMS_SUMMARY_CRON_SCHEDULE = '30 15 * * *'; // 9:00 PM IST = 15:30 UTC
 // export const TEAMS_SUMMARY_CRON_SCHEDULE = '* * * * *';
 
 
