@@ -15,13 +15,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Project, CreateLogDto, DailyLog } from '@/lib/api/types';
-import { formatDate } from '@/utils/formatting';
 import { istToIso } from '@/utils/date';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useUsers } from '@/lib/query/hooks/useUsers';
 import { useUsersWithProjectsByTeam } from '@/lib/query/hooks/useUsers';
+import { useLogFormPersistence } from '@/hooks/useLogFormPersistence';
+import type { LogRow } from '@/store/slices/logFormSlice';
 
 /**
  * Normalizes time input to HH:MM format
@@ -95,15 +96,6 @@ const validateTimeFormat = (input: string): string | undefined => {
   return undefined;
 };
 
-interface LogRow {
-  id: string;
-  projectId: number | '';
-  taskDescription: string;
-  actualTimeSpent: string;
-  trackedTime: string;
-  logId?: number;
-}
-
 interface MultiRowLogFormProps {
   onSubmit: (data: CreateLogDto[]) => Promise<void>;
   onCancel: () => void;
@@ -150,41 +142,22 @@ export function MultiRowLogForm({
     return [];
   }, [isAdmin, usersWithProjects, users, projects]);
 
-  // State for selected user (admin only, when creating logs for others)
-  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
-
-  const [date, setDate] = React.useState<string>(
-    initialData && initialData.length > 0 ? formatDate(initialData[0].date) : formatDate(new Date())
-  );
-  const [rows, setRows] = React.useState<LogRow[]>(() => {
-    if (initialData && initialData.length > 0) {
-      return initialData.map((log, index) => ({
-        id: `log-${log.id}-${index}`,
-        projectId: log.project_id,
-        taskDescription: log.task_description,
-        actualTimeSpent: log.actual_time_spent || '0:00',
-        trackedTime: log.tracked_time || '0:00',
-        logId: log.id,
-      }));
-    }
-    return [{ id: Date.now().toString(), projectId: '', taskDescription: '', actualTimeSpent: '0:00', trackedTime: '0:00' }];
+  // Form state with persistence (only persists in create mode, not edit mode)
+  const {
+    date,
+    setDate,
+    rows,
+    updateRow,
+    addRow,
+    removeRow,
+    selectedUserId,
+    setSelectedUser,
+    resetProjects,
+    clearFormState,
+  } = useLogFormPersistence({
+    isEditMode: !!initialData,
+    initialData,
   });
-
-  React.useEffect(() => {
-    if (initialData && initialData.length > 0) {
-      setDate(formatDate(initialData[0].date));
-      setRows(
-        initialData.map((log, index) => ({
-          id: `log-${log.id}-${index}`,
-          projectId: log.project_id,
-          taskDescription: log.task_description,
-          actualTimeSpent: log.actual_time_spent || '0:00',
-          trackedTime: log.tracked_time || '0:00',
-          logId: log.id,
-        }))
-      );
-    }
-  }, [initialData]);
 
   // Filter projects based on selected user (for admins creating logs for others)
   const filteredProjects = React.useMemo(() => {
@@ -210,36 +183,24 @@ export function MultiRowLogForm({
   }>({});
 
   const handleAddRow = () => {
-    const lastRow = rows[rows.length - 1];
-    const newRow: LogRow = {
-      id: Date.now().toString(),
-      projectId: lastRow?.projectId || '',
-      taskDescription: '',
-      actualTimeSpent: '0:00',
-      trackedTime: '0:00',
-    };
-    setRows([...rows, newRow]);
+    addRow();
   };
 
   const handleRemoveRow = (id: string) => {
-    if (rows.length > 1) {
-      setRows(rows.filter((row) => row.id !== id));
-      // Clear validation errors for removed row
-      const newErrors = { ...validationErrors };
-      if (newErrors.rows?.[id]) {
-        delete newErrors.rows[id];
-        setValidationErrors(newErrors);
-      }
+    removeRow(id);
+    // Clear validation errors for removed row
+    if (validationErrors.rows?.[id]) {
+      const { [id]: _, ...remainingRowErrors } = validationErrors.rows;
+      setValidationErrors({ ...validationErrors, rows: remainingRowErrors });
     }
   };
 
-  const updateRow = (id: string, updates: Partial<LogRow>) => {
-    setRows(rows.map((row) => (row.id === id ? { ...row, ...updates } : row)));
+  const handleUpdateRow = (id: string, updates: Partial<LogRow>) => {
+    updateRow(id, updates);
     // Clear validation errors for this row when user makes changes
-    const newErrors = { ...validationErrors };
-    if (newErrors.rows?.[id]) {
-      delete newErrors.rows[id];
-      setValidationErrors(newErrors);
+    if (validationErrors.rows?.[id]) {
+      const { [id]: _, ...remainingRowErrors } = validationErrors.rows;
+      setValidationErrors({ ...validationErrors, rows: remainingRowErrors });
     }
   };
 
@@ -326,6 +287,8 @@ export function MultiRowLogForm({
 
     try {
       await onSubmit(logEntries);
+      // Clear persisted form state after successful submission
+      clearFormState();
     } catch (err) {
       // Error is handled by parent component
     }
@@ -366,13 +329,13 @@ export function MultiRowLogForm({
                 value={selectedUserId?.toString() || ''}
                 onValueChange={(value) => {
                   const userId = parseInt(value, 10);
-                  setSelectedUserId(userId);
+                  setSelectedUser(userId);
                   // Clear user validation error
                   if (validationErrors.user) {
                     setValidationErrors({ ...validationErrors, user: undefined });
                   }
                   // Reset project selections when user changes
-                  setRows(rows.map((row) => ({ ...row, projectId: '' })));
+                  resetProjects();
                 }}
               >
                 <SelectTrigger id="user-select" className={cn(validationErrors.user ? 'aria-invalid' : '')}>
@@ -424,7 +387,7 @@ export function MultiRowLogForm({
                         <div className="space-y-1">
                           <Select
                             value={row.projectId.toString()}
-                            onValueChange={(value) => updateRow(row.id, { projectId: parseInt(value, 10) })}
+                            onValueChange={(value) => handleUpdateRow(row.id, { projectId: parseInt(value, 10) })}
                           >
                             <SelectTrigger className={cn(rowErrors.projectId ? 'aria-invalid' : '', 'w-full')}>
                               <SelectValue placeholder="Select project" />
@@ -447,7 +410,7 @@ export function MultiRowLogForm({
                           <Textarea
                             placeholder="Enter task description"
                             value={row.taskDescription}
-                            onChange={(e) => updateRow(row.id, { taskDescription: e.target.value })}
+                            onChange={(e) => handleUpdateRow(row.id, { taskDescription: e.target.value })}
                             className={cn(
                               rowErrors.taskDescription ? 'aria-invalid' : '',
                               'min-h-10'
@@ -466,11 +429,11 @@ export function MultiRowLogForm({
                               type="text"
                               value={row.actualTimeSpent}
                               onChange={(e) =>
-                                updateRow(row.id, { actualTimeSpent: e.target.value })
+                                handleUpdateRow(row.id, { actualTimeSpent: e.target.value })
                               }
                               onBlur={(e) => {
                                 const normalized = normalizeTimeInput(e.target.value);
-                                updateRow(row.id, { actualTimeSpent: normalized });
+                                handleUpdateRow(row.id, { actualTimeSpent: normalized });
                               }}
                               placeholder="0:00"
                               className={rowErrors.actualTimeSpent ? 'aria-invalid pr-6' : 'pr-6'}
@@ -491,11 +454,11 @@ export function MultiRowLogForm({
                               type="text"
                               value={row.trackedTime}
                               onChange={(e) =>
-                                updateRow(row.id, { trackedTime: e.target.value })
+                                handleUpdateRow(row.id, { trackedTime: e.target.value })
                               }
                               onBlur={(e) => {
                                 const normalized = normalizeTimeInput(e.target.value);
-                                updateRow(row.id, { trackedTime: normalized });
+                                handleUpdateRow(row.id, { trackedTime: normalized });
                               }}
                               placeholder="0:00"
                               className={rowErrors.trackedTime ? 'aria-invalid pr-6' : 'pr-6'}
@@ -544,7 +507,18 @@ export function MultiRowLogForm({
           )}
 
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                // Clear persisted state only in create mode (not edit mode)
+                if (!initialData) {
+                  clearFormState();
+                }
+                onCancel();
+              }}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

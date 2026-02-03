@@ -13,6 +13,7 @@ import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
 import teamsReducer from './slices/teamsSlice';
 import projectsReducer from './slices/projectsSlice';
+import logFormReducer from './slices/logFormSlice';
 
 const authPersistConfig = {
   key: 'auth',
@@ -29,15 +30,22 @@ const projectsPersistConfig = {
   storage,
 };
 
+const logFormPersistConfig = {
+  key: 'logForm',
+  storage,
+};
+
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedTeamsReducer = persistReducer(teamsPersistConfig, teamsReducer);
 const persistedProjectsReducer = persistReducer(projectsPersistConfig, projectsReducer);
+const persistedLogFormReducer = persistReducer(logFormPersistConfig, logFormReducer);
 
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     teams: persistedTeamsReducer,
     projects: persistedProjectsReducer,
+    logForm: persistedLogFormReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
