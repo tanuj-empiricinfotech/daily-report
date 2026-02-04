@@ -205,6 +205,26 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     dispatch(clearReplyingTo(conversationId));
   };
 
+  // Nudge feature - double click on empty space sends 👉🏻
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    // Only trigger if clicking on the container itself, not on message bubbles
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('[data-message-bubble]') ||
+      target.closest('button') ||
+      target.closest('textarea')
+    ) {
+      return;
+    }
+
+    const localId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sendMessageMutation.mutate({
+      conversationId,
+      content: '👉🏻',
+      localId,
+    });
+  };
+
   if (!conversation) {
     return (
       <div className={cn('flex items-center justify-center h-full', className)}>
@@ -261,6 +281,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
         className="flex-1 overflow-y-auto"
         ref={parentRef}
         onScroll={handleScroll}
+        onDoubleClick={handleDoubleClick}
       >
         {isFetchingNextPage && (
           <div className="flex justify-center py-2">
@@ -417,6 +438,7 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
         )}
 
         <div
+          data-message-bubble
           className={cn(
             'rounded-2xl px-4 py-2 transition-all',
             isOwn
