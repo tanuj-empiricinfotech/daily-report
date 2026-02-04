@@ -226,7 +226,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
               <MessageBubble
                 key={message.local_id || message.id}
                 message={message}
-                isOwn={message.sender_id === user?.id}
+                isOwn={message.sender_id === user?.id || message.status === 'pending'}
               />
             ))}
             <div ref={bottomRef} />
