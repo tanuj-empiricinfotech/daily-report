@@ -43,6 +43,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const lastMarkedAsReadMessageIdRef = useRef<number | null>(null);
 
   const conversation = useSelector((state: RootState) =>
     state.teamChat.conversations.find((c) => c.id === conversationId)
@@ -63,6 +64,10 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
 
   const messages = messagesState?.messages || [];
   const hasMore = messagesState?.hasMore ?? true;
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageId = lastMessage?.id;
+  const lastMessageSenderId = lastMessage?.sender_id;
+  const lastMessageReadAt = lastMessage?.read_at;
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -73,16 +78,30 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
 
   // Mark messages as read when viewing
   useEffect(() => {
-    if (messages.length > 0 && user?.id) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.sender_id !== user.id && !lastMessage.read_at) {
-        markAsReadMutation.mutate({
-          conversationId,
-          upToMessageId: lastMessage.id,
-        });
-      }
-    }
-  }, [conversationId, messages, user?.id]);
+    lastMarkedAsReadMessageIdRef.current = null;
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!lastMessageId || !user?.id) return;
+    if (lastMessageSenderId === user.id) return;
+    if (lastMessageReadAt) return;
+
+    if (lastMarkedAsReadMessageIdRef.current === lastMessageId) return;
+    lastMarkedAsReadMessageIdRef.current = lastMessageId;
+
+    markAsReadMutation.mutate({
+      conversationId,
+      upToMessageId: lastMessageId,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    conversationId,
+    lastMessageId,
+    lastMessageSenderId,
+    lastMessageReadAt,
+    user?.id,
+    // markAsReadMutation excluded - stable function, including causes infinite loop
+  ]);
 
   // Handle scroll for infinite loading
   const handleScroll = useCallback(

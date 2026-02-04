@@ -32,28 +32,25 @@ export function MessagesPage() {
   // Fetch conversations (loading state handled by ConversationList)
   useConversations();
 
-  // Sync URL param with active conversation
+  // Sync URL param to Redux on mount or URL change
   useEffect(() => {
     if (conversationId) {
       const id = parseInt(conversationId, 10);
-      if (!isNaN(id) && id !== activeConversationId) {
+      if (!isNaN(id)) {
         dispatch(setActiveConversation(id));
       }
     }
-  }, [conversationId, activeConversationId, dispatch]);
+  }, [conversationId, dispatch]);
 
-  // Update URL when active conversation changes
+  // Update URL when active conversation changes (only if different from URL)
   useEffect(() => {
-    if (activeConversationId && !conversationId) {
-      navigate(`/messages/${activeConversationId}`, { replace: true });
-    } else if (
-      activeConversationId &&
-      conversationId &&
-      parseInt(conversationId, 10) !== activeConversationId
-    ) {
+    if (!activeConversationId) return;
+
+    const urlId = conversationId ? parseInt(conversationId, 10) : null;
+    if (urlId !== activeConversationId) {
       navigate(`/messages/${activeConversationId}`, { replace: true });
     }
-  }, [activeConversationId, conversationId, navigate]);
+  }, [activeConversationId, navigate]); // Removed conversationId from deps to break the cycle
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background">
