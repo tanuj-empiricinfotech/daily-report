@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import type { RootState } from '@/store/store';
 import { setActiveConversation } from '@/store/slices/teamChatSlice';
 import { useConversations } from '@/lib/query/hooks/useTeamChat';
+import { useTeamChatSSE } from '@/lib/hooks/useTeamChatSSE';
 import {
   ConversationList,
   MessageThread,
@@ -31,6 +32,9 @@ export function MessagesPage() {
 
   // Fetch conversations (loading state handled by ConversationList)
   useConversations();
+
+  // Connect to SSE for real-time updates
+  useTeamChatSSE(true);
 
   // Sync URL param to Redux on mount or URL change
   useEffect(() => {
