@@ -5,7 +5,7 @@
  * Handles message display, composition, and streaming responses.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   AssistantRuntimeProvider,
   ThreadPrimitive,
@@ -13,6 +13,8 @@ import {
   MessagePrimitive,
   useMessagePartText,
   ActionBarPrimitive,
+  useComposerRuntime,
+  useThreadRuntime,
 } from '@assistant-ui/react';
 import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk';
 import { IconSend, IconUser, IconRobot, IconCopy, IconCheck, IconRefresh } from '@tabler/icons-react';
@@ -103,10 +105,20 @@ function EmptyState() {
 
 /**
  * Suggested Prompt Component
+ * Clicking sets the text in the composer input
  */
 function SuggestedPrompt({ text }: { text: string }) {
+  const composerRuntime = useComposerRuntime();
+
+  const handleClick = () => {
+    composerRuntime.setText(text);
+  };
+
   return (
-    <div className="px-4 py-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
+    <div
+      onClick={handleClick}
+      className="px-4 py-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+    >
       {text}
     </div>
   );
@@ -318,8 +330,57 @@ function AssistantMessageActions() {
 /**
  * Composer Component
  * Message input with send button
+ * Handles message persistence - restores text on error
  */
 function Composer() {
+  const composerRuntime = useComposerRuntime();
+  const threadRuntime = useThreadRuntime();
+  const lastSentMessageRef = useRef<string>('');
+  const wasRunningRef = useRef(false);
+  const messageCountBeforeSendRef = useRef(0);
+
+  useEffect(() => {
+    // Subscribe to thread state changes to detect errors
+    const unsubscribe = threadRuntime.subscribe(() => {
+      const state = threadRuntime.getState();
+      const isRunning = state.isRunning;
+
+      // Detect transition from running to not running
+      if (wasRunningRef.current && !isRunning && lastSentMessageRef.current) {
+        const messages = state.messages;
+        const lastMessage = messages[messages.length - 1];
+
+        // Check if an assistant message was added after our user message
+        // If only user message exists (or count didn't increase properly), likely an error
+        const hasNewAssistantResponse =
+          lastMessage?.role === 'assistant' &&
+          messages.length > messageCountBeforeSendRef.current;
+
+        if (!hasNewAssistantResponse) {
+          // Error occurred - restore the message
+          composerRuntime.setText(lastSentMessageRef.current);
+        }
+
+        // Clear stored message after handling
+        lastSentMessageRef.current = '';
+        messageCountBeforeSendRef.current = 0;
+      }
+
+      wasRunningRef.current = isRunning;
+    });
+
+    return unsubscribe;
+  }, [threadRuntime, composerRuntime]);
+
+  const handleSend = () => {
+    // Store the current text and message count before sending
+    const currentText = composerRuntime.getState().text;
+    if (currentText.trim()) {
+      lastSentMessageRef.current = currentText;
+      messageCountBeforeSendRef.current = threadRuntime.getState().messages.length;
+    }
+  };
+
   return (
     <ComposerPrimitive.Root className="border-t p-4">
       <div className="flex gap-2 items-end max-w-4xl mx-auto">
@@ -329,7 +390,11 @@ function Composer() {
           autoFocus
         />
         <ComposerPrimitive.Send asChild>
-          <Button size="icon" className="h-[44px] w-[44px] rounded-xl">
+          <Button
+            size="icon"
+            className="h-[44px] w-[44px] rounded-xl"
+            onClick={handleSend}
+          >
             <IconSend className="h-4 w-4" />
           </Button>
         </ComposerPrimitive.Send>
