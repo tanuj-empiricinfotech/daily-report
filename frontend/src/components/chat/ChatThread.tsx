@@ -6,6 +6,9 @@
  */
 
 import { useMemo, useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import type { RootState } from '@/store/store';
+import { setDraftMessage, clearDraftMessage } from '@/store/slices/chatSlice';
 import {
   AssistantRuntimeProvider,
   ThreadPrimitive,
@@ -330,17 +333,40 @@ function AssistantMessageActions() {
 /**
  * Composer Component
  * Message input with send button
- * Handles message persistence - restores text on error
+ * Handles message persistence via Redux - restores text on error and page reload
  */
 function Composer() {
+  const dispatch = useDispatch();
+  const draftMessage = useSelector((state: RootState) => state.chat.draftMessage);
   const composerRuntime = useComposerRuntime();
   const threadRuntime = useThreadRuntime();
   const lastSentMessageRef = useRef<string>('');
   const wasRunningRef = useRef(false);
   const messageCountBeforeSendRef = useRef(0);
+  const isInitializedRef = useRef(false);
 
+  // Load draft from Redux state on mount
   useEffect(() => {
-    // Subscribe to thread state changes to detect errors
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+    if (draftMessage) {
+      composerRuntime.setText(draftMessage);
+    }
+  }, [composerRuntime, draftMessage]);
+
+  // Subscribe to composer text changes and persist to Redux
+  useEffect(() => {
+    const unsubscribe = composerRuntime.subscribe(() => {
+      const text = composerRuntime.getState().text;
+      dispatch(setDraftMessage(text));
+    });
+
+    return unsubscribe;
+  }, [composerRuntime, dispatch]);
+
+  // Subscribe to thread state changes to detect errors
+  useEffect(() => {
     const unsubscribe = threadRuntime.subscribe(() => {
       const state = threadRuntime.getState();
       const isRunning = state.isRunning;
@@ -359,6 +385,9 @@ function Composer() {
         if (!hasNewAssistantResponse) {
           // Error occurred - restore the message
           composerRuntime.setText(lastSentMessageRef.current);
+        } else {
+          // Success - clear Redux draft
+          dispatch(clearDraftMessage());
         }
 
         // Clear stored message after handling
@@ -370,7 +399,7 @@ function Composer() {
     });
 
     return unsubscribe;
-  }, [threadRuntime, composerRuntime]);
+  }, [threadRuntime, composerRuntime, dispatch]);
 
   const handleSend = () => {
     // Store the current text and message count before sending

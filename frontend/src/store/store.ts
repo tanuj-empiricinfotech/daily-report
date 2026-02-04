@@ -14,6 +14,7 @@ import authReducer from './slices/authSlice';
 import teamsReducer from './slices/teamsSlice';
 import projectsReducer from './slices/projectsSlice';
 import logFormReducer from './slices/logFormSlice';
+import chatReducer from './slices/chatSlice';
 
 const authPersistConfig = {
   key: 'auth',
@@ -35,10 +36,16 @@ const logFormPersistConfig = {
   storage,
 };
 
+const chatPersistConfig = {
+  key: 'chat',
+  storage,
+};
+
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedTeamsReducer = persistReducer(teamsPersistConfig, teamsReducer);
 const persistedProjectsReducer = persistReducer(projectsPersistConfig, projectsReducer);
 const persistedLogFormReducer = persistReducer(logFormPersistConfig, logFormReducer);
+const persistedChatReducer = persistReducer(chatPersistConfig, chatReducer);
 
 export const store = configureStore({
   reducer: {
@@ -46,6 +53,7 @@ export const store = configureStore({
     teams: persistedTeamsReducer,
     projects: persistedProjectsReducer,
     logForm: persistedLogFormReducer,
+    chat: persistedChatReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
