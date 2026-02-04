@@ -408,7 +408,7 @@ export function Team() {
 
       {/* Error Display */}
       {mutationError && (
-        <ErrorDisplay error={(mutationError as Error).message} />
+        <ErrorDisplay error={mutationError as Error} />
       )}
 
       {/* Team Members Table */}

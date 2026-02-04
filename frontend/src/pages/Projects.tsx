@@ -294,7 +294,7 @@ export function Projects() {
 
       {/* Error Display */}
       {mutationError && (
-        <ErrorDisplay error={(mutationError as Error).message} />
+        <ErrorDisplay error={mutationError as Error} />
       )}
 
       {/* Projects Table */}

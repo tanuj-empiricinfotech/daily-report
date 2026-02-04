@@ -118,7 +118,7 @@ export function Login() {
                 </button>
               </div>
             </div>
-            {error && <ErrorDisplay error={error.message} />}
+            {error && <ErrorDisplay error={error} />}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <LoadingSpinner size="sm" /> : isRegister ? 'Register' : 'Login'}
             </Button>

@@ -79,7 +79,7 @@ export function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalP
   };
 
   const isLoading = changePasswordMutation.isPending;
-  const apiError = changePasswordMutation.error?.message;
+  const apiError = changePasswordMutation.error;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -179,7 +179,7 @@ export function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalP
 
           {/* Error Display */}
           {(validationError || apiError) && (
-            <ErrorDisplay error={validationError || apiError || 'An error occurred'} />
+            <ErrorDisplay error={validationError || apiError} />
           )}
 
           {/* Success Message */}

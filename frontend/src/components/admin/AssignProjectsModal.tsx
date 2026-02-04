@@ -130,7 +130,7 @@ export function AssignProjectsModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {error && <ErrorDisplay error={(error as Error).message} />}
+          {error && <ErrorDisplay error={error as Error} />}
 
           {isLoading ? (
             <div className="flex justify-center py-8">
