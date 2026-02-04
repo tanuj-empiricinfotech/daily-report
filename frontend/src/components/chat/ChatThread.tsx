@@ -5,7 +5,7 @@
  * Handles message display, composition, and streaming responses.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AssistantRuntimeProvider,
   ThreadPrimitive,
@@ -16,10 +16,11 @@ import {
 } from '@assistant-ui/react';
 import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk';
 import { IconSend, IconUser, IconRobot, IconCopy, IconCheck, IconRefresh } from '@tabler/icons-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { ChatContextOptions } from '@/lib/api/types';
-import { useState } from 'react';
 
 interface ChatThreadProps {
   apiEndpoint: string;
@@ -133,12 +134,12 @@ function UserMessage() {
  */
 function AssistantMessage() {
   return (
-    <MessagePrimitive.Root className="flex gap-3 p-4">
+    <MessagePrimitive.Root className="flex gap-3 p-4 group">
       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
         <IconRobot className="w-4 h-4 text-primary" />
       </div>
-      <div className="flex flex-col max-w-[80%]">
-        <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-2">
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
           <MessagePrimitive.Content
             components={{
               Text: TextPart,
@@ -153,100 +154,116 @@ function AssistantMessage() {
 
 /**
  * Text Part Component
- * Renders text content with markdown support
+ * Renders text content with full markdown support
  */
 function TextPart() {
   const partText = useMessagePartText();
   // Handle the case where partText might be an object with a text property
   const text = typeof partText === 'string' ? partText : (partText as { text?: string })?.text || '';
+
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
-      <MarkdownContent content={text} />
+    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-table:my-2">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Custom table styling
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-4">
+              <table className="min-w-full border-collapse border border-border text-sm">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-muted/50">{children}</thead>
+          ),
+          th: ({ children }) => (
+            <th className="border border-border px-3 py-2 text-left font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-border px-3 py-2">{children}</td>
+          ),
+          tr: ({ children }) => (
+            <tr className="hover:bg-muted/30">{children}</tr>
+          ),
+          // Custom code styling
+          code: ({ className, children, ...props }) => {
+            const isInline = !className;
+            if (isInline) {
+              return (
+                <code className="bg-muted-foreground/20 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className={cn("block bg-muted p-3 rounded-lg overflow-x-auto text-sm font-mono", className)} {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="bg-muted rounded-lg overflow-x-auto my-3">
+              {children}
+            </pre>
+          ),
+          // Custom list styling
+          ul: ({ children }) => (
+            <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+          ),
+          li: ({ children }) => (
+            <li className="ml-2">{children}</li>
+          ),
+          // Custom heading styling
+          h1: ({ children }) => (
+            <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-lg font-semibold mt-4 mb-2">{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-base font-semibold mt-3 mb-1">{children}</h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="text-sm font-semibold mt-3 mb-1">{children}</h4>
+          ),
+          // Custom paragraph styling
+          p: ({ children }) => (
+            <p className="my-2 leading-relaxed">{children}</p>
+          ),
+          // Custom link styling
+          a: ({ href, children }) => (
+            <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+              {children}
+            </a>
+          ),
+          // Custom blockquote styling
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-primary/30 pl-4 my-3 italic text-muted-foreground">
+              {children}
+            </blockquote>
+          ),
+          // Horizontal rule
+          hr: () => <hr className="my-4 border-border" />,
+          // Strong/bold text
+          strong: ({ children }) => (
+            <strong className="font-semibold">{children}</strong>
+          ),
+          // Emphasis/italic text
+          em: ({ children }) => (
+            <em className="italic">{children}</em>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
     </div>
   );
-}
-
-/**
- * Simple Markdown Renderer
- * Handles basic markdown formatting
- */
-function MarkdownContent({ content }: { content: string }) {
-  // Split content into paragraphs and render with basic formatting
-  const lines = content.split('\n');
-
-  return (
-    <>
-      {lines.map((line, index) => {
-        // Handle headers
-        if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-base font-semibold mt-4 mb-2">{line.slice(4)}</h3>;
-        }
-        if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-lg font-semibold mt-4 mb-2">{line.slice(3)}</h2>;
-        }
-        if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-xl font-bold mt-4 mb-2">{line.slice(2)}</h1>;
-        }
-        // Handle list items
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          return (
-            <div key={index} className="flex gap-2 ml-2">
-              <span className="text-muted-foreground">•</span>
-              <span>{formatInlineMarkdown(line.slice(2))}</span>
-            </div>
-          );
-        }
-        // Handle numbered lists
-        const numberedMatch = line.match(/^(\d+)\.\s/);
-        if (numberedMatch) {
-          return (
-            <div key={index} className="flex gap-2 ml-2">
-              <span className="text-muted-foreground min-w-[1.5rem]">{numberedMatch[1]}.</span>
-              <span>{formatInlineMarkdown(line.slice(numberedMatch[0].length))}</span>
-            </div>
-          );
-        }
-        // Handle empty lines
-        if (line.trim() === '') {
-          return <div key={index} className="h-2" />;
-        }
-        // Regular paragraph
-        return <p key={index} className="my-1">{formatInlineMarkdown(line)}</p>;
-      })}
-    </>
-  );
-}
-
-/**
- * Format inline markdown (bold, italic, code)
- */
-function formatInlineMarkdown(text: string): React.ReactNode {
-  // Simple regex-based formatting - could be enhanced with a proper markdown parser
-  const parts: React.ReactNode[] = [];
-  let key = 0;
-
-  // Handle code blocks
-  const codeRegex = /`([^`]+)`/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = codeRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    parts.push(
-      <code key={key++} className="bg-muted-foreground/20 px-1 py-0.5 rounded text-sm">
-        {match[1]}
-      </code>
-    );
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : text;
 }
 
 /**
@@ -257,7 +274,7 @@ function AssistantMessageActions() {
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
       <ActionBarPrimitive.Root>
         <ActionBarPrimitive.Copy
           onClick={() => {
@@ -265,17 +282,17 @@ function AssistantMessageActions() {
             setTimeout(() => setCopied(false), 2000);
           }}
         >
-          <Button variant="ghost" size="icon" className="h-6 w-6">
+          <Button variant="ghost" size="icon" className="h-7 w-7">
             {copied ? (
-              <IconCheck className="h-3 w-3 text-green-500" />
+              <IconCheck className="h-3.5 w-3.5 text-green-500" />
             ) : (
-              <IconCopy className="h-3 w-3" />
+              <IconCopy className="h-3.5 w-3.5" />
             )}
           </Button>
         </ActionBarPrimitive.Copy>
         <ActionBarPrimitive.Reload>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <IconRefresh className="h-3 w-3" />
+          <Button variant="ghost" size="icon" className="h-7 w-7">
+            <IconRefresh className="h-3.5 w-3.5" />
           </Button>
         </ActionBarPrimitive.Reload>
       </ActionBarPrimitive.Root>
