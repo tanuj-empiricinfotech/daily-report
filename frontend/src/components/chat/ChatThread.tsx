@@ -20,6 +20,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { ChatContextOptions } from '@/lib/api/types';
 
 interface ChatThreadProps {
@@ -276,25 +277,39 @@ function AssistantMessageActions() {
   return (
     <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
       <ActionBarPrimitive.Root>
-        <ActionBarPrimitive.Copy
-          onClick={() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
-        >
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            {copied ? (
-              <IconCheck className="h-3.5 w-3.5 text-green-500" />
-            ) : (
-              <IconCopy className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </ActionBarPrimitive.Copy>
-        <ActionBarPrimitive.Reload>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <IconRefresh className="h-3.5 w-3.5" />
-          </Button>
-        </ActionBarPrimitive.Reload>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Copy
+              onClick={() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                {copied ? (
+                  <IconCheck className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <IconCopy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </ActionBarPrimitive.Copy>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {copied ? 'Copied!' : 'Copy message'}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Reload>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <IconRefresh className="h-3.5 w-3.5" />
+              </Button>
+            </ActionBarPrimitive.Reload>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Regenerate response
+          </TooltipContent>
+        </Tooltip>
       </ActionBarPrimitive.Root>
     </div>
   );
