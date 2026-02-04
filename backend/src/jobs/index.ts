@@ -6,6 +6,7 @@
  */
 
 import { TeamsDailySummaryJob } from './teams-daily-summary.job';
+import { VanishingMessagesCleanupJob } from './vanishing-messages-cleanup.job';
 
 /**
  * Initialize and start all scheduled jobs
@@ -20,6 +21,10 @@ export function initializeJobs(): void {
     const teamsSummaryJob = new TeamsDailySummaryJob();
     teamsSummaryJob.start();
 
+    // Initialize vanishing messages cleanup job
+    const vanishingCleanupJob = new VanishingMessagesCleanupJob();
+    vanishingCleanupJob.start();
+
     console.log('All scheduled jobs initialized successfully');
   } catch (error) {
     console.error('Failed to initialize scheduled jobs:', error);
@@ -30,4 +35,4 @@ export function initializeJobs(): void {
 /**
  * Export job classes for manual testing
  */
-export { TeamsDailySummaryJob };
+export { TeamsDailySummaryJob, VanishingMessagesCleanupJob };

@@ -50,5 +50,21 @@ export const endpoints = {
     send: `${API_BASE}/chat`,
     getContext: `${API_BASE}/chat/context`,
   },
+  teamChat: {
+    // Conversations
+    conversations: `${API_BASE}/team-chat/conversations`,
+    conversation: (id: number) => `${API_BASE}/team-chat/conversations/${id}`,
+    // Messages
+    messages: (conversationId: number) => `${API_BASE}/team-chat/conversations/${conversationId}/messages`,
+    deleteMessage: (messageId: number) => `${API_BASE}/team-chat/messages/${messageId}`,
+    // Actions
+    vanishingMode: (conversationId: number) => `${API_BASE}/team-chat/conversations/${conversationId}/vanishing`,
+    markAsRead: (conversationId: number) => `${API_BASE}/team-chat/conversations/${conversationId}/read`,
+    typing: (conversationId: number) => `${API_BASE}/team-chat/conversations/${conversationId}/typing`,
+    // Notifications
+    unreadNotifications: `${API_BASE}/team-chat/notifications/unread`,
+    // SSE Events
+    events: `${API_BASE}/team-chat/events`,
+  },
 };
 

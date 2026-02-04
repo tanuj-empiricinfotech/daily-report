@@ -17,6 +17,7 @@ import { Team } from './pages/Team';
 import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
 import { ChatPage } from './pages/ChatPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -92,6 +93,26 @@ function AppRoutes() {
           <ProtectedRoute>
             <DashboardLayout>
               <ChatPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <MessagesPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages/:conversationId"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <MessagesPage />
             </DashboardLayout>
           </ProtectedRoute>
         }

@@ -6,6 +6,7 @@ import assignmentsRoutes from './assignments';
 import usersRoutes from './users';
 import logsRoutes from './logs';
 import chatRoutes from './chat';
+import teamChatRoutes from './team-chat';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/assignments', assignmentsRoutes);
 router.use('/users', usersRoutes);
 router.use('/logs', logsRoutes);
 router.use('/chat', chatRoutes);
+router.use('/team-chat', teamChatRoutes);
 
 export default router;
 

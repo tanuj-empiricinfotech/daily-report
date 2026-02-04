@@ -37,3 +37,40 @@ export const WEBHOOK_RETRY_DELAY_MS = 2000;
  * Whether to skip notifications for teams with no activity
  */
 export const SKIP_EMPTY_SUMMARIES = true;
+
+// ============================================================================
+// Team Chat Configuration
+// ============================================================================
+
+/**
+ * Cron schedule for vanishing messages cleanup job
+ * Runs every 5 minutes to delete expired messages
+ */
+export const VANISHING_CLEANUP_CRON_SCHEDULE = '*/5 * * * *';
+
+/**
+ * SSE heartbeat interval in milliseconds
+ * Sends a keep-alive ping to maintain connection
+ */
+export const SSE_HEARTBEAT_INTERVAL_MS = 30000;
+
+/**
+ * SSE connection timeout in milliseconds
+ * Closes connections with no activity after this period
+ */
+export const SSE_CONNECTION_TIMEOUT_MS = 300000;
+
+/**
+ * Maximum message content length in characters
+ */
+export const MAX_MESSAGE_LENGTH = 5000;
+
+/**
+ * Default vanishing mode duration in hours
+ */
+export const DEFAULT_VANISHING_DURATION_HOURS = 24;
+
+/**
+ * Number of messages to fetch per page
+ */
+export const MESSAGES_PER_PAGE = 50;

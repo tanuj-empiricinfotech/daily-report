@@ -14,6 +14,7 @@ import {
     IconLogout,
     IconPlus,
     IconMessageCircle,
+    IconMessages,
 } from '@tabler/icons-react';
 import {
     Sidebar,
@@ -61,6 +62,12 @@ const mainNavItems = [
         url: '/chat',
         icon: IconMessageCircle,
         description: 'AI chat with logs',
+    },
+    {
+        title: 'Messages',
+        url: '/messages',
+        icon: IconMessages,
+        description: 'Team messaging',
     },
 ];
 

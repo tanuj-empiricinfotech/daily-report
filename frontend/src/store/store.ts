@@ -15,6 +15,7 @@ import teamsReducer from './slices/teamsSlice';
 import projectsReducer from './slices/projectsSlice';
 import logFormReducer from './slices/logFormSlice';
 import chatReducer from './slices/chatSlice';
+import teamChatReducer from './slices/teamChatSlice';
 
 const authPersistConfig = {
   key: 'auth',
@@ -41,11 +42,18 @@ const chatPersistConfig = {
   storage,
 };
 
+const teamChatPersistConfig = {
+  key: 'teamChat',
+  storage,
+  whitelist: ['drafts', 'isMuted'], // Only persist drafts and mute preference
+};
+
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedTeamsReducer = persistReducer(teamsPersistConfig, teamsReducer);
 const persistedProjectsReducer = persistReducer(projectsPersistConfig, projectsReducer);
 const persistedLogFormReducer = persistReducer(logFormPersistConfig, logFormReducer);
 const persistedChatReducer = persistReducer(chatPersistConfig, chatReducer);
+const persistedTeamChatReducer = persistReducer(teamChatPersistConfig, teamChatReducer);
 
 export const store = configureStore({
   reducer: {
@@ -54,6 +62,7 @@ export const store = configureStore({
     projects: persistedProjectsReducer,
     logForm: persistedLogFormReducer,
     chat: persistedChatReducer,
+    teamChat: persistedTeamChatReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
