@@ -13,6 +13,7 @@ import {
     IconSettings,
     IconLogout,
     IconPlus,
+    IconMessageCircle,
 } from '@tabler/icons-react';
 import {
     Sidebar,
@@ -54,6 +55,12 @@ const mainNavItems = [
         url: '/logs',
         icon: IconClipboardList,
         description: 'Log your work',
+    },
+    {
+        title: 'Chat',
+        url: '/chat',
+        icon: IconMessageCircle,
+        description: 'AI chat with logs',
     },
 ];
 

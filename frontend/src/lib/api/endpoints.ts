@@ -46,5 +46,9 @@ export const endpoints = {
     update: (id: number) => `${API_BASE}/logs/${id}`,
     delete: (id: number) => `${API_BASE}/logs/${id}`,
   },
+  chat: {
+    send: `${API_BASE}/chat`,
+    getContext: `${API_BASE}/chat/context`,
+  },
 };
 

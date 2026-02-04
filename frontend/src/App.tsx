@@ -16,6 +16,7 @@ import { ProjectDetails } from './pages/ProjectDetails';
 import { Team } from './pages/Team';
 import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
+import { ChatPage } from './pages/ChatPage';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -81,6 +82,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <DashboardLayout>
               <Settings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ChatPage />
             </DashboardLayout>
           </ProtectedRoute>
         }

@@ -45,3 +45,23 @@ export const normalizeDateForComparison = (date: string | Date): string => {
   return formatDate(date);
 };
 
+/**
+ * Formats a date range for display
+ * Returns a compact string like "Jan 01 - Jan 07, 2024"
+ */
+export const formatDateRange = (startDate: string, endDate: string): string => {
+  const start = parseISO(startDate.split('T')[0] + 'T00:00:00');
+  const end = parseISO(endDate.split('T')[0] + 'T00:00:00');
+
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+
+  if (sameMonth) {
+    return `${format(start, 'MMM dd')} - ${format(end, 'dd, yyyy')}`;
+  } else if (sameYear) {
+    return `${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
+  } else {
+    return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
+  }
+};
+
