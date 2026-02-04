@@ -42,11 +42,11 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
       return { conversation: existing.rows[0], created: false };
     }
 
-    // Create new conversation
+    // Create new conversation with vanishing mode enabled by default
     const result = await query(
       `INSERT INTO ${this.tableName}
-       (participant_one_id, participant_two_id, team_id, vanishing_duration_hours)
-       VALUES ($1, $2, $3, $4)
+       (participant_one_id, participant_two_id, team_id, vanishing_mode, vanishing_duration_hours)
+       VALUES ($1, $2, $3, TRUE, $4)
        RETURNING *`,
       [participantOneId, participantTwoId, teamId, DEFAULT_VANISHING_DURATION_HOURS]
     );
