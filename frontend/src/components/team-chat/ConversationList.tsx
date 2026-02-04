@@ -121,13 +121,17 @@ function ConversationItem({ conversation, isActive, onClick }: ConversationItemP
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-3 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left',
-        isActive && 'bg-muted'
+        'w-full p-3 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left relative',
+        isActive && 'bg-muted',
+        hasUnread && !isActive && 'bg-primary/5 border-l-2 border-l-primary'
       )}
     >
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <IconUser className="w-5 h-5 text-primary" />
+      <div className={cn(
+        'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+        hasUnread ? 'bg-primary/20' : 'bg-primary/10'
+      )}>
+        <IconUser className={cn('w-5 h-5', hasUnread ? 'text-primary' : 'text-primary')} />
       </div>
 
       {/* Content */}

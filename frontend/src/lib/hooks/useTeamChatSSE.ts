@@ -16,6 +16,7 @@ import {
   setConnectionStatus,
   incrementUnreadCount,
   updateLastMessage,
+  setActiveConversation,
   type Message,
 } from '@/store/slices/teamChatSlice';
 
@@ -25,6 +26,51 @@ import {
 
 const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000]; // Exponential backoff
 const MAX_RECONNECT_ATTEMPTS = 10;
+
+// ============================================================================
+// Browser Notification Helpers
+// ============================================================================
+
+const requestNotificationPermission = async (): Promise<boolean> => {
+  if (!('Notification' in window)) {
+    console.log('Browser does not support notifications');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+
+  return false;
+};
+
+const showBrowserNotification = (
+  title: string,
+  body: string,
+  onClick?: () => void
+): void => {
+  if (Notification.permission !== 'granted') return;
+
+  const notification = new Notification(title, {
+    body,
+    icon: '/favicon.ico',
+    tag: 'team-chat-message',
+  } as NotificationOptions);
+
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+    onClick?.();
+  };
+
+  // Auto-close after 5 seconds
+  setTimeout(() => notification.close(), 5000);
+};
 
 // ============================================================================
 // SSE Event Types
@@ -65,8 +111,8 @@ export function useTeamChatSSE(enabled: boolean = true) {
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const activeConversationId = useSelector(
-    (state: RootState) => state.teamChat.activeConversationId
+  const { activeConversationId, isMuted, conversations } = useSelector(
+    (state: RootState) => state.teamChat
   );
 
   // Handle new message event
@@ -87,11 +133,27 @@ export function useTeamChatSSE(enabled: boolean = true) {
       );
 
       // Increment unread if not the active conversation
-      if (conversation_id !== activeConversationId) {
+      const isActiveConversation = conversation_id === activeConversationId;
+      if (!isActiveConversation) {
         dispatch(incrementUnreadCount(conversation_id));
       }
+
+      // Show browser notification if tab is not focused or not viewing this conversation
+      if (!isMuted && (!document.hasFocus() || !isActiveConversation)) {
+        const senderName = message.sender_name || 'Someone';
+        const conversation = conversations.find(c => c.id === conversation_id);
+        const title = conversation?.other_participant_name || senderName;
+        const body = message.content.length > 100
+          ? message.content.substring(0, 100) + '...'
+          : message.content;
+
+        showBrowserNotification(title, body, () => {
+          // Focus the conversation when notification is clicked
+          dispatch(setActiveConversation(conversation_id));
+        });
+      }
     },
-    [dispatch, activeConversationId]
+    [dispatch, activeConversationId, isMuted, conversations]
   );
 
   // Handle message read event
@@ -147,6 +209,9 @@ export function useTeamChatSSE(enabled: boolean = true) {
       console.log('SSE: Connected');
       dispatch(setConnectionStatus('connected'));
       reconnectAttemptRef.current = 0;
+
+      // Request notification permission
+      requestNotificationPermission();
     };
 
     eventSource.onerror = () => {
