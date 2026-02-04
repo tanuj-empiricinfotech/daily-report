@@ -138,8 +138,8 @@ export function useTeamChatSSE(enabled: boolean = true) {
         dispatch(incrementUnreadCount(conversation_id));
       }
 
-      // Show browser notification if tab is not focused or not viewing this conversation
-      if (!isMuted && (!document.hasFocus() || !isActiveConversation)) {
+      // Show browser notification only if not viewing this conversation
+      if (!isMuted && !isActiveConversation) {
         const senderName = message.sender_name || 'Someone';
         const conversation = conversations.find(c => c.id === conversation_id);
         const title = conversation?.other_participant_name || senderName;
