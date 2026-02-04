@@ -57,7 +57,7 @@ const mainNavItems = [
         description: 'Log your work',
     },
     {
-        title: 'Chat',
+        title: 'AI Chat',
         url: '/chat',
         icon: IconMessageCircle,
         description: 'AI chat with logs',
