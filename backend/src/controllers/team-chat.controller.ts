@@ -153,12 +153,13 @@ export class TeamChatController {
     try {
       const userId = req.user!.userId;
       const conversationId = parseInt(req.params.conversationId, 10);
-      const { content }: CreateMessageDto = req.body;
+      const { content, reply_to_message_id }: CreateMessageDto = req.body;
 
-      const { message, conversation } = await this.messagesService.sendMessage(
+      const { message } = await this.messagesService.sendMessage(
         conversationId,
         userId,
-        content
+        content,
+        reply_to_message_id
       );
 
       // Broadcast to other participant via SSE

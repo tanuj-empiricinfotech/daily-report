@@ -100,6 +100,10 @@ router.post(
       .withMessage('Message content is required')
       .isLength({ max: MAX_MESSAGE_LENGTH })
       .withMessage(`Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`),
+    body('reply_to_message_id')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('reply_to_message_id must be a positive integer'),
   ],
   handleValidationErrors,
   controller.sendMessage

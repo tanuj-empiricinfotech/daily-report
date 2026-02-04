@@ -34,7 +34,8 @@ export class MessagesService {
   async sendMessage(
     conversationId: number,
     senderId: number,
-    content: string
+    content: string,
+    replyToMessageId?: number
   ): Promise<{ message: MessageWithSender; conversation: Conversation }> {
     // Validate content
     const trimmedContent = content.trim();
@@ -56,6 +57,14 @@ export class MessagesService {
       throw new NotFoundError('Conversation not found');
     }
 
+    // Validate reply_to_message_id if provided
+    if (replyToMessageId) {
+      const replyToMessage = await this.messagesRepository.findById(replyToMessageId);
+      if (!replyToMessage || replyToMessage.conversation_id !== conversationId) {
+        throw new BadRequestError('Invalid reply message');
+      }
+    }
+
     // Calculate expiration for vanishing messages
     let expiresAt: Date | null = null;
     if (conversation.vanishing_mode) {
@@ -69,7 +78,8 @@ export class MessagesService {
       senderId,
       trimmedContent,
       conversation.vanishing_mode,
-      expiresAt
+      expiresAt,
+      replyToMessageId
     );
 
     // Update conversation's last message timestamp

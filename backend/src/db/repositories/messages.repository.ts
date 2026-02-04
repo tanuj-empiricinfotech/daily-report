@@ -21,21 +21,22 @@ export class MessagesRepository extends BaseRepository<Message> {
     senderId: number,
     content: string,
     isVanishing: boolean,
-    expiresAt: Date | null
+    expiresAt: Date | null,
+    replyToMessageId?: number
   ): Promise<Message> {
     const result = await query(
       `INSERT INTO ${this.tableName}
-       (conversation_id, sender_id, content, is_vanishing, expires_at)
-       VALUES ($1, $2, $3, $4, $5)
+       (conversation_id, sender_id, content, is_vanishing, expires_at, reply_to_message_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [conversationId, senderId, content, isVanishing, expiresAt]
+      [conversationId, senderId, content, isVanishing, expiresAt, replyToMessageId || null]
     );
 
     return result.rows[0];
   }
 
   /**
-   * Find messages for a conversation with sender details
+   * Find messages for a conversation with sender details and reply info
    * Supports cursor-based pagination (load older messages)
    */
   async findByConversationId(
@@ -44,9 +45,17 @@ export class MessagesRepository extends BaseRepository<Message> {
     beforeMessageId?: number
   ): Promise<{ messages: MessageWithSender[]; hasMore: boolean }> {
     let sql = `
-      SELECT m.*, u.name as sender_name
+      SELECT
+        m.*,
+        u.name as sender_name,
+        rm.id as reply_to_id,
+        rm.content as reply_to_content,
+        rm.sender_id as reply_to_sender_id,
+        ru.name as reply_to_sender_name
       FROM ${this.tableName} m
       JOIN users u ON m.sender_id = u.id
+      LEFT JOIN ${this.tableName} rm ON m.reply_to_message_id = rm.id
+      LEFT JOIN users ru ON rm.sender_id = ru.id
       WHERE m.conversation_id = $1
     `;
     const params: (number | undefined)[] = [conversationId];
@@ -63,25 +72,82 @@ export class MessagesRepository extends BaseRepository<Message> {
 
     const result = await query(sql, params);
     const hasMore = result.rows.length > limit;
-    const messages = result.rows.slice(0, limit);
+    const rawMessages = result.rows.slice(0, limit);
+
+    // Transform to include reply_to object
+    const messages: MessageWithSender[] = rawMessages.map((row) => {
+      const message: MessageWithSender = {
+        id: row.id,
+        conversation_id: row.conversation_id,
+        sender_id: row.sender_id,
+        content: row.content,
+        is_vanishing: row.is_vanishing,
+        expires_at: row.expires_at,
+        read_at: row.read_at,
+        reply_to_message_id: row.reply_to_message_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        sender_name: row.sender_name,
+        reply_to: row.reply_to_id
+          ? {
+              id: row.reply_to_id,
+              content: row.reply_to_content,
+              sender_id: row.reply_to_sender_id,
+              sender_name: row.reply_to_sender_name,
+            }
+          : null,
+      };
+      return message;
+    });
 
     // Reverse to show oldest first in the UI
     return { messages: messages.reverse(), hasMore };
   }
 
   /**
-   * Find a message by ID with sender details
+   * Find a message by ID with sender details and reply info
    */
   async findByIdWithSender(messageId: number): Promise<MessageWithSender | null> {
     const result = await query(
-      `SELECT m.*, u.name as sender_name
+      `SELECT
+        m.*,
+        u.name as sender_name,
+        rm.id as reply_to_id,
+        rm.content as reply_to_content,
+        rm.sender_id as reply_to_sender_id,
+        ru.name as reply_to_sender_name
        FROM ${this.tableName} m
        JOIN users u ON m.sender_id = u.id
+       LEFT JOIN ${this.tableName} rm ON m.reply_to_message_id = rm.id
+       LEFT JOIN users ru ON rm.sender_id = ru.id
        WHERE m.id = $1`,
       [messageId]
     );
 
-    return result.rows[0] || null;
+    const row = result.rows[0];
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      conversation_id: row.conversation_id,
+      sender_id: row.sender_id,
+      content: row.content,
+      is_vanishing: row.is_vanishing,
+      expires_at: row.expires_at,
+      read_at: row.read_at,
+      reply_to_message_id: row.reply_to_message_id,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      sender_name: row.sender_name,
+      reply_to: row.reply_to_id
+        ? {
+            id: row.reply_to_id,
+            content: row.reply_to_content,
+            sender_id: row.reply_to_sender_id,
+            sender_name: row.reply_to_sender_name,
+          }
+        : null,
+    };
   }
 
   /**

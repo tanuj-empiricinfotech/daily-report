@@ -183,21 +183,27 @@ export const useSendMessage = () => {
       conversationId,
       content,
       localId,
+      replyToMessageId,
     }: {
       conversationId: number;
       content: string;
       localId: string;
+      replyToMessageId?: number;
+      replyTo?: Message['reply_to'];
     }) => {
       const response = await fetchWithCredentials<ApiResponse<Message>>(
         endpoints.teamChat.messages(conversationId),
         {
           method: 'POST',
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({
+            content,
+            reply_to_message_id: replyToMessageId,
+          }),
         }
       );
       return { message: response.data, localId };
     },
-    onMutate: async ({ conversationId, content, localId }) => {
+    onMutate: async ({ conversationId, content, localId, replyToMessageId, replyTo }) => {
       // Optimistic update
       const pendingMessage: Message = {
         id: -Date.now(), // Temporary negative ID
@@ -207,6 +213,8 @@ export const useSendMessage = () => {
         is_vanishing: false,
         expires_at: null,
         read_at: null,
+        reply_to_message_id: replyToMessageId,
+        reply_to: replyTo,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         status: 'pending',

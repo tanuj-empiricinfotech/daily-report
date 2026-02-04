@@ -28,6 +28,13 @@ export interface Conversation {
   last_message_preview?: string | null;
 }
 
+export interface ReplyInfo {
+  id: number;
+  content: string;
+  sender_id: number;
+  sender_name: string;
+}
+
 export interface Message {
   id: number;
   conversation_id: number;
@@ -37,6 +44,8 @@ export interface Message {
   is_vanishing: boolean;
   expires_at: string | null;
   read_at: string | null;
+  reply_to_message_id?: number | null;
+  reply_to?: ReplyInfo | null;
   created_at: string;
   updated_at: string;
   // For optimistic updates
@@ -76,6 +85,9 @@ interface TeamChatState {
   // Draft messages (keyed by conversation ID)
   drafts: Record<number, string>;
 
+  // Reply state (keyed by conversation ID)
+  replyingTo: Record<number, Message | null>;
+
   // Pending/optimistic messages
   pendingMessages: Record<string, Message>;
 
@@ -101,6 +113,7 @@ const initialState: TeamChatState = {
 
   messagesByConversation: {},
   drafts: {},
+  replyingTo: {},
   pendingMessages: {},
 
   onlineUsers: {},
@@ -305,6 +318,22 @@ const teamChatSlice = createSlice({
     },
 
     // ========================================
+    // Reply Actions
+    // ========================================
+
+    setReplyingTo(state, action: PayloadAction<{ conversationId: number; message: Message | null }>) {
+      if (action.payload.message) {
+        state.replyingTo[action.payload.conversationId] = action.payload.message;
+      } else {
+        delete state.replyingTo[action.payload.conversationId];
+      }
+    },
+
+    clearReplyingTo(state, action: PayloadAction<number>) {
+      delete state.replyingTo[action.payload];
+    },
+
+    // ========================================
     // Presence Actions
     // ========================================
 
@@ -394,6 +423,10 @@ export const {
   // Drafts
   setDraft,
   clearDraft,
+
+  // Reply
+  setReplyingTo,
+  clearReplyingTo,
 
   // Presence
   setUserOnline,

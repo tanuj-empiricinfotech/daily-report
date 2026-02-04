@@ -28,8 +28,16 @@ export interface Message {
   is_vanishing: boolean;
   expires_at: Date | null;
   read_at: Date | null;
+  reply_to_message_id: number | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface ReplyInfo {
+  id: number;
+  content: string;
+  sender_id: number;
+  sender_name: string;
 }
 
 export interface ChatNotification {
@@ -54,6 +62,7 @@ export interface ConversationWithDetails extends Conversation {
 
 export interface MessageWithSender extends Message {
   sender_name: string;
+  reply_to?: ReplyInfo | null;
 }
 
 export interface UnreadSummary {
@@ -73,6 +82,7 @@ export interface CreateConversationDto {
 
 export interface CreateMessageDto {
   content: string;
+  reply_to_message_id?: number;
 }
 
 export interface UpdateVanishingModeDto {
