@@ -25,6 +25,33 @@ import { useLogFormPersistence } from '@/hooks/useLogFormPersistence';
 import type { LogRow } from '@/store/slices/logFormSlice';
 
 /**
+ * Parses time string (H:MM or H) to decimal hours
+ */
+const parseTimeToDecimal = (input: string): number => {
+  const trimmed = input.trim();
+  if (!trimmed || trimmed === '0:00') return 0;
+
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    return hours + minutes / 60;
+  }
+
+  const num = parseFloat(trimmed);
+  return isNaN(num) ? 0 : num;
+};
+
+/**
+ * Formats decimal hours to H:MM display format
+ */
+const formatDecimalToTime = (decimal: number): string => {
+  const hours = Math.floor(decimal);
+  const minutes = Math.round((decimal - hours) * 60);
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+};
+
+/**
  * Normalizes time input to HH:MM format
  * - "8" → "8:00"
  * - "3:30" → "3:30"
@@ -181,6 +208,22 @@ export function MultiRowLogForm({
     rows?: Record<string, Record<string, string>>;
     general?: string;
   }>({});
+
+  // Calculate total hours for display
+  const totalHours = React.useMemo(() => {
+    let actualTotal = 0;
+    let trackedTotal = 0;
+
+    rows.forEach((row) => {
+      actualTotal += parseTimeToDecimal(row.actualTimeSpent);
+      trackedTotal += parseTimeToDecimal(row.trackedTime);
+    });
+
+    return {
+      actual: formatDecimalToTime(actualTotal),
+      tracked: formatDecimalToTime(trackedTotal),
+    };
+  }, [rows]);
 
   const handleAddRow = () => {
     addRow();
@@ -501,6 +544,20 @@ export function MultiRowLogForm({
               })}
             </TableBody>
           </Table>
+
+          {/* Total Hours Section */}
+          <div className="flex justify-end border-t pt-3">
+            <div className="flex gap-8 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Total Actual:</span>
+                <span className="font-medium">{totalHours.actual} h</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Total Tracked:</span>
+                <span className="font-medium">{totalHours.tracked} h</span>
+              </div>
+            </div>
+          </div>
 
           {validationErrors.general && (
             <p className="text-sm text-destructive">{validationErrors.general}</p>

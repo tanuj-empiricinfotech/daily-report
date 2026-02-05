@@ -345,7 +345,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       {replyingTo && (
         <div className="px-4 pt-2 border-t bg-muted/30">
           <div className="flex items-start gap-2 p-2 rounded bg-muted/50">
-            <IconArrowBackUp className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <IconArrowBackUp className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-muted-foreground">
                 Replying to {replyingTo.sender_name || 'Unknown'}
@@ -355,7 +355,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 flex-shrink-0"
+              className="h-6 w-6 shrink-0"
               onClick={handleCancelReply}
             >
               <IconX className="h-4 w-4" />
@@ -379,7 +379,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
           />
           <Button
             size="icon"
-            className="h-[44px] w-[44px] flex-shrink-0"
+            className="h-[44px] w-[44px] shrink-0"
             onClick={handleSend}
             disabled={!draft.trim() || sendMessageMutation.isPending}
           >
@@ -478,7 +478,7 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
             <p className="text-xs font-medium mb-1">{message.sender_name}</p>
           )}
 
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
 
           <div
             className={cn(
