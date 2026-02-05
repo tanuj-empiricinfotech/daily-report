@@ -86,7 +86,7 @@ export class TeamChatController {
 
   /**
    * GET /api/team-chat/conversations/:conversationId
-   * Get a single conversation by ID
+   * Get a single conversation by ID with full details
    */
   getConversation = async (
     req: AuthRequest,
@@ -97,7 +97,7 @@ export class TeamChatController {
       const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
 
-      const conversation = await this.conversationsService.getConversationById(
+      const conversation = await this.conversationsService.getConversationByIdWithDetails(
         conversationId,
         userId
       );

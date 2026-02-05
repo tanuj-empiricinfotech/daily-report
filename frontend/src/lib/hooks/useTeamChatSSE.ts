@@ -11,6 +11,7 @@ import { endpoints } from '@/lib/api/endpoints';
 import type { RootState } from '@/store/store';
 import {
   addMessage,
+  addConversation,
   updateConversation,
   setTypingUser,
   setConnectionStatus,
@@ -18,6 +19,7 @@ import {
   updateLastMessage,
   setActiveConversation,
   type Message,
+  type Conversation,
 } from '@/store/slices/teamChatSlice';
 
 // ============================================================================
@@ -110,6 +112,7 @@ export function useTeamChatSSE(enabled: boolean = true) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchingConversationsRef = useRef<Set<number>>(new Set());
 
   const { activeConversationId, isMuted, conversations } = useSelector(
     (state: RootState) => state.teamChat
@@ -117,8 +120,29 @@ export function useTeamChatSSE(enabled: boolean = true) {
 
   // Handle new message event
   const handleNewMessage = useCallback(
-    (data: SSENewMessageEvent) => {
+    async (data: SSENewMessageEvent) => {
       const { conversation_id, message } = data;
+
+      // Check if conversation exists in Redux
+      const conversationExists = conversations.some(c => c.id === conversation_id);
+
+      // Fetch conversation if it doesn't exist (and not already fetching)
+      if (!conversationExists && !fetchingConversationsRef.current.has(conversation_id)) {
+        fetchingConversationsRef.current.add(conversation_id);
+        try {
+          const response = await fetch(endpoints.teamChat.conversation(conversation_id), {
+            credentials: 'include',
+          });
+          if (response.ok) {
+            const result = await response.json();
+            dispatch(addConversation(result.data as Conversation));
+          }
+        } catch (error) {
+          console.error('Failed to fetch new conversation:', error);
+        } finally {
+          fetchingConversationsRef.current.delete(conversation_id);
+        }
+      }
 
       // Add message to store
       dispatch(addMessage(message));
@@ -141,6 +165,7 @@ export function useTeamChatSSE(enabled: boolean = true) {
       // Show browser notification only if not viewing this conversation
       if (!isMuted && !isActiveConversation) {
         const senderName = message.sender_name || 'Someone';
+        // Re-check conversations as we may have just fetched it
         const conversation = conversations.find(c => c.id === conversation_id);
         const title = conversation?.other_participant_name || senderName;
         const body = message.content.length > 100

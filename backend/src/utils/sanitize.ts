@@ -76,9 +76,9 @@ export function sanitizeObject<T extends Record<string, any>>(
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => 
+    return obj.map(item =>
       typeof item === 'string' ? sanitizeFunction(item) : sanitizeObject(item, sanitizeFunction)
-    ) as T;
+    ) as unknown as T;
   }
 
   const sanitized: any = {};

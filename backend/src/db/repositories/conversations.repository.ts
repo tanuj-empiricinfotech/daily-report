@@ -112,6 +112,49 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
   }
 
   /**
+   * Find a conversation by ID with full details (other participant, unread count, last message)
+   * Similar to findByUserIdWithDetails but for a single conversation
+   */
+  async findByIdWithDetails(
+    conversationId: number,
+    userId: number
+  ): Promise<ConversationWithDetails | null> {
+    const result = await query(
+      `SELECT
+        c.*,
+        CASE
+          WHEN c.participant_one_id = $2 THEN c.participant_two_id
+          ELSE c.participant_one_id
+        END as other_participant_id,
+        CASE
+          WHEN c.participant_one_id = $2 THEN u2.name
+          ELSE u1.name
+        END as other_participant_name,
+        COALESCE(unread.count, 0)::integer as unread_count,
+        last_msg.content as last_message_preview
+      FROM ${this.tableName} c
+      JOIN users u1 ON c.participant_one_id = u1.id
+      JOIN users u2 ON c.participant_two_id = u2.id
+      LEFT JOIN (
+        SELECT conversation_id, COUNT(*) as count
+        FROM chat_notifications
+        WHERE user_id = $2 AND is_read = FALSE
+        GROUP BY conversation_id
+      ) unread ON unread.conversation_id = c.id
+      LEFT JOIN LATERAL (
+        SELECT content FROM messages
+        WHERE conversation_id = c.id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) last_msg ON true
+      WHERE c.id = $1 AND (c.participant_one_id = $2 OR c.participant_two_id = $2)`,
+      [conversationId, userId]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  /**
    * Get the other participant's ID in a conversation
    */
   getOtherParticipantId(conversation: Conversation, userId: number): number {

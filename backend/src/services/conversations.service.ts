@@ -87,6 +87,25 @@ export class ConversationsService {
   }
 
   /**
+   * Get a conversation by ID with full details (other participant, unread count, last message)
+   */
+  async getConversationByIdWithDetails(
+    conversationId: number,
+    userId: number
+  ): Promise<ConversationWithDetails> {
+    const conversation = await this.conversationsRepository.findByIdWithDetails(
+      conversationId,
+      userId
+    );
+
+    if (!conversation) {
+      throw new NotFoundError('Conversation not found');
+    }
+
+    return conversation;
+  }
+
+  /**
    * Update vanishing mode settings for a conversation
    */
   async updateVanishingMode(
