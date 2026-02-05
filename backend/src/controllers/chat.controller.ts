@@ -7,7 +7,7 @@
 
 import { Response, NextFunction } from 'express';
 import { ChatService } from '../services/chat.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import type { ChatMessage, ChatRequest } from '../lib/ai';
 import { istToIso } from '../utils/date';
 
@@ -100,8 +100,9 @@ export class ChatController {
   chat = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { messages: rawMessages, context }: { messages: IncomingMessage[]; context?: ChatRequest['context'] } = req.body;
-      const authenticatedUserId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const authenticatedUserId = user.userId;
+      const isAdmin = user.role === 'admin';
 
       // Validate messages array exists
       if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
@@ -200,8 +201,9 @@ export class ChatController {
    */
   getContext = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const authenticatedUserId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const authenticatedUserId = user.userId;
+      const isAdmin = user.role === 'admin';
 
       // Parse query params
       const startDate = req.query.startDate

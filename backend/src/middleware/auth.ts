@@ -34,3 +34,19 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
   next();
 };
 
+/**
+ * Helper function to get authenticated user from request
+ * Throws UnauthorizedError if user is not authenticated
+ * Use this instead of non-null assertions (req.user!)
+ * 
+ * @param req - Authenticated request
+ * @returns Authenticated user object
+ * @throws UnauthorizedError if user is not authenticated
+ */
+export function getAuthenticatedUser(req: AuthRequest): { userId: number; email: string; role: string } {
+  if (!req.user) {
+    throw new UnauthorizedError('User not authenticated');
+  }
+  return req.user;
+}
+

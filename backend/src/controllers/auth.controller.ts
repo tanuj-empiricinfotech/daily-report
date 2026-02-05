@@ -2,9 +2,9 @@ import { Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { AuthRequest } from '../middleware/auth';
 import { CreateUserDto } from '../types';
-
-// Constants for cookie configuration (following clean code guidelines)
-const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+import { COOKIE_CONFIG } from '../config/app.config';
+import logger from '../utils/logger';
+import { envConfig } from '../config/env.config';
 
 interface CookieOptions {
   httpOnly: boolean;
@@ -28,7 +28,7 @@ interface CookieOptions {
 const getCookieOptions = (req: AuthRequest): CookieOptions => {
   const origin = req.headers.origin;
   const isHttpsOrigin = origin?.startsWith('https://');
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = envConfig.nodeEnv === 'production';
 
   // Check if backend is HTTPS through multiple methods:
   // 1. req.protocol === 'https' (works when trust proxy is enabled)
@@ -40,15 +40,15 @@ const getCookieOptions = (req: AuthRequest): CookieOptions => {
     req.protocol === 'https' ||
     req.secure ||
     forwardedProto === 'https' ||
-    process.env.BACKEND_HTTPS === 'true';
+    envConfig.backendHttps;
 
   // Use HTTPS cookies if:
   // - Backend is HTTPS AND (origin is HTTPS OR in production mode)
   // - Or if origin is HTTPS (regardless of backend detection)
   const useSecureCookies = (isBackendHttps && (isHttpsOrigin || isProduction)) || isHttpsOrigin;
 
-  // Debug logging
-  console.log('[Cookie] Configuration:', {
+  // Debug logging (only in development)
+  logger.debug('Cookie configuration', {
     origin,
     isHttpsOrigin,
     isProduction,
@@ -62,23 +62,23 @@ const getCookieOptions = (req: AuthRequest): CookieOptions => {
   if (useSecureCookies) {
     // For HTTPS environments, use secure cookies with sameSite: 'none'
     // This is required for cross-origin requests from Vercel frontend to Render backend
-    console.log('[Cookie] Using secure cookies (HTTPS)');
+    logger.debug('Using secure cookies (HTTPS)');
     return {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: COOKIE_MAX_AGE_MS,
+      maxAge: COOKIE_CONFIG.MAX_AGE_MS,
     };
   }
 
   // For HTTP backend (localhost development), use secure: false with sameSite: 'lax'
   // This provides CSRF protection while allowing cookies in local development
-  console.log('[Cookie] Using non-secure cookies (HTTP)');
+  logger.debug('Using non-secure cookies (HTTP)');
   return {
     httpOnly: true,
     secure: false,
     sameSite: 'lax',
-    maxAge: COOKIE_MAX_AGE_MS,
+    maxAge: COOKIE_CONFIG.MAX_AGE_MS,
   };
 };
 

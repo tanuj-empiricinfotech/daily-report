@@ -7,6 +7,7 @@
 
 import { TeamsDailySummaryJob } from './teams-daily-summary.job';
 import { VanishingMessagesCleanupJob } from './vanishing-messages-cleanup.job';
+import logger from '../utils/logger';
 
 /**
  * Initialize and start all scheduled jobs
@@ -14,7 +15,7 @@ import { VanishingMessagesCleanupJob } from './vanishing-messages-cleanup.job';
  * Call this function after the server starts to begin running cron jobs
  */
 export function initializeJobs(): void {
-  console.log('Initializing scheduled jobs...');
+  logger.info('Initializing scheduled jobs...');
 
   try {
     // Initialize Teams daily summary job
@@ -25,9 +26,9 @@ export function initializeJobs(): void {
     const vanishingCleanupJob = new VanishingMessagesCleanupJob();
     vanishingCleanupJob.start();
 
-    console.log('All scheduled jobs initialized successfully');
+    logger.info('All scheduled jobs initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize scheduled jobs:', error);
+    logger.error('Failed to initialize scheduled jobs', { error });
     // Don't throw - allow server to continue running even if jobs fail to start
   }
 }

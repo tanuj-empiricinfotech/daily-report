@@ -1,8 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { TeamsService } from '../services/teams.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import { CreateTeamDto } from '../types';
 import { TeamsDailySummaryJob } from '../jobs/teams-daily-summary.job';
+import logger from '../utils/logger';
 
 export class TeamsController {
   private teamsService: TeamsService;
@@ -14,7 +15,7 @@ export class TeamsController {
   create = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data: CreateTeamDto = req.body;
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const team = await this.teamsService.createTeam(data, userId);
       res.status(201).json({
         success: true,
@@ -54,7 +55,7 @@ export class TeamsController {
     try {
       const id = parseInt(req.params.id, 10);
       const data: Partial<CreateTeamDto> = req.body;
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const team = await this.teamsService.updateTeam(id, data, userId);
       res.json({
         success: true,
@@ -68,7 +69,7 @@ export class TeamsController {
   delete = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       await this.teamsService.deleteTeam(id, userId);
       res.json({
         success: true,
@@ -95,12 +96,10 @@ export class TeamsController {
         return;
       }
 
-      console.log('='.repeat(60));
-      console.log('Manual Teams Summary Test - Starting');
-      console.log('='.repeat(60));
-      console.log('Date:', date || 'today');
-      console.log('Webhook URL:', webhookUrl);
-      console.log('='.repeat(60));
+      logger.info('Manual Teams Summary Test - Starting', {
+        date: date || 'today',
+        webhookUrl,
+      });
 
       const job = new TeamsDailySummaryJob();
       await job.execute(date, webhookUrl);
@@ -110,7 +109,7 @@ export class TeamsController {
         message: 'Daily summary test completed. Check server logs for detailed output.',
       });
     } catch (error) {
-      console.error('Test daily summary failed:', error);
+      logger.error('Test daily summary failed', { error });
       next(error);
     }
   };
@@ -127,13 +126,12 @@ export class TeamsController {
     try {
       const { date, webhookUrl } = req.body;
 
-      console.log('='.repeat(60));
-      console.log('API Triggered Teams Daily Summary - Starting');
-      console.log('='.repeat(60));
-      console.log('Date:', date || 'current IST date');
-      console.log('Webhook URL:', webhookUrl || 'from environment (TEAMS_WEBHOOK_URL)');
-      console.log('Triggered by:', req.user?.email || 'unknown');
-      console.log('='.repeat(60));
+      const user = getAuthenticatedUser(req);
+      logger.info('API Triggered Teams Daily Summary - Starting', {
+        date: date || 'current IST date',
+        webhookUrl: webhookUrl || 'from environment (TEAMS_WEBHOOK_URL)',
+        triggeredBy: user.email,
+      });
 
       const job = new TeamsDailySummaryJob();
       await job.execute(date, webhookUrl);
@@ -147,7 +145,7 @@ export class TeamsController {
         },
       });
     } catch (error) {
-      console.error('Trigger daily summary failed:', error);
+      logger.error('Trigger daily summary failed', { error });
       next(error);
     }
   };

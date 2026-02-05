@@ -5,11 +5,22 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { initializeJobs } from './jobs';
+import { validateEnvironmentVariables, envConfig } from './config/env.config';
+import logger from './utils/logger';
+import { SERVER_CONFIG } from './config/app.config';
 
 dotenv.config();
 
+// Validate environment variables before starting server
+try {
+  validateEnvironmentVariables();
+} catch (error) {
+  logger.error('Failed to start server due to environment validation errors', { error });
+  process.exit(1);
+}
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = envConfig.port;
 
 /**
  * Trust proxy configuration
@@ -21,10 +32,10 @@ const PORT = process.env.PORT || 3000;
  *
  * Set to 1 to trust the first proxy in the chain
  */
-app.set('trust proxy', 1);
+app.set('trust proxy', SERVER_CONFIG.TRUST_PROXY);
 
 // Environment configuration (following clean code principles - configuration management)
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = envConfig.frontendUrl;
 const LOCALHOST_DEV_URL = 'http://localhost:5173';
 
 // Allowed origin patterns for development tunnels and deployment platforms
@@ -46,43 +57,43 @@ const ALLOWED_ORIGIN_PATTERNS = {
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
   // Allow requests with no origin (like mobile apps or curl requests)
   if (!origin) {
-    console.log('[CORS] No origin provided - allowing');
+    logger.debug('CORS: No origin provided - allowing');
     return callback(null, true);
   }
 
-  console.log(`[CORS] Checking origin: ${origin}`);
+  logger.debug('CORS: Checking origin', { origin });
 
   // Allow environment-configured frontend URL
   if (origin === FRONTEND_URL) {
-    console.log(`[CORS] Matched FRONTEND_URL: ${FRONTEND_URL}`);
+    logger.debug('CORS: Matched FRONTEND_URL', { frontendUrl: FRONTEND_URL });
     return callback(null, true);
   }
 
   // Allow localhost development (fallback for dev environment)
   if (origin === LOCALHOST_DEV_URL) {
-    console.log('[CORS] Matched localhost dev URL');
+    logger.debug('CORS: Matched localhost dev URL');
     return callback(null, true);
   }
 
   // Allow any ngrok URL (development tunnels)
   if (ALLOWED_ORIGIN_PATTERNS.ngrok.test(origin)) {
-    console.log('[CORS] Matched ngrok pattern');
+    logger.debug('CORS: Matched ngrok pattern');
     return callback(null, true);
   }
 
   // Allow Vercel deployments (production and preview)
   if (ALLOWED_ORIGIN_PATTERNS.vercel.test(origin)) {
-    console.log('[CORS] Matched Vercel pattern');
+    logger.debug('CORS: Matched Vercel pattern');
     return callback(null, true);
   }
 
   // Allow Pinggy tunnels
   if (ALLOWED_ORIGIN_PATTERNS.pinggy.test(origin)) {
-    console.log('[CORS] Matched Pinggy pattern');
+    logger.debug('CORS: Matched Pinggy pattern');
     return callback(null, true);
   }
 
-  console.log(`[CORS] Origin not allowed: ${origin}`);
+  logger.warn('CORS: Origin not allowed', { origin });
   callback(new Error('Not allowed by CORS'));
 };
 
@@ -105,7 +116,7 @@ app.get('/health', (req, res) => {
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
 
   // Initialize scheduled jobs after server starts
   initializeJobs();

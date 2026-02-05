@@ -1,8 +1,13 @@
 import jwt from 'jsonwebtoken';
 import type { JwtPayload } from '../types';
+import { envConfig } from '../config/env.config';
 
-const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
+/**
+ * Get JWT secret with validation
+ * Uses validated environment configuration
+ */
+const JWT_SECRET: string = envConfig.jwtSecret;
+const JWT_EXPIRES_IN: string = envConfig.jwtExpiresIn;
 
 export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, JWT_SECRET, {

@@ -13,6 +13,7 @@ import {
   WEBHOOK_MAX_RETRIES,
   WEBHOOK_RETRY_DELAY_MS,
 } from '../config/jobs.config';
+import logger from '../utils/logger';
 
 export class TeamsNotificationService {
   /**
@@ -38,13 +39,13 @@ export class TeamsNotificationService {
       }
 
       // Format the summary as an Adaptive Card
-      console.log('Formatting summary for team:', summary);
+      logger.debug('Formatting summary for team', { teamName: summary.teamName });
       const card = formatTeamsSummaryCard(summary);
 
       // Send with retry logic
       await this.sendWithRetry(webhookUrl, card);
 
-      console.log(`Successfully sent Teams notification for team: ${summary.teamName}`);
+      logger.info(`Successfully sent Teams notification for team: ${summary.teamName}`);
       return {
         success: true,
         teamId: summary.teamId,
@@ -52,7 +53,7 @@ export class TeamsNotificationService {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to send Teams notification for team ${summary.teamName}:`, errorMessage);
+      logger.error(`Failed to send Teams notification for team ${summary.teamName}`, { error: errorMessage });
 
       return {
         success: false,
@@ -79,8 +80,10 @@ export class TeamsNotificationService {
       ? this.formatForPowerAutomate(payload)
       : payload;
 
-    console.log('Webhook type:', isPowerAutomateWebhook ? 'Power Automate' : 'Teams Incoming Webhook');
-    console.log('Request payload:', JSON.stringify(requestPayload, null, 2));
+    logger.debug('Webhook type', { 
+      type: isPowerAutomateWebhook ? 'Power Automate' : 'Teams Incoming Webhook' 
+    });
+    logger.debug('Request payload', { payload: requestPayload });
 
     for (let attempt = 1; attempt <= WEBHOOK_MAX_RETRIES; attempt++) {
       try {
@@ -92,10 +95,11 @@ export class TeamsNotificationService {
         });
 
         // Log success details
-        console.log('Webhook request succeeded:');
-        console.log('  Status:', response.status, response.statusText);
-        console.log('  Response data:', JSON.stringify(response.data, null, 2));
-        console.log('  Response headers:', JSON.stringify(response.headers, null, 2));
+        logger.debug('Webhook request succeeded', {
+          status: response.status,
+          statusText: response.statusText,
+          responseData: response.data,
+        });
 
         // Success - no need to retry
         return;
@@ -112,12 +116,11 @@ export class TeamsNotificationService {
             ? error.message
             : 'Unknown error';
 
-        console.warn(
-          `Webhook attempt ${attempt}/${WEBHOOK_MAX_RETRIES} failed:`,
-          `Status: ${statusCode},`,
-          `Error: ${errorMessage}`
-        );
-        console.warn('  Response data:', JSON.stringify(responseData, null, 2));
+        logger.warn(`Webhook attempt ${attempt}/${WEBHOOK_MAX_RETRIES} failed`, {
+          statusCode,
+          error: errorMessage,
+          responseData,
+        });
 
         // Check for specific error types and provide helpful guidance
         if (statusCode === 403) {
@@ -127,25 +130,15 @@ export class TeamsNotificationService {
 
           if (nestedError?.code === 'BotNotInConversationRoster' ||
             (typeof nestedError === 'string' && nestedError.includes('BotNotInConversationRoster'))) {
-            console.error('');
-            console.error('⚠️  BOT NOT IN CONVERSATION ROSTER ERROR DETECTED');
-            console.error('This error occurs when Power Automate uses Bot Framework and the bot is not in the conversation.');
-            console.error('');
-            console.error('SOLUTIONS:');
-            console.error('1. Use Teams Incoming Webhook instead (recommended):');
-            console.error('   - Get webhook URL from Teams channel > Connectors > Incoming Webhook');
-            console.error('   - Set TEAMS_WEBHOOK_URL to the webhook URL');
-            console.error('   - This bypasses bot requirements entirely');
-            console.error('');
-            console.error('2. Change Power Automate to post as "User" instead of "Flow bot"');
-            console.error('   - Edit your Power Automate flow');
-            console.error('   - Find "Post as" field and change to "User"');
-            console.error('');
-            console.error('3. Add Flow bot to the Teams channel');
-            console.error('   - Type @Flow in the channel to add the bot');
-            console.error('');
-            console.error('See POWER_AUTOMATE_TEAMS_FIX.md for detailed instructions.');
-            console.error('');
+            logger.error('BOT NOT IN CONVERSATION ROSTER ERROR DETECTED', {
+              message: 'This error occurs when Power Automate uses Bot Framework and the bot is not in the conversation.',
+              solutions: [
+                '1. Use Teams Incoming Webhook instead (recommended): Get webhook URL from Teams channel > Connectors > Incoming Webhook. Set TEAMS_WEBHOOK_URL to the webhook URL. This bypasses bot requirements entirely.',
+                '2. Change Power Automate to post as "User" instead of "Flow bot": Edit your Power Automate flow, find "Post as" field and change to "User".',
+                '3. Add Flow bot to the Teams channel: Type @Flow in the channel to add the bot.',
+              ],
+              documentation: 'See POWER_AUTOMATE_TEAMS_FIX.md for detailed instructions.',
+            });
 
             // Don't retry for this error - it won't succeed without configuration changes
             throw new Error(
@@ -235,14 +228,14 @@ export class TeamsNotificationService {
       const isValidDomain = validDomains.some(domain => url.hostname.includes(domain));
 
       if (!isValidDomain) {
-        console.warn(`Webhook URL does not match expected Microsoft Teams domains: ${webhookUrl}`);
+        logger.warn(`Webhook URL does not match expected Microsoft Teams domains: ${webhookUrl}`);
         // Still return true as Microsoft might use other domains
         // This is just a warning, not a hard validation
       }
 
       return true;
     } catch (error) {
-      console.error('Invalid webhook URL format:', webhookUrl);
+      logger.error('Invalid webhook URL format', { webhookUrl });
       return false;
     }
   }

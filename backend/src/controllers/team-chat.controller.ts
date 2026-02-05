@@ -8,7 +8,7 @@
 import { Response, NextFunction } from 'express';
 import { ConversationsService } from '../services/conversations.service';
 import { MessagesService } from '../services/messages.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import {
   getSSEManager,
   sendNewMessageEvent,
@@ -42,7 +42,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversations = await this.conversationsService.getConversations(userId);
 
       res.json({
@@ -64,7 +64,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const { participant_id }: CreateConversationDto = req.body;
 
       const { conversation, created } = await this.conversationsService.getOrCreateConversation(
@@ -94,7 +94,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
 
       const conversation = await this.conversationsService.getConversationById(
@@ -121,7 +121,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
       const { limit, before } = req.query as unknown as GetMessagesQuery;
 
@@ -151,7 +151,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
       const { content, reply_to_message_id }: CreateMessageDto = req.body;
 
@@ -184,7 +184,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
       const settings: UpdateVanishingModeDto = req.body;
 
@@ -221,7 +221,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const conversationId = parseInt(req.params.conversationId, 10);
       const { up_to_message_id } = req.body;
 
@@ -253,8 +253,9 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
-      const userName = req.user!.email.split('@')[0]; // Simple name extraction
+      const user = getAuthenticatedUser(req);
+      const userId = user.userId;
+      const userName = user.email.split('@')[0]; // Simple name extraction
       const conversationId = parseInt(req.params.conversationId, 10);
       const { is_typing } = req.body;
 
@@ -280,7 +281,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const messageId = parseInt(req.params.messageId, 10);
 
       await this.messagesService.deleteMessage(messageId, userId);
@@ -304,7 +305,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
 
       const [totalCount, summary] = await Promise.all([
         this.conversationsService.getTotalUnreadCount(userId),
@@ -333,7 +334,7 @@ export class TeamChatController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
 
       // Set SSE headers
       res.setHeader('Content-Type', 'text/event-stream');

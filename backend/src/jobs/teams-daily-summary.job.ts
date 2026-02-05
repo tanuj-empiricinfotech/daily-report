@@ -14,6 +14,7 @@ import {
   CRON_TIMEZONE,
   SKIP_EMPTY_SUMMARIES,
 } from '../config/jobs.config';
+import logger from '../utils/logger';
 
 export class TeamsDailySummaryJob {
   private summaryService: TeamsSummaryService;
@@ -35,18 +36,18 @@ export class TeamsDailySummaryJob {
     const isEnabled = process.env.ENABLE_TEAMS_SUMMARY === 'true';
 
     if (!isEnabled) {
-      console.log('Teams daily summary job is disabled (ENABLE_TEAMS_SUMMARY=false)');
+      logger.info('Teams daily summary job is disabled (ENABLE_TEAMS_SUMMARY=false)');
       return;
     }
 
-    console.log(`Starting Teams daily summary job with schedule: ${TEAMS_SUMMARY_CRON_SCHEDULE}`);
+    logger.info(`Starting Teams daily summary job with schedule: ${TEAMS_SUMMARY_CRON_SCHEDULE}`);
 
     // Create and start the cron job
     this.task = cron.schedule(
       TEAMS_SUMMARY_CRON_SCHEDULE,
       () => {
         this.execute().catch(error => {
-          console.error('Teams daily summary job failed:', error);
+          logger.error('Teams daily summary job failed', { error });
         });
       },
       {
@@ -54,7 +55,7 @@ export class TeamsDailySummaryJob {
       }
     );
 
-    console.log('Teams daily summary job started successfully');
+    logger.info('Teams daily summary job started successfully');
   }
 
   /**
@@ -63,7 +64,7 @@ export class TeamsDailySummaryJob {
   stop(): void {
     if (this.task) {
       this.task.stop();
-      console.log('Teams daily summary job stopped');
+      logger.info('Teams daily summary job stopped');
     }
   }
 
@@ -77,14 +78,12 @@ export class TeamsDailySummaryJob {
    */
   async execute(date?: string, globalWebhookUrl?: string): Promise<void> {
     const startTime = Date.now();
-    console.log('='.repeat(60));
-    console.log('Teams Daily Summary Job - Starting');
-    console.log('='.repeat(60));
+    logger.info('Teams Daily Summary Job - Starting');
 
     try {
       // Determine the date to generate summary for
       const summaryDate = date || getCurrentDateIST();
-      console.log(`Generating summaries for date: ${summaryDate}`);
+      logger.info(`Generating summaries for date: ${summaryDate}`);
 
       // Get global webhook URL from environment or parameter
       const globalWebhook = globalWebhookUrl || process.env.TEAMS_WEBHOOK_URL;
@@ -92,10 +91,10 @@ export class TeamsDailySummaryJob {
       // Generate summaries for all teams
       const summaries = await this.summaryService.generateAllTeamsSummaries(summaryDate);
 
-      console.log(`Generated ${summaries.length} team summaries with activity`);
+      logger.info(`Generated ${summaries.length} team summaries with activity`);
 
       if (summaries.length === 0) {
-        console.log('No teams with activity found. Nothing to send.');
+        logger.info('No teams with activity found. Nothing to send.');
         return;
       }
 
@@ -107,7 +106,7 @@ export class TeamsDailySummaryJob {
         try {
           // Skip teams with no activity if configured
           if (SKIP_EMPTY_SUMMARIES && summary.userSummaries.length === 0) {
-            console.log(`Skipping team ${summary.teamName} - no activity`);
+            logger.debug(`Skipping team ${summary.teamName} - no activity`);
             continue;
           }
 
@@ -115,37 +114,38 @@ export class TeamsDailySummaryJob {
           const webhookUrl = await this.getWebhookUrl(summary.teamId, globalWebhook);
 
           if (!webhookUrl) {
-            console.warn(`No webhook URL configured for team: ${summary.teamName} (ID: ${summary.teamId})`);
+            logger.warn(`No webhook URL configured for team: ${summary.teamName} (ID: ${summary.teamId})`);
             failureCount++;
             continue;
           }
 
           // Send notification
-          console.log(`Sending notification for team: ${summary.teamName}`);
+          logger.debug(`Sending notification for team: ${summary.teamName}`);
           const result = await this.notificationService.sendDailySummary(summary, webhookUrl);
 
           if (result.success) {
             successCount++;
-            console.log(`✓ Successfully sent notification for team: ${summary.teamName}`);
+            logger.info(`Successfully sent notification for team: ${summary.teamName}`);
           } else {
             failureCount++;
-            console.error(`✗ Failed to send notification for team: ${summary.teamName}`, result.error);
+            logger.error(`Failed to send notification for team: ${summary.teamName}`, { error: result.error });
           }
         } catch (error) {
           failureCount++;
-          console.error(`Error processing team ${summary.teamName}:`, error);
+          logger.error(`Error processing team ${summary.teamName}`, { error });
         }
       }
 
       // Log summary
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log('='.repeat(60));
-      console.log('Teams Daily Summary Job - Completed');
-      console.log(`Duration: ${duration}s`);
-      console.log(`Success: ${successCount}, Failed: ${failureCount}, Total: ${summaries.length}`);
-      console.log('='.repeat(60));
+      logger.info('Teams Daily Summary Job - Completed', {
+        duration: `${duration}s`,
+        success: successCount,
+        failed: failureCount,
+        total: summaries.length,
+      });
     } catch (error) {
-      console.error('Teams daily summary job encountered an error:', error);
+      logger.error('Teams daily summary job encountered an error', { error });
       throw error;
     }
   }

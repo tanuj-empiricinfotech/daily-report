@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { ProjectsService } from '../services/projects.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import { CreateProjectDto } from '../types';
 import { query } from '../db/connection';
 
@@ -14,7 +14,7 @@ export class ProjectsController {
   create = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data: CreateProjectDto = req.body;
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const project = await this.projectsService.createProject(data, userId);
       res.status(201).json({
         success: true,
@@ -27,7 +27,7 @@ export class ProjectsController {
 
   getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = req.user!;
+      const user = getAuthenticatedUser(req);
       // Get user's team_id from database
       const userResult = await query('SELECT team_id FROM users WHERE id = $1', [user.userId]);
       const userTeamId = userResult.rows[0]?.team_id || null;
@@ -49,7 +49,7 @@ export class ProjectsController {
   getByTeam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);
-      const user = req.user!;
+      const user = getAuthenticatedUser(req);
       // Get user's team_id from database
       const userResult = await query('SELECT team_id FROM users WHERE id = $1', [user.userId]);
       const userTeamId = userResult.rows[0]?.team_id || null;
@@ -71,7 +71,7 @@ export class ProjectsController {
 
   getMyProjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const user = req.user!;
+      const user = getAuthenticatedUser(req);
       const projects = await this.projectsService.getProjectsByUserId(user.userId);
       res.json({
         success: true,
@@ -99,7 +99,7 @@ export class ProjectsController {
     try {
       const id = parseInt(req.params.id, 10);
       const data: Partial<CreateProjectDto> = req.body;
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       const project = await this.projectsService.updateProject(id, data, userId);
       res.json({
         success: true,
@@ -113,7 +113,7 @@ export class ProjectsController {
   delete = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       await this.projectsService.deleteProject(id, userId);
       res.json({
         success: true,

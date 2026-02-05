@@ -3,7 +3,9 @@ import { PASSWORD_CONFIG, PASSWORD_ERROR_MESSAGES } from '../config/password.con
 
 export const registerValidator = [
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: PASSWORD_CONFIG.MIN_LENGTH })
+    .withMessage(PASSWORD_ERROR_MESSAGES.TOO_SHORT),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('role').isIn(['admin', 'member']).withMessage('Role must be admin or member'),
 ];

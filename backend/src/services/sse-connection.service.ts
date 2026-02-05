@@ -12,6 +12,7 @@ import {
   SSE_HEARTBEAT_INTERVAL_MS,
   SSE_CONNECTION_TIMEOUT_MS,
 } from '../config/jobs.config';
+import logger from '../utils/logger';
 
 interface SSEConnection {
   userId: number;
@@ -60,7 +61,7 @@ class SSEConnectionManager {
       this.removeConnection(userId, response);
     });
 
-    console.log(`SSE: User ${userId} connected. Total connections: ${this.getTotalConnections()}`);
+    logger.debug(`SSE: User ${userId} connected. Total connections: ${this.getTotalConnections()}`);
   }
 
   /**
@@ -78,7 +79,7 @@ class SSEConnectionManager {
       this.connections.set(userId, filtered);
     }
 
-    console.log(`SSE: User ${userId} disconnected. Total connections: ${this.getTotalConnections()}`);
+    logger.debug(`SSE: User ${userId} disconnected. Total connections: ${this.getTotalConnections()}`);
   }
 
   /**
@@ -97,7 +98,7 @@ class SSEConnectionManager {
         connection.response.write(eventData);
         connection.lastActivity = Date.now();
       } catch (error) {
-        console.error(`SSE: Error sending to user ${userId}:`, error);
+        logger.error(`SSE: Error sending to user ${userId}`, { error });
         this.removeConnection(userId, connection.response);
       }
     }

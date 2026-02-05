@@ -16,6 +16,7 @@ import {
 } from '../types/teams.types';
 import { Team, DailyLog, User, Project } from '../types';
 import { parseTimeToDecimal, formatDecimalToTime } from '../utils/time.util';
+import logger from '../utils/logger';
 
 /**
  * Helper function to add time values
@@ -56,7 +57,7 @@ export class TeamsSummaryService {
     const teams = await this.teamsRepository.findAll();
 
     if (teams.length === 0) {
-      console.log('No teams found');
+      logger.info('No teams found');
       return [];
     }
 
@@ -70,7 +71,7 @@ export class TeamsSummaryService {
           summaries.push(summary);
         }
       } catch (error) {
-        console.error(`Failed to generate summary for team ${team.name}:`, error);
+        logger.error(`Failed to generate summary for team ${team.name}`, { error });
         // Continue processing other teams even if one fails
       }
     }

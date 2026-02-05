@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { LogsService } from '../services/logs.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import { CreateLogDto, UpdateLogDto } from '../types';
 import { istToIso, isoToIst } from '../utils/date';
 
@@ -18,8 +18,9 @@ export class LogsController {
       if (data.date) {
         data.date = istToIso(data.date);
       }
-      const authenticatedUserId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const authenticatedUserId = user.userId;
+      const isAdmin = user.role === 'admin';
       const targetUserId = data.user_id; // Optional user_id for admin creating logs for others
       const log = await this.logsService.createLog(data, authenticatedUserId, isAdmin, targetUserId);
       // Return ISO date (frontend will convert to IST for display)
@@ -41,8 +42,9 @@ export class LogsController {
           data.date = istToIso(data.date);
         }
       });
-      const authenticatedUserId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const authenticatedUserId = user.userId;
+      const isAdmin = user.role === 'admin';
       // For bulk creation, all logs should have the same user_id (if provided)
       const targetUserId = dataArray.length > 0 ? dataArray[0].user_id : undefined;
       const logs = await this.logsService.createLogsBulk(dataArray, authenticatedUserId, isAdmin, targetUserId);
@@ -58,7 +60,7 @@ export class LogsController {
 
   getMyLogs = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user!.userId;
+      const userId = getAuthenticatedUser(req).userId;
       // Convert IST filter dates to ISO for querying
       const date = req.query.date ? istToIso(req.query.date as string) : undefined;
       const startDate = req.query.startDate ? istToIso(req.query.startDate as string) : undefined;
@@ -99,8 +101,9 @@ export class LogsController {
   getById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      const userId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const userId = user.userId;
+      const isAdmin = user.role === 'admin';
       const log = await this.logsService.getLogById(id, userId, isAdmin);
       // Return ISO date (frontend will convert to IST for display)
       res.json({
@@ -120,8 +123,9 @@ export class LogsController {
       if (data.date) {
         data.date = istToIso(data.date);
       }
-      const userId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const userId = user.userId;
+      const isAdmin = user.role === 'admin';
       const log = await this.logsService.updateLog(id, data, userId, isAdmin);
       // Date is already a string in YYYY-MM-DD format (no conversion needed)
       res.json({
@@ -136,8 +140,9 @@ export class LogsController {
   delete = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      const userId = req.user!.userId;
-      const isAdmin = req.user!.role === 'admin';
+      const user = getAuthenticatedUser(req);
+      const userId = user.userId;
+      const isAdmin = user.role === 'admin';
       await this.logsService.deleteLog(id, userId, isAdmin);
       res.json({
         success: true,

@@ -62,21 +62,23 @@ export function parseDate(dateString: string): Date {
 }
 
 /**
- * Get the current date in IST timezone as YYYY-MM-DD string
+ * Get the current date in configured timezone as YYYY-MM-DD string
  *
- * IST is UTC+5:30, so we add 5 hours and 30 minutes to UTC time
- * to get the current date in Indian timezone
+ * Defaults to IST (UTC+5:30) if TIMEZONE_OFFSET_HOURS is not set
+ * Configurable via TIMEZONE_OFFSET_HOURS environment variable
  *
- * @returns Current date in IST as YYYY-MM-DD format
+ * @returns Current date in configured timezone as YYYY-MM-DD format
  */
 export function getCurrentDateIST(): string {
   const now = new Date();
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const istTime = new Date(now.getTime() + IST_OFFSET_MS);
+  // Use configurable timezone offset (defaults to 5.5 for IST)
+  const timezoneOffsetHours = parseFloat(process.env.TIMEZONE_OFFSET_HOURS || '5.5');
+  const timezoneOffsetMs = timezoneOffsetHours * 60 * 60 * 1000;
+  const localTime = new Date(now.getTime() + timezoneOffsetMs);
 
-  const year = istTime.getUTCFullYear();
-  const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(istTime.getUTCDate()).padStart(2, '0');
+  const year = localTime.getUTCFullYear();
+  const month = String(localTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(localTime.getUTCDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 }
