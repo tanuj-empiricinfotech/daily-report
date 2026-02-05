@@ -83,6 +83,145 @@ function Thread() {
 }
 
 /**
+ * Detailed prompts for suggested actions
+ */
+const WEEKLY_SUMMARY_PROMPT = `Summarize my work from this week based on my work logs.
+
+Please provide a comprehensive summary that includes:
+
+## Work Overview
+- Total time logged and how it was distributed
+- Main focus areas and priorities
+
+## Accomplishments
+- Key tasks completed
+- Milestones reached
+- Problems solved
+
+## Project Breakdown
+- Time spent per project
+- Progress made on each project
+- Notable contributions
+
+## Collaboration & Communication
+- Meetings attended
+- Team interactions
+- Any blockers or dependencies on others
+
+## Looking Ahead
+- Work in progress that will carry over
+- Upcoming priorities based on current trajectory
+
+Format the response in a clear, readable structure that I could share with my manager or team.`;
+
+const PROJECT_TIME_ANALYSIS_PROMPT = `Analyze which projects I spent the most time on based on my work logs.
+
+Please provide a detailed breakdown including:
+
+## Time Distribution Overview
+- Rank projects by total time invested
+- Show percentage breakdown of time allocation
+- Visualize with a simple text-based chart if possible
+
+## Per-Project Analysis
+For each significant project:
+- Total hours/time logged
+- Types of tasks performed (development, meetings, research, debugging, etc.)
+- Peak activity periods
+- Average daily time spent
+
+## Insights & Patterns
+- Which projects are consuming the most effort?
+- Are there any projects with disproportionate time investment?
+- Time trends (increasing/decreasing focus on certain projects)
+
+## Efficiency Observations
+- Projects with high meeting-to-work ratios
+- Context switching patterns between projects
+- Recommendations for time optimization
+
+Present the data in a clear, analytical format with concrete numbers and percentages where available.`;
+
+const WEEKLY_REPORT_PROMPT = `Generate a professional weekly report based on my work logs.
+
+Create a polished, stakeholder-ready report in **markdown format** with the following structure:
+
+## Weekly Status Report
+**Week of:** [Date Range]
+**Prepared by:** [Name from logs]
+
+---
+
+## Executive Summary
+A 2-3 sentence high-level overview of the week's accomplishments and status.
+
+## Key Accomplishments
+- Bullet points of completed work
+- Emphasize deliverables and outcomes
+- Include any metrics or quantifiable results
+
+## Projects Status
+
+| Project | Status | Progress This Week | Notes |
+|---------|--------|-------------------|-------|
+| [Project] | 🟢 On Track / 🟡 At Risk / 🔴 Blocked | [Summary] | [Any blockers] |
+
+## Time Allocation
+Brief breakdown of how time was spent across projects/activities.
+
+## Challenges & Blockers
+- Any obstacles encountered
+- Dependencies or waiting items
+- Risks identified
+
+## Next Week's Priorities
+- Planned focus areas
+- Upcoming deadlines
+- Goals for the week
+
+## Notes & Comments
+Any additional context or callouts for stakeholders.
+
+---
+
+Make it professional, concise, and suitable for sharing with management or in team standups.`;
+
+const CASE_STUDY_PROMPT = `Create a comprehensive case study for [PROJECT NAME] based on my work logs.
+
+Please generate a professional case study document in **markdown format** that I can copy directly into a .md file. Structure it as follows:
+
+## Project Overview
+- Brief description of the project scope and objectives
+- Timeline and key milestones from the logs
+
+## Business Context & Impact
+- What business problem was being solved?
+- Who were the stakeholders and end users?
+- What was the expected business value or ROI?
+
+## Technical Challenges
+- Key technical problems encountered during development
+- Complexity factors and constraints
+- Dependencies or integration challenges
+
+## Solutions Implemented
+- Technical approaches and architecture decisions
+- Technologies, frameworks, and tools used
+- Innovative solutions or workarounds developed
+
+## Results & Outcomes
+- Quantifiable results where possible (performance improvements, time saved, etc.)
+- Qualitative improvements (user experience, maintainability, etc.)
+- Lessons learned and best practices identified
+
+## Key Metrics
+- Time invested (from work logs)
+- Features delivered
+- Any measurable impact data
+
+Please analyze my work logs to extract relevant information and present it in a polished, professional format suitable for a portfolio or stakeholder presentation.`;
+
+/**
  * Empty State Component
  * Shown when no messages exist yet
  */
@@ -98,9 +237,22 @@ function EmptyState() {
         or generate reports from your daily logs.
       </p>
       <div className="grid gap-2 text-sm text-muted-foreground">
-        <SuggestedPrompt text="Summarize my work this week" />
-        <SuggestedPrompt text="What projects did I spend the most time on?" />
-        <SuggestedPrompt text="Generate a weekly report" />
+        <SuggestedPrompt
+          label="Summarize my work this week"
+          prompt={WEEKLY_SUMMARY_PROMPT}
+        />
+        <SuggestedPrompt
+          label="What projects did I spend the most time on?"
+          prompt={PROJECT_TIME_ANALYSIS_PROMPT}
+        />
+        <SuggestedPrompt
+          label="Generate a weekly report"
+          prompt={WEEKLY_REPORT_PROMPT}
+        />
+        <SuggestedPrompt
+          label="Create a case study for [Project Name]"
+          prompt={CASE_STUDY_PROMPT}
+        />
       </div>
     </div>
   );
@@ -109,12 +261,14 @@ function EmptyState() {
 /**
  * Suggested Prompt Component
  * Clicking sets the text in the composer input
+ * @param label - Display text shown in the UI
+ * @param prompt - Optional full prompt text (defaults to label if not provided)
  */
-function SuggestedPrompt({ text }: { text: string }) {
+function SuggestedPrompt({ label, prompt }: { label: string; prompt?: string }) {
   const composerRuntime = useComposerRuntime();
 
   const handleClick = () => {
-    composerRuntime.setText(text);
+    composerRuntime.setText(prompt || label);
   };
 
   return (
@@ -122,7 +276,7 @@ function SuggestedPrompt({ text }: { text: string }) {
       onClick={handleClick}
       className="px-4 py-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
     >
-      {text}
+      {label}
     </div>
   );
 }

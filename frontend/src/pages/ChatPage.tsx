@@ -221,7 +221,7 @@ export function ChatPage() {
                 <li>"Summarize my work this week"</li>
                 <li>"What projects took the most time?"</li>
                 <li>"Generate a status report"</li>
-                <li>"Compare tracked vs actual time"</li>
+                <li>"Create a case study for [Project]"</li>
               </ul>
             </CardContent>
           </Card>
