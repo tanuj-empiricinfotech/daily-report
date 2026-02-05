@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
@@ -8,6 +9,7 @@ import { initializeJobs } from './jobs';
 import { validateEnvironmentVariables, envConfig } from './config/env.config';
 import logger from './utils/logger';
 import { SERVER_CONFIG } from './config/app.config';
+import { initializeGamesModule, initializeGameSocket } from './games';
 
 dotenv.config();
 
@@ -20,6 +22,7 @@ try {
 }
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = envConfig.port;
 
 /**
@@ -115,7 +118,13 @@ app.get('/health', (req, res) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+// Initialize games module (registers all games)
+initializeGamesModule();
+
+// Initialize Socket.io for games
+initializeGameSocket(httpServer, corsOrigin);
+
+httpServer.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);
 
   // Initialize scheduled jobs after server starts

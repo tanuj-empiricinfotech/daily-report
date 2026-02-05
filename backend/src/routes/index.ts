@@ -7,6 +7,7 @@ import usersRoutes from './users';
 import logsRoutes from './logs';
 import chatRoutes from './chat';
 import teamChatRoutes from './team-chat';
+import gamesRoutes from './games';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use('/users', usersRoutes);
 router.use('/logs', logsRoutes);
 router.use('/chat', chatRoutes);
 router.use('/team-chat', teamChatRoutes);
+router.use('/games', gamesRoutes);
 
 export default router;
 
