@@ -107,10 +107,18 @@ export abstract class TurnBasedGame<
       context.setScore(playerId, 0);
     }
 
-    // Broadcast game started
+    // Broadcast game started with initial state
     context.broadcast('game:started', {
-      totalRounds: this.turnState.totalRounds,
-      turnOrder: this.turnState.turnOrder,
+      gameState: {
+        phase: 'starting',
+        round: {
+          roundNumber: 0,
+          totalRounds: this.turnState.totalRounds,
+          currentTurn: 0,
+          totalTurns: this.turnState.turnOrder.length,
+        },
+        strokes: [],
+      },
     });
 
     // Start first round

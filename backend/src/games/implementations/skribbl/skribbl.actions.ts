@@ -24,7 +24,8 @@ export const SKRIBBL_ACTIONS = {
 export interface PickWordAction extends GameAction {
   type: typeof SKRIBBL_ACTIONS.PICK_WORD;
   payload: {
-    wordIndex: number;
+    word?: string;
+    wordIndex?: number;
   };
 }
 

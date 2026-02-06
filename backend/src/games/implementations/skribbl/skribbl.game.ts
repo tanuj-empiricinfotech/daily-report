@@ -164,6 +164,9 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
         this.autoPickWord(context);
       }
     }, SKRIBBL_CONFIG.wordPickTime * 1000);
+
+    // Broadcast state so all clients see picking_word phase
+    this.broadcastState(context);
   }
 
   protected onTurnEnd(context: GameContext): void {
@@ -182,6 +185,9 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
 
     // Broadcast turn end
     context.broadcast(`${this.id}:turn_end`, turnResult);
+
+    // Broadcast updated state (turn_results phase, reveals word to all)
+    this.broadcastState(context);
   }
 
   protected onTurnTimeout(context: GameContext): void {
@@ -256,10 +262,22 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
       return { success: false, error: 'Only the drawer can pick a word' };
     }
 
-    // Validate word index
-    const wordIndex = (payload as { wordIndex: number }).wordIndex;
-    if (wordIndex < 0 || wordIndex >= this.state.wordOptions.length) {
-      return { success: false, error: 'Invalid word selection' };
+    // Accept either word string or word index
+    let selectedWord: string;
+    const wordPayload = payload as { word?: string; wordIndex?: number };
+
+    if (typeof wordPayload.word === 'string') {
+      if (!this.state.wordOptions.includes(wordPayload.word)) {
+        return { success: false, error: 'Invalid word selection' };
+      }
+      selectedWord = wordPayload.word;
+    } else if (typeof wordPayload.wordIndex === 'number') {
+      if (wordPayload.wordIndex < 0 || wordPayload.wordIndex >= this.state.wordOptions.length) {
+        return { success: false, error: 'Invalid word selection' };
+      }
+      selectedWord = this.state.wordOptions[wordPayload.wordIndex];
+    } else {
+      return { success: false, error: 'Must provide word or wordIndex' };
     }
 
     // Clear word pick timer
@@ -269,7 +287,7 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
     }
 
     // Set word and start drawing phase
-    this.state.currentWord = this.state.wordOptions[wordIndex];
+    this.state.currentWord = selectedWord;
     this.state.wordOptions = [];
     this.state.phase = 'drawing';
     this.state.turnStartTime = Date.now();
@@ -293,6 +311,9 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
 
     // Start the turn timer (from parent class)
     this.startTurnTimer(context);
+
+    // Broadcast updated state (drawing phase)
+    this.broadcastState(context);
 
     return { success: true };
   }
@@ -385,6 +406,9 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
 
       // End turn early
       this.endCurrentTurn(context);
+    } else {
+      // Broadcast updated state (player guessed)
+      this.broadcastState(context);
     }
 
     return { success: true, data: { correct: true, points: guesserPoints } };
@@ -445,6 +469,65 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
   }
 
   // =========================================================================
+  // State Broadcasting
+  // =========================================================================
+
+  /**
+   * Broadcast the current game state to all connected players.
+   * Sends per-player state (drawer sees word/choices, others don't).
+   */
+  private broadcastState(context: GameContext): void {
+    const baseState = {
+      phase: this.state.phase,
+      round: {
+        roundNumber: this.turnState.currentRound,
+        totalRounds: this.turnState.totalRounds,
+        currentTurn: this.turnState.currentTurnIndex + 1,
+        totalTurns: this.turnState.turnOrder.length,
+      },
+      strokes: this.state.strokes,
+    };
+
+    for (const playerId of context.getConnectedPlayerIds()) {
+      const isDrawer = playerId === this.state.drawerId;
+      const playerState: Record<string, unknown> = { ...baseState };
+
+      // Turn info
+      if (this.state.drawerId) {
+        const drawer = context.getPlayer(this.state.drawerId);
+        const turn: Record<string, unknown> = {
+          drawerId: this.state.drawerId,
+          drawerName: drawer?.name || 'Unknown',
+          hint: {
+            pattern: this.generateHint(this.state.currentWord, this.state.hintsRevealed) || '',
+            revealedCount: this.state.hintsRevealed,
+            totalLength: this.state.currentWord?.length || 0,
+          },
+          timeRemaining: this.state.timeRemaining,
+          playersGuessed: Array.from(this.state.guessedPlayers),
+        };
+
+        // Drawer sees the current word
+        if (isDrawer && this.state.currentWord) {
+          turn.word = this.state.currentWord;
+        }
+
+        playerState.turn = turn;
+      }
+
+      // Word choices for drawer during picking phase
+      if (isDrawer && this.state.phase === 'picking_word' && this.state.wordOptions.length > 0) {
+        playerState.wordChoices = this.state.wordOptions.map((w) => ({
+          word: w,
+          difficulty: 'medium',
+        }));
+      }
+
+      context.sendToPlayer(playerId, 'game:state_update', { state: playerState });
+    }
+  }
+
+  // =========================================================================
   // Helper Methods
   // =========================================================================
 
@@ -457,7 +540,7 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
       this.handlePickWord(context, {
         type: SKRIBBL_ACTIONS.PICK_WORD,
         playerId: this.state.drawerId!,
-        payload: { wordIndex: randomIndex },
+        payload: { word: this.state.wordOptions[randomIndex] },
       });
     }
   }

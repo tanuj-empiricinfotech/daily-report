@@ -1,13 +1,15 @@
 /**
  * Game Socket Hook
  *
- * Manages Socket.io connection for games.
+ * Manages a singleton Socket.io connection for games.
+ * The socket persists across page navigations to avoid
+ * reconnection issues from component mount/unmount cycles.
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { io, Socket } from 'socket.io-client';
-import type { RootState } from '@/store/store';
+import type { RootState, AppDispatch } from '@/store/store';
 import type { ServerToClientEvents, ClientToServerEvents } from '../types/events.types';
 import type { GameSettings } from '../types/game.types';
 import {
@@ -31,123 +33,161 @@ type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 // Extract base URL from API URL (remove /api suffix if present)
 const getSocketBaseUrl = (): string => {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  // Remove /api or /api/ suffix to get the base server URL
   return apiUrl.replace(/\/api\/?$/, '');
 };
 
 const SOCKET_BASE_URL = getSocketBaseUrl();
 
+// =============================================================================
+// Module-level singleton socket
+// =============================================================================
+
+let sharedSocket: GameSocket | null = null;
+let handlersAttached = false;
+
 /**
- * Hook for managing game socket connection
+ * Attach event handlers to the socket (idempotent - only attaches once)
+ */
+function attachEventHandlers(socket: GameSocket, dispatch: AppDispatch): void {
+  if (handlersAttached) return;
+  handlersAttached = true;
+
+  // Connection events
+  socket.on('connect', () => {
+    dispatch(setConnectionStatus('connected'));
+  });
+
+  socket.on('disconnect', () => {
+    dispatch(setConnectionStatus('disconnected'));
+  });
+
+  socket.on('connect_error', (error) => {
+    dispatch(setConnectionError(error.message));
+  });
+
+  // Room events
+  socket.on('room:player_joined', ({ player }) => {
+    dispatch(addPlayer(player));
+  });
+
+  socket.on('room:player_left', ({ playerId }) => {
+    dispatch(removePlayer(playerId));
+  });
+
+  socket.on('room:player_ready', ({ playerId, isReady }) => {
+    dispatch(updatePlayer({ id: playerId, isReady }));
+  });
+
+  socket.on('room:player_disconnected', ({ playerId }) => {
+    dispatch(updatePlayer({ id: playerId, isConnected: false }));
+  });
+
+  socket.on('room:player_reconnected', ({ playerId }) => {
+    dispatch(updatePlayer({ id: playerId, isConnected: true }));
+  });
+
+  socket.on('room:host_changed', ({ newHostId }) => {
+    dispatch(setHost(newHostId));
+  });
+
+  socket.on('room:settings_updated', ({ settings }) => {
+    dispatch(setSettings(settings));
+  });
+
+  socket.on('room:closed', () => {
+    dispatch(clearRoom());
+  });
+
+  // Game lifecycle events
+  socket.on('game:starting', ({ countdown }) => {
+    dispatch(setCountdown(countdown));
+  });
+
+  socket.on('game:started', ({ gameState }) => {
+    dispatch(startGame());
+    dispatch(setGameState(gameState));
+  });
+
+  socket.on('game:state_update', ({ state }) => {
+    dispatch(setGameState(state));
+  });
+
+  socket.on('game:ended', (result) => {
+    dispatch(endGame(result));
+  });
+
+  // Error events
+  socket.on('error', (error) => {
+    console.error('Game socket error:', error);
+  });
+}
+
+/**
+ * Get or create the shared socket instance
+ */
+function getOrCreateSocket(dispatch: AppDispatch): GameSocket {
+  // Already connected - reuse
+  if (sharedSocket?.connected) {
+    dispatch(setConnectionStatus('connected'));
+    return sharedSocket;
+  }
+
+  // Exists but disconnected - reconnect
+  if (sharedSocket) {
+    dispatch(setConnectionStatus('connecting'));
+    sharedSocket.connect();
+    return sharedSocket;
+  }
+
+  // Create new socket
+  dispatch(setConnectionStatus('connecting'));
+
+  sharedSocket = io(`${SOCKET_BASE_URL}/game`, {
+    path: '/game-socket',
+    withCredentials: true,
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  attachEventHandlers(sharedSocket, dispatch);
+
+  return sharedSocket;
+}
+
+// =============================================================================
+// Hook
+// =============================================================================
+
+/**
+ * Hook for managing game socket connection.
+ * Uses a module-level singleton so the socket survives page navigations.
  */
 export function useGameSocket() {
   const dispatch = useDispatch();
-  const socketRef = useRef<GameSocket | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-
   const connectionStatus = useSelector((state: RootState) => state.game.connectionStatus);
 
   /**
-   * Connect to game socket
+   * Ensure socket is connected
    */
   const connect = useCallback(() => {
-    if (socketRef.current?.connected) return;
-
-    dispatch(setConnectionStatus('connecting'));
-
-    const socket: GameSocket = io(`${SOCKET_BASE_URL}/game`, {
-      path: '/game-socket',
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      forceNew: true,
-    });
-
-    // Connection events
-    socket.on('connect', () => {
-      dispatch(setConnectionStatus('connected'));
-    });
-
-    socket.on('disconnect', () => {
-      dispatch(setConnectionStatus('disconnected'));
-    });
-
-    socket.on('connect_error', (error) => {
-      dispatch(setConnectionError(error.message));
-    });
-
-    // Room events
-    socket.on('room:player_joined', ({ player }) => {
-      dispatch(addPlayer(player));
-    });
-
-    socket.on('room:player_left', ({ playerId }) => {
-      dispatch(removePlayer(playerId));
-    });
-
-    socket.on('room:player_ready', ({ playerId, isReady }) => {
-      dispatch(updatePlayer({ id: playerId, isReady }));
-    });
-
-    socket.on('room:player_disconnected', ({ playerId }) => {
-      dispatch(updatePlayer({ id: playerId, isConnected: false }));
-    });
-
-    socket.on('room:player_reconnected', ({ playerId }) => {
-      dispatch(updatePlayer({ id: playerId, isConnected: true }));
-    });
-
-    socket.on('room:host_changed', ({ newHostId }) => {
-      dispatch(setHost(newHostId));
-    });
-
-    socket.on('room:settings_updated', ({ settings }) => {
-      dispatch(setSettings(settings));
-    });
-
-    socket.on('room:closed', () => {
-      dispatch(clearRoom());
-    });
-
-    // Game lifecycle events
-    socket.on('game:starting', ({ countdown }) => {
-      dispatch(setCountdown(countdown));
-    });
-
-    socket.on('game:started', ({ gameState }) => {
-      dispatch(startGame());
-      dispatch(setGameState(gameState));
-    });
-
-    socket.on('game:state_update', ({ state }) => {
-      dispatch(setGameState(state));
-    });
-
-    socket.on('game:ended', (result) => {
-      dispatch(endGame(result));
-    });
-
-    // Error events
-    socket.on('error', (error) => {
-      console.error('Game socket error:', error);
-    });
-
-    socketRef.current = socket;
-    setIsInitialized(true);
+    getOrCreateSocket(dispatch);
   }, [dispatch]);
 
   /**
-   * Disconnect from game socket
+   * Fully disconnect and destroy the socket.
+   * Only call when explicitly leaving the games section.
    */
   const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (sharedSocket) {
+      sharedSocket.removeAllListeners();
+      sharedSocket.disconnect();
+      sharedSocket = null;
+      handlersAttached = false;
     }
-    setIsInitialized(false);
-  }, []);
+    dispatch(setConnectionStatus('disconnected'));
+  }, [dispatch]);
 
   /**
    * Create a new room
@@ -155,12 +195,12 @@ export function useGameSocket() {
   const createRoom = useCallback(
     (gameId: string, settings?: Partial<GameSettings>): Promise<string | null> => {
       return new Promise((resolve) => {
-        if (!socketRef.current?.connected) {
+        if (!sharedSocket?.connected) {
           resolve(null);
           return;
         }
 
-        socketRef.current.emit('room:create', { gameId, settings }, (response) => {
+        sharedSocket.emit('room:create', { gameId, settings }, (response) => {
           if (response.success && response.roomCode && response.room) {
             dispatch(
               setRoomState({
@@ -188,12 +228,12 @@ export function useGameSocket() {
   const joinRoom = useCallback(
     (roomCode: string): Promise<boolean> => {
       return new Promise((resolve) => {
-        if (!socketRef.current?.connected) {
+        if (!sharedSocket?.connected) {
           resolve(false);
           return;
         }
 
-        socketRef.current.emit('room:join', { roomCode }, (response) => {
+        sharedSocket.emit('room:join', { roomCode }, (response) => {
           if (response.success && response.room) {
             dispatch(
               setRoomState({
@@ -219,8 +259,8 @@ export function useGameSocket() {
    * Leave current room
    */
   const leaveRoom = useCallback(() => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('room:leave');
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('room:leave');
     }
     dispatch(clearRoom());
   }, [dispatch]);
@@ -229,8 +269,8 @@ export function useGameSocket() {
    * Set ready status
    */
   const setReady = useCallback((isReady: boolean) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('room:ready', { isReady });
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('room:ready', { isReady });
     }
   }, []);
 
@@ -238,8 +278,8 @@ export function useGameSocket() {
    * Update room settings (host only)
    */
   const updateRoomSettings = useCallback((settings: Partial<GameSettings>) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('room:update_settings', { settings });
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('room:update_settings', { settings });
     }
   }, []);
 
@@ -247,8 +287,8 @@ export function useGameSocket() {
    * Start the game (host only)
    */
   const startGameAction = useCallback(() => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('game:start');
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('game:start');
     }
   }, []);
 
@@ -256,8 +296,8 @@ export function useGameSocket() {
    * Send a game action
    */
   const sendAction = useCallback((type: string, payload: Record<string, unknown>) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('game:action', { type, payload });
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('game:action', { type, payload });
     }
   }, []);
 
@@ -266,10 +306,10 @@ export function useGameSocket() {
    */
   const onGameEvent = useCallback(
     <T>(event: string, handler: (data: T) => void) => {
-      if (socketRef.current) {
-        socketRef.current.on(event as keyof ServerToClientEvents, handler as () => void);
+      if (sharedSocket) {
+        sharedSocket.on(event as keyof ServerToClientEvents, handler as () => void);
         return () => {
-          socketRef.current?.off(event as keyof ServerToClientEvents, handler as () => void);
+          sharedSocket?.off(event as keyof ServerToClientEvents, handler as () => void);
         };
       }
       return () => {};
@@ -277,19 +317,16 @@ export function useGameSocket() {
     []
   );
 
-  // Auto-connect on mount
+  // Ensure socket is connected on mount (no cleanup - socket persists)
   useEffect(() => {
     connect();
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
+  }, [connect]);
 
   return {
-    socket: socketRef.current,
+    socket: sharedSocket,
     isConnected: connectionStatus === 'connected',
     connectionStatus,
-    isInitialized,
+    isInitialized: sharedSocket !== null,
     connect,
     disconnect,
     createRoom,
