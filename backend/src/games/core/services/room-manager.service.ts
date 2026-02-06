@@ -6,8 +6,8 @@
  */
 
 import type { Namespace, Socket } from 'socket.io';
-import { nanoid } from 'nanoid';
 import { gameRegistry } from './game-registry.service';
+import { generateRoomCode as generateCode } from '../utils/room-code.util';
 import { GameContextImpl } from './game-context.impl';
 import type { IGameDefinition } from '../interfaces/game.interface';
 import type {
@@ -61,7 +61,7 @@ export class RoomManagerService {
   /**
    * Create a new game room
    */
-  createRoom(socket: Socket, options: CreateRoomOptions): { success: boolean; roomCode?: string; error?: string } {
+  createRoom(socket: Socket, options: CreateRoomOptions): { success: boolean; roomCode?: string; room?: RoomJoinedEvent; error?: string } {
     const { gameId, teamId, hostId, hostName, settings } = options;
     const socketData = socket.data as SocketData;
 
@@ -124,7 +124,11 @@ export class RoomManagerService {
 
     logger.info(`Room created: ${roomCode} for game ${gameId} by user ${hostId}`);
 
-    return { success: true, roomCode };
+    return {
+      success: true,
+      roomCode,
+      room: this.getRoomState(roomCode, hostId),
+    };
   }
 
   /**
@@ -170,6 +174,9 @@ export class RoomManagerService {
       // Notify about reconnection
       game.onPlayerReconnect?.(context, userId);
 
+      // Broadcast reconnection to other players
+      socket.to(normalizedCode).emit('room:player_reconnected', { playerId: userId });
+
       logger.info(`Player ${userId} reconnected to room ${normalizedCode}`);
 
       return {
@@ -209,6 +216,11 @@ export class RoomManagerService {
 
     // Notify game
     game.onPlayerJoin(context, player);
+
+    // Broadcast to other players in the room
+    socket.to(normalizedCode).emit('room:player_joined', {
+      player: this.sanitizePlayer(player),
+    });
 
     logger.info(`Player ${userId} joined room ${normalizedCode}`);
 
@@ -285,6 +297,12 @@ export class RoomManagerService {
 
     // Notify game
     game.onPlayerLeave(context, userId);
+
+    // Broadcast player removal to remaining players
+    this.namespace.to(room.code).emit('room:player_left', {
+      playerId: userId,
+      reason,
+    });
 
     // Handle host leaving
     if (room.hostId === userId && room.players.size > 0) {
@@ -382,6 +400,11 @@ export class RoomManagerService {
 
     // Notify game
     game.onSettingsUpdate?.(context, room.settings);
+
+    // Broadcast updated settings to all players in the room
+    this.namespace.to(roomCode).emit('room:settings_updated', {
+      settings: room.settings,
+    });
 
     return { success: true };
   }
@@ -520,7 +543,7 @@ export class RoomManagerService {
   private generateRoomCode(): string {
     let code: string;
     do {
-      code = nanoid(ROOM_CODE_LENGTH).toUpperCase();
+      code = generateCode(ROOM_CODE_LENGTH);
     } while (this.rooms.has(code));
     return code;
   }
@@ -551,17 +574,24 @@ export class RoomManagerService {
   }
 
   /**
+   * Sanitize a single player for public transmission
+   */
+  private sanitizePlayer(player: Player): PublicPlayer {
+    return {
+      id: player.id,
+      name: player.name,
+      avatarUrl: player.avatarUrl,
+      isReady: player.isReady,
+      isConnected: player.isConnected,
+      score: player.score,
+    };
+  }
+
+  /**
    * Sanitize players for public transmission
    */
   private sanitizePlayers(players: Iterable<Player>): PublicPlayer[] {
-    return Array.from(players).map((p) => ({
-      id: p.id,
-      name: p.name,
-      avatarUrl: p.avatarUrl,
-      isReady: p.isReady,
-      isConnected: p.isConnected,
-      score: p.score,
-    }));
+    return Array.from(players).map((p) => this.sanitizePlayer(p));
   }
 
   /**

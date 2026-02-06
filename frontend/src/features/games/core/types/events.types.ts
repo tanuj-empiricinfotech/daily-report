@@ -1,10 +1,10 @@
 /**
- * Socket Event Types for Games Platform
+ * Socket Event Types for Frontend
  *
  * Type definitions for all socket.io events.
  */
 
-import type { PublicPlayer, GameSettings, PlayerScore, GameInfo } from './common.types';
+import type { Player, GameInfo, GameSettings, PlayerScore } from './game.types';
 
 // =============================================================================
 // Server -> Client Events
@@ -20,7 +20,7 @@ export interface ServerToClientEvents {
   'room:joined': (data: RoomJoinedEvent) => void;
   'room:left': (data: { playerId: number }) => void;
   'room:state': (data: RoomStateEvent) => void;
-  'room:player_joined': (data: { player: PublicPlayer }) => void;
+  'room:player_joined': (data: { player: Player }) => void;
   'room:player_left': (data: { playerId: number; reason: string }) => void;
   'room:player_ready': (data: { playerId: number; isReady: boolean }) => void;
   'room:player_disconnected': (data: { playerId: number }) => void;
@@ -36,11 +36,7 @@ export interface ServerToClientEvents {
   'game:ended': (data: GameEndedEvent) => void;
 
   // Error events
-  'error': (data: GameErrorEvent) => void;
-
-  // Game-specific events are dynamically typed
-  // They follow the pattern: 'gameId:eventName'
-  // Examples: 'skribbl:turn_start', 'skribbl:stroke', 'trivia:question'
+  error: (data: GameErrorEvent) => void;
 }
 
 // =============================================================================
@@ -49,8 +45,14 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   // Room events
-  'room:create': (data: CreateRoomEvent, callback: (response: RoomCreatedResponse) => void) => void;
-  'room:join': (data: JoinRoomEvent, callback: (response: JoinRoomResponse) => void) => void;
+  'room:create': (
+    data: CreateRoomEvent,
+    callback: (response: RoomCreatedResponse) => void
+  ) => void;
+  'room:join': (
+    data: JoinRoomEvent,
+    callback: (response: JoinRoomResponse) => void
+  ) => void;
   'room:leave': () => void;
   'room:ready': (data: { isReady: boolean }) => void;
   'room:update_settings': (data: { settings: Partial<GameSettings> }) => void;
@@ -61,7 +63,7 @@ export interface ClientToServerEvents {
   'game:action': (data: GameActionEvent) => void;
 
   // Utility
-  'ping': (callback: (response: { timestamp: number }) => void) => void;
+  ping: (callback: (response: { timestamp: number }) => void) => void;
 }
 
 // =============================================================================
@@ -77,7 +79,7 @@ export interface RoomCreatedEvent {
 export interface RoomJoinedEvent {
   roomCode: string;
   gameInfo: GameInfo;
-  players: PublicPlayer[];
+  players: Player[];
   settings: GameSettings;
   hostId: number;
   isHost: boolean;
@@ -86,7 +88,7 @@ export interface RoomJoinedEvent {
 export interface RoomStateEvent {
   roomCode: string;
   gameId: string;
-  players: PublicPlayer[];
+  players: Player[];
   settings: GameSettings;
   hostId: number;
   status: string;
@@ -133,15 +135,4 @@ export interface JoinRoomResponse {
   success: boolean;
   room?: RoomJoinedEvent;
   error?: string;
-}
-
-// =============================================================================
-// Socket Data (attached to socket instance)
-// =============================================================================
-
-export interface SocketData {
-  userId: number;
-  userName: string;
-  teamId: number;
-  roomCode: string | null;
 }

@@ -49,4 +49,3 @@ export function getAuthenticatedUser(req: AuthRequest): { userId: number; email:
   }
   return req.user;
 }
-

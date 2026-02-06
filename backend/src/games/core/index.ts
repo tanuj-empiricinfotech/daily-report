@@ -17,5 +17,8 @@ export * from './services';
 export * from './types/common.types';
 export * from './types/events.types';
 
+// Utilities
+export * from './utils';
+
 // Socket setup
 export { initializeGameSocket, getGameNamespace, getRoomManager } from './socket/game.socket';

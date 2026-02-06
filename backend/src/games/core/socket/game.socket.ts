@@ -108,7 +108,7 @@ function setupRoomEvents(socket: Socket<ClientToServerEvents, ServerToClientEven
     });
 
     if (result.success) {
-      callback({ success: true, roomCode: result.roomCode });
+      callback({ success: true, roomCode: result.roomCode, room: result.room });
     } else {
       callback({ success: false, error: result.error });
     }

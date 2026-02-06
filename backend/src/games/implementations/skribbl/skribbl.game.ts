@@ -26,7 +26,7 @@ import {
   isUndoStrokeAction,
 } from './skribbl.actions';
 import { WordService } from './services/word.service';
-import { nanoid } from 'nanoid';
+import { generateId } from '../../core/utils/room-code.util';
 
 /**
  * Skribbl Game Class
@@ -535,7 +535,7 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
     type: GameChatMessage['type']
   ): void {
     this.state.messages.push({
-      id: nanoid(8),
+      id: generateId(8),
       playerId,
       playerName,
       content,
@@ -549,7 +549,7 @@ export class SkribblGame extends TurnBasedGame<SkribblState, SkribblAction, Skri
    */
   private addSystemMessage(content: string): void {
     this.state.messages.push({
-      id: nanoid(8),
+      id: generateId(8),
       playerId: 0,
       playerName: 'System',
       content,

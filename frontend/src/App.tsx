@@ -18,6 +18,7 @@ import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
 import { ChatPage } from './pages/ChatPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { GamesListPage, GameRoomPage, JoinGamePage } from './features/games/pages';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -114,6 +115,34 @@ function AppRoutes() {
             <DashboardLayout>
               <MessagesPage />
             </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Games Routes */}
+      <Route
+        path="/games"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <GamesListPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/games/room/:roomCode"
+        element={
+          <ProtectedRoute>
+            <GameRoomPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/games/join/:roomCode"
+        element={
+          <ProtectedRoute>
+            <JoinGamePage />
           </ProtectedRoute>
         }
       />
