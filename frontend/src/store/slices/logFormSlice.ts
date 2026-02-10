@@ -37,7 +37,6 @@ const logFormSlice = createSlice({
   reducers: {
     setFormDate(state, action: PayloadAction<string>) {
       state.date = action.payload;
-      state.isDirty = true;
     },
 
     setFormRows(state, action: PayloadAction<LogRow[]>) {

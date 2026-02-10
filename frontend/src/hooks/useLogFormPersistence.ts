@@ -95,6 +95,13 @@ export function useLogFormPersistence({
     }
   }, [isEditMode, initialData]);
 
+  // In create mode, reset to fresh defaults if persisted state has no meaningful changes
+  React.useEffect(() => {
+    if (!isEditMode && !reduxState.isDirty) {
+      dispatch(clearForm());
+    }
+  }, [isEditMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Create mode handlers (Redux)
   const reduxHandlers = React.useMemo(() => ({
     setDate: (date: string) => dispatch(setFormDate(date)),
