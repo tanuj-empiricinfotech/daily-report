@@ -104,7 +104,15 @@ app.use(cors({
   origin: corsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Access-Control-Allow-Origin', 'ngrok-skip-browser-warning', 'X-Pinggy-No-Screen'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Access-Control-Allow-Origin',
+    'ngrok-skip-browser-warning',
+    'X-Pinggy-No-Screen',
+    'User-Agent',
+  ],
   exposedHeaders: ['Set-Cookie'],
 }));
 app.use(express.json());

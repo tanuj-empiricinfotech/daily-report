@@ -77,7 +77,7 @@ export function ChatPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <IconMessageCircle className="w-5 h-5 text-primary" />
@@ -105,7 +105,7 @@ export function ChatPage() {
         </Card>
 
         {/* Context Panel */}
-        <div className="w-80 flex-shrink-0 space-y-4">
+        <div className="w-80 shrink-0 space-y-4">
           {/* Date Range Filter */}
           <Card>
             <CardHeader className="pb-3">
