@@ -2,7 +2,7 @@
  * AI Provider Registry
  *
  * Modular architecture for AI providers following the Strategy Pattern.
- * Currently supports OpenAI, designed for easy extension to Anthropic, Google, etc.
+ * Currently supports OpenAI and Google Gemini, designed for easy extension to Anthropic, etc.
  *
  * Usage:
  *   const provider = createAIProvider();
@@ -10,6 +10,7 @@
  */
 
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
+import { createGoogleGenerativeAI, type GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import type { LanguageModel } from 'ai';
 import type { AIProviderType } from './types';
 
@@ -26,9 +27,9 @@ const MODEL_TIERS = {
     powerful: 'claude-3-opus-20240229',
   },
   google: {
-    fast: 'gemini-1.5-flash',
-    standard: 'gemini-1.5-pro',
-    powerful: 'gemini-1.5-pro',
+    fast: 'gemini-2.0-flash-lite',
+    standard: 'gemini-2.0-flash',
+    powerful: 'gemini-2.0-pro',
   },
 } as const;
 
@@ -65,6 +66,27 @@ class OpenAIProviderImpl implements AIProvider {
   }
 }
 
+/**
+ * Google Gemini Provider Implementation
+ */
+class GoogleProviderImpl implements AIProvider {
+  readonly type: AIProviderType = 'google';
+  private provider: GoogleGenerativeAIProvider;
+
+  constructor(apiKey: string) {
+    this.provider = createGoogleGenerativeAI({ apiKey });
+  }
+
+  getModel(tier: ModelTier = 'standard'): LanguageModel {
+    const modelId = this.getModelId(tier);
+    return this.provider(modelId);
+  }
+
+  getModelId(tier: ModelTier = 'standard'): string {
+    return MODEL_TIERS.google[tier];
+  }
+}
+
 // Provider registry for managing multiple providers
 const providerRegistry = new Map<AIProviderType, AIProvider>();
 
@@ -91,8 +113,14 @@ function getProvider(type: AIProviderType): AIProvider {
     }
     case 'anthropic':
       throw new Error('Anthropic provider not yet implemented. Install @ai-sdk/anthropic to add support.');
-    case 'google':
-      throw new Error('Google provider not yet implemented. Install @ai-sdk/google to add support.');
+    case 'google': {
+      const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      if (!apiKey) {
+        throw new Error('GOOGLE_GENERATIVE_AI_API_KEY environment variable is required');
+      }
+      provider = new GoogleProviderImpl(apiKey);
+      break;
+    }
     default:
       throw new Error(`Unknown AI provider type: ${type}`);
   }
