@@ -29,44 +29,21 @@ export function DateRangePicker({
   error,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState<DateRange | undefined>(() => {
+
+  const date = React.useMemo<DateRange | undefined>(() => {
     if (!value) return undefined
     return {
       from: value.from ? (typeof value.from === 'string' ? new Date(value.from) : value.from) : undefined,
       to: value.to ? (typeof value.to === 'string' ? new Date(value.to) : value.to) : undefined,
     }
-  })
-
-  React.useEffect(() => {
-    if (value) {
-      setDate({
-        from: value.from ? (typeof value.from === 'string' ? new Date(value.from) : value.from) : undefined,
-        to: value.to ? (typeof value.to === 'string' ? new Date(value.to) : value.to) : undefined,
-      })
-    } else {
-      setDate(undefined)
-    }
   }, [value])
 
   const handleSelect = (range: DateRange | undefined) => {
-    setDate(range)
-    
-    // Only close the popover when both dates are selected
+    onChange?.(range ? { from: range.from, to: range.to } : undefined)
+
+    // Close popover only when both dates are selected
     if (range?.from && range?.to) {
-      if (onChange) {
-        onChange({ from: range.from, to: range.to })
-      }
       setOpen(false)
-    } else if (range?.from) {
-      // First date selected, keep popover open
-      if (onChange) {
-        onChange({ from: range.from, to: undefined })
-      }
-    } else {
-      // Range cleared
-      if (onChange) {
-        onChange(undefined)
-      }
     }
   }
 
@@ -77,11 +54,7 @@ export function DateRangePicker({
           {label}
         </label>
       )}
-      <Popover open={open} onOpenChange={(isOpen) => {
-        // Prevent popover from closing while selecting range (only first date picked)
-        if (!isOpen && date?.from && !date?.to) return
-        setOpen(isOpen)
-      }}>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
