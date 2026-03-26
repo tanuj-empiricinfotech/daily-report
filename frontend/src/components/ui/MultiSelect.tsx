@@ -4,8 +4,8 @@
  * Following clean code principles - reusable, type-safe
  */
 
-import { useState, useMemo } from 'react';
-import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react';
+import { useState, useMemo, useRef } from 'react';
+import { IconCheck, IconChevronDown, IconX, IconSearch } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,6 +51,14 @@ export function MultiSelect({
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const term = search.toLowerCase();
+    return options.filter((opt) => opt.label.toLowerCase().includes(term));
+  }, [options, search]);
 
   // Toggle selection
   const handleToggle = (optionValue: string | number) => {
@@ -104,7 +112,23 @@ export function MultiSelect({
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-64" align="start">
+        <DropdownMenuContent className="w-64" align="start" onCloseAutoFocus={() => setSearch('')}>
+          {/* Search input */}
+          <div className="px-2 py-1.5">
+            <div className="relative">
+              <IconSearch className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                placeholder="Search..."
+                className="w-full rounded-md border border-input bg-background py-1.5 pl-7 pr-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          </div>
+
           {/* Action buttons */}
           <div className="flex items-center justify-between px-2 py-1.5">
             <Button
@@ -130,12 +154,12 @@ export function MultiSelect({
 
           {/* Options */}
           <div className="max-h-64 overflow-y-auto">
-            {options.length === 0 ? (
+            {filteredOptions.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                No options available
+                {search.trim() ? 'No matches found' : 'No options available'}
               </div>
             ) : (
-              options.map((option) => {
+              filteredOptions.map((option) => {
                 const isSelected = value.includes(option.value);
                 return (
                   <DropdownMenuItem
