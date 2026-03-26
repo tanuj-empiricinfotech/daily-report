@@ -8,7 +8,14 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChatThread } from '@/components/chat/ChatThread';
@@ -138,33 +145,36 @@ export function ChatPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <Select
+                <Combobox
                   value={selectedUserId?.toString() || 'self'}
                   onValueChange={(value) =>
-                    setSelectedUserId(value === 'self' ? undefined : parseInt(value, 10))
+                    setSelectedUserId(value === 'self' ? undefined : parseInt(value as string, 10))
                   }
-                  disabled={usersLoading}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="self">
-                      <span className="flex items-center gap-2">
-                        My Logs
-                        <Badge variant="secondary" className="text-xs">You</Badge>
-                      </span>
-                    </SelectItem>
-                    {teamUsers.map((teamUser) => (
-                      <SelectItem key={teamUser.id} value={teamUser.id.toString()}>
-                        {teamUser.name}
-                        {teamUser.id === user?.id && (
-                          <Badge variant="secondary" className="ml-2 text-xs">You</Badge>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <ComboboxInput
+                    placeholder="Search team member..."
+                    disabled={usersLoading}
+                  />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>No members found</ComboboxEmpty>
+                      <ComboboxItem value="self">
+                        <span className="flex items-center gap-2">
+                          My Logs
+                          <Badge variant="secondary" className="text-xs">You</Badge>
+                        </span>
+                      </ComboboxItem>
+                      {teamUsers.map((teamUser) => (
+                        <ComboboxItem key={teamUser.id} value={teamUser.id.toString()}>
+                          {teamUser.name}
+                          {teamUser.id === user?.id && (
+                            <Badge variant="secondary" className="ml-2 text-xs">You</Badge>
+                          )}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
               </CardContent>
             </Card>
           )}
