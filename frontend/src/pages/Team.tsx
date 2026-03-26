@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder, IconUserCheck, IconUserOff } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { useUsersWithProjectsByTeam, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/query/hooks/useUsers';
+import { useUsersWithProjectsByTeam, useCreateUser, useUpdateUser, useDeleteUser, useToggleUserActive } from '@/lib/query/hooks/useUsers';
 import { useTeams } from '@/lib/query/hooks/useTeams';
 import type { User, CreateUserDto, UserWithProjectsAndTeam } from '@/lib/api/types';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -86,12 +86,16 @@ export function Team() {
   );
   const [assignProjectsUserId, setAssignProjectsUserId] = useState<number | null>(null);
   const [assignProjectsUserName, setAssignProjectsUserName] = useState<string | null>(null);
+  const [toggleActiveUserId, setToggleActiveUserId] = useState<number | null>(null);
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
 
-  // Fetch data - single API call for users with projects
-  const { data: users = [], isLoading: usersLoading } = useUsersWithProjectsByTeam(teamIdForQuery);
+  // Fetch data - single API call for users with projects (include inactive for admins)
+  const { data: users = [], isLoading: usersLoading } = useUsersWithProjectsByTeam(
+    teamIdForQuery,
+    { includeInactive: true }
+  );
 
   // Fetch teams only for form dropdown and team selector
   const { data: teams = [], isLoading: teamsLoading } = useTeams({ isAdmin });
@@ -100,6 +104,7 @@ export function Team() {
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const toggleActiveMutation = useToggleUserActive();
 
   // Copy email to clipboard
   const handleCopyEmail = async (email: string) => {
@@ -212,6 +217,24 @@ export function Team() {
     }
   };
 
+  // Handle toggle active status
+  const handleToggleActiveClick = (userId: number) => {
+    if (userId === user?.id) return;
+    setToggleActiveUserId(userId);
+  };
+
+  const handleToggleActiveConfirm = async () => {
+    if (!toggleActiveUserId) return;
+    try {
+      await toggleActiveMutation.mutateAsync(toggleActiveUserId);
+      setToggleActiveUserId(null);
+    } catch (error) {
+      // Error will be shown via mutation error state
+    }
+  };
+
+  const toggleActiveUser = users.find((u) => u.id === toggleActiveUserId);
+
   // Table columns
   const columns = useMemo<Column<UserWithProjectsAndTeam>[]>(
     () => [
@@ -263,6 +286,24 @@ export function Team() {
           </Badge>
         ),
         width: '120px',
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        accessorFn: (row) => (row.is_active ? 'Active' : 'Inactive'),
+        enableSorting: true,
+        cell: (row) => (
+          <Badge
+            variant={row.is_active ? 'default' : 'secondary'}
+            className={row.is_active
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+            }
+          >
+            {row.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        ),
+        width: '100px',
       },
       {
         id: 'team',
@@ -346,6 +387,23 @@ export function Team() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => handleToggleActiveClick(row.id)}
+              disabled={row.id === user?.id}
+              title={row.is_active ? 'Deactivate user' : 'Activate user'}
+            >
+              {row.is_active ? (
+                <IconUserOff
+                  className={`h-4 w-4 ${row.id === user?.id ? 'text-muted-foreground' : 'text-orange-500'}`}
+                />
+              ) : (
+                <IconUserCheck
+                  className={`h-4 w-4 ${row.id === user?.id ? 'text-muted-foreground' : 'text-green-500'}`}
+                />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleDeleteClick(row.id)}
               disabled={row.id === user?.id}
             >
@@ -356,7 +414,7 @@ export function Team() {
             </Button>
           </div>
         ),
-        width: '120px',
+        width: '160px',
       },
     ],
     [user?.id, copiedEmail]
@@ -366,7 +424,8 @@ export function Team() {
   const mutationError =
     createUserMutation.error ||
     updateUserMutation.error ||
-    deleteUserMutation.error;
+    deleteUserMutation.error ||
+    toggleActiveMutation.error;
 
   return (
     <div className="space-y-6">
@@ -565,6 +624,41 @@ export function Team() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteUserMutation.isPending ? <LoadingSpinner size="sm" /> : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Toggle Active Confirmation Dialog */}
+      <AlertDialog open={toggleActiveUserId !== null} onOpenChange={() => setToggleActiveUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleActiveUser?.is_active ? 'Deactivate' : 'Activate'} Team Member
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleActiveUser?.is_active
+                ? `Are you sure you want to deactivate ${toggleActiveUser?.name}? They will no longer be able to log in or submit daily logs.`
+                : `Are you sure you want to reactivate ${toggleActiveUser?.name}? They will regain access to log in and submit daily logs.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleToggleActiveConfirm}
+              className={toggleActiveUser?.is_active
+                ? 'bg-orange-600 text-white hover:bg-orange-700'
+                : 'bg-green-600 text-white hover:bg-green-700'
+              }
+            >
+              {toggleActiveMutation.isPending ? (
+                <LoadingSpinner size="sm" />
+              ) : toggleActiveUser?.is_active ? (
+                'Deactivate'
+              ) : (
+                'Activate'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -30,6 +30,7 @@ export const endpoints = {
     create: `${API_BASE}/users`,
     update: (id: number) => `${API_BASE}/users/${id}`,
     delete: (id: number) => `${API_BASE}/users/${id}`,
+    toggleActive: (id: number) => `${API_BASE}/users/${id}/toggle-active`,
   },
   assignments: {
     create: `${API_BASE}/assignments`,

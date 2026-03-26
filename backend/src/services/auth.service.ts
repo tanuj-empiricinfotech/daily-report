@@ -3,7 +3,7 @@ import { UsersRepository } from '../db/repositories/users.repository';
 import { CreateUserDto, User } from '../types';
 import { generateToken } from '../utils/jwt';
 import type { JwtPayload } from '../types';
-import { BadRequestError, UnauthorizedError } from '../utils/errors';
+import { BadRequestError, ForbiddenError, UnauthorizedError } from '../utils/errors';
 import { PASSWORD_CONFIG, PASSWORD_ERROR_MESSAGES } from '../config/password.config';
 
 export class AuthService {
@@ -36,6 +36,10 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(email);
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (user.is_active === false) {
+      throw new ForbiddenError('Your account has been deactivated. Contact your administrator.');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);

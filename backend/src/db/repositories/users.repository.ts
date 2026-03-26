@@ -2,6 +2,10 @@ import { BaseRepository } from './base.repository';
 import { User, CreateUserDto, UserWithProjectsAndTeam } from '../../types';
 import { query } from '../connection';
 
+interface UserQueryOptions {
+  includeInactive?: boolean;
+}
+
 export class UsersRepository extends BaseRepository<User> {
   protected tableName = 'users';
 
@@ -23,15 +27,22 @@ export class UsersRepository extends BaseRepository<User> {
     return result.rows[0] || null;
   }
 
-  async findByTeamId(teamId: number): Promise<User[]> {
+  async findByTeamId(teamId: number, options?: UserQueryOptions): Promise<User[]> {
+    const activeFilter = options?.includeInactive ? '' : ' AND is_active = TRUE';
     const result = await query(
-      `SELECT * FROM ${this.tableName} WHERE team_id = $1`,
+      `SELECT * FROM ${this.tableName} WHERE team_id = $1${activeFilter}`,
       [teamId]
     );
     return result.rows;
   }
 
-  async update(id: number, data: Partial<CreateUserDto & { password_hash?: string; email?: string }>): Promise<User | null> {
+  async findAll(options?: UserQueryOptions): Promise<User[]> {
+    const activeFilter = options?.includeInactive ? '' : ' WHERE is_active = TRUE';
+    const result = await query(`SELECT * FROM ${this.tableName}${activeFilter}`);
+    return result.rows;
+  }
+
+  async update(id: number, data: Partial<CreateUserDto & { password_hash?: string; email?: string; is_active?: boolean }>): Promise<User | null> {
     const updates: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
@@ -56,6 +67,10 @@ export class UsersRepository extends BaseRepository<User> {
       updates.push(`password_hash = $${paramCount++}`);
       values.push(data.password_hash);
     }
+    if (data.is_active !== undefined) {
+      updates.push(`is_active = $${paramCount++}`);
+      values.push(data.is_active);
+    }
 
     if (updates.length === 0) {
       return this.findById(id);
@@ -69,9 +84,10 @@ export class UsersRepository extends BaseRepository<User> {
     return result.rows[0] || null;
   }
 
-  async findAllMembers(): Promise<User[]> {
+  async findAllMembers(options?: UserQueryOptions): Promise<User[]> {
+    const activeFilter = options?.includeInactive ? '' : ' AND is_active = TRUE';
     const result = await query(
-      `SELECT * FROM ${this.tableName} WHERE role = 'member'`
+      `SELECT * FROM ${this.tableName} WHERE role = 'member'${activeFilter}`
     );
     return result.rows;
   }
@@ -90,15 +106,18 @@ export class UsersRepository extends BaseRepository<User> {
    * and a 'team_name' field with the team name.
    * Projects array is empty if the user has no assigned projects.
    * @param teamId The id of the team whose users should be fetched.
+   * @param options Optional query options (e.g., includeInactive)
    */
-  async findAllWithProjectsByTeamId(teamId: number): Promise<UserWithProjectsAndTeam[]> {
+  async findAllWithProjectsByTeamId(teamId: number, options?: UserQueryOptions): Promise<UserWithProjectsAndTeam[]> {
+    const activeFilter = options?.includeInactive ? '' : ' AND u.is_active = TRUE';
     const result = await query(
-      `SELECT 
+      `SELECT
         u.id,
         u.email,
         u.name,
         u.role,
         u.team_id,
+        u.is_active,
         u.created_at,
         u.updated_at,
         t.name AS team_name,
@@ -121,12 +140,11 @@ export class UsersRepository extends BaseRepository<User> {
       LEFT JOIN teams t ON u.team_id = t.id
       LEFT JOIN project_assignments pa ON u.id = pa.user_id
       LEFT JOIN projects p ON pa.project_id = p.id
-      WHERE u.team_id = $1
-      GROUP BY u.id, u.email, u.name, u.role, u.team_id, u.created_at, u.updated_at, t.name
+      WHERE u.team_id = $1${activeFilter}
+      GROUP BY u.id, u.email, u.name, u.role, u.team_id, u.is_active, u.created_at, u.updated_at, t.name
       ORDER BY u.id`,
       [teamId]
     );
     return result.rows;
   }
 }
-

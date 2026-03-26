@@ -103,7 +103,8 @@ export class TeamsSummaryService {
     }
 
     // Get all users in this team (for getting user names)
-    const teamUsers = await this.usersRepository.findByTeamId(team.id);
+    // Include inactive users so their names still appear correctly in historical log summaries
+    const teamUsers = await this.usersRepository.findByTeamId(team.id, { includeInactive: true });
     const userMap = new Map<number, User>();
     teamUsers.forEach(user => userMap.set(user.id, user));
 

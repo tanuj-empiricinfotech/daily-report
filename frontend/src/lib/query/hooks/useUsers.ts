@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client, { endpoints } from '../../api/client';
 import type { User, ApiResponse, CreateUserDto, UserWithProjectsAndTeam } from '../../api/types';
 
+interface UseUsersByTeamOptions {
+  includeInactive?: boolean;
+}
+
 export const useUsers = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['users'],
@@ -13,30 +17,43 @@ export const useUsers = (enabled: boolean = true) => {
   });
 };
 
-export const useUsersByTeam = (teamId: number | null, isAdmin: boolean | undefined) => {
+export const useUsersByTeam = (
+  teamId: number | null,
+  isAdmin: boolean | undefined,
+  options?: UseUsersByTeamOptions
+) => {
+  const includeInactive = options?.includeInactive ?? false;
+
   return useQuery({
-    queryKey: ['users', 'team', teamId],
+    queryKey: ['users', 'team', teamId, { includeInactive }],
     queryFn: async () => {
+      const params = includeInactive ? '?includeInactive=true' : '';
       if (teamId === null) {
-        const response = await client.get<ApiResponse<User[]>>(endpoints.users.list);
+        const response = await client.get<ApiResponse<User[]>>(endpoints.users.list + params);
         return response.data.data;
       }
-      const response = await client.get<ApiResponse<User[]>>(endpoints.users.getByTeam(teamId));
+      const response = await client.get<ApiResponse<User[]>>(endpoints.users.getByTeam(teamId) + params);
       return response.data.data;
     },
     enabled: !!isAdmin
   });
 };
 
-export const useUsersWithProjectsByTeam = (teamId: number | null) => {
+export const useUsersWithProjectsByTeam = (
+  teamId: number | null,
+  options?: UseUsersByTeamOptions
+) => {
+  const includeInactive = options?.includeInactive ?? false;
+
   return useQuery({
-    queryKey: ['users', 'team', teamId, 'with-projects'],
+    queryKey: ['users', 'team', teamId, 'with-projects', { includeInactive }],
     queryFn: async () => {
       if (teamId === null) {
         return [];
       }
+      const params = includeInactive ? '?includeInactive=true' : '';
       const response = await client.get<ApiResponse<UserWithProjectsAndTeam[]>>(
-        endpoints.users.getByTeamWithProjects(teamId)
+        endpoints.users.getByTeamWithProjects(teamId) + params
       );
       return response.data.data;
     },
@@ -89,3 +106,16 @@ export const useDeleteUser = () => {
   });
 };
 
+export const useToggleUserActive = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await client.patch<ApiResponse<User>>(endpoints.users.toggleActive(id));
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};

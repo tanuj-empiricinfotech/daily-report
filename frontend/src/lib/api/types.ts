@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: 'admin' | 'member';
   team_id: number | null;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,7 @@ export interface UserWithProjects {
   name: string;
   role: 'admin' | 'member';
   team_id: number | null;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
   projects: Array<{

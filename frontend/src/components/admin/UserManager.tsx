@@ -42,7 +42,7 @@ function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProp
     .filter((project): project is Project => project !== undefined);
 
   return (
-    <Card>
+    <Card className={!user.is_active ? 'opacity-60' : ''}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -50,6 +50,14 @@ function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProp
             <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
               {user.role}
             </Badge>
+            {!user.is_active && (
+              <Badge
+                variant="secondary"
+                className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              >
+                Inactive
+              </Badge>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => onEdit(user)}>
@@ -137,7 +145,7 @@ function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProp
 export function UserManager() {
   const { isAdmin } = useAuth();
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
-  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, isAdmin);
+  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, isAdmin, { includeInactive: true });
   const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId, isAdmin);
   const { data: teams = [] } = useTeams({ isAdmin });
   const createUserMutation = useCreateUser();

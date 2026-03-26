@@ -3,7 +3,7 @@ import { Response, NextFunction } from 'express';
 import { UsersRepository } from '../db/repositories/users.repository';
 import { AuthRequest } from '../middleware/auth';
 import { CreateUserDto } from '../types';
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../utils/errors';
+import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/errors';
 
 export class UsersController {
   private usersRepository: UsersRepository;
@@ -14,7 +14,8 @@ export class UsersController {
 
   getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const users = await this.usersRepository.findAll();
+      const includeInactive = req.query.includeInactive === 'true';
+      const users = await this.usersRepository.findAll({ includeInactive });
       const usersWithoutPassword = users.map((user) => {
         const { password_hash, ...userWithoutPassword } = user;
         return userWithoutPassword;
@@ -31,7 +32,8 @@ export class UsersController {
   getByTeam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);
-      const users = await this.usersRepository.findByTeamId(teamId);
+      const includeInactive = req.query.includeInactive === 'true';
+      const users = await this.usersRepository.findByTeamId(teamId, { includeInactive });
       const usersWithoutPassword = users.map((user) => {
         const { password_hash, ...userWithoutPassword } = user;
         return userWithoutPassword;
@@ -48,7 +50,8 @@ export class UsersController {
   getByTeamWithProjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);
-      
+      const includeInactive = req.query.includeInactive === 'true';
+
       // If user is a member, ensure they can only access their own team
       if (req.user && req.user.role !== 'admin') {
         const currentUser = await this.usersRepository.findById(req.user.userId);
@@ -56,8 +59,8 @@ export class UsersController {
           throw new UnauthorizedError('You can only access your own team');
         }
       }
-      
-      const users = await this.usersRepository.findAllWithProjectsByTeamId(teamId);
+
+      const users = await this.usersRepository.findAllWithProjectsByTeamId(teamId, { includeInactive });
       res.json({
         success: true,
         data: users,
@@ -70,7 +73,7 @@ export class UsersController {
   create = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data: CreateUserDto = req.body;
-      
+
       const existingUser = await this.usersRepository.findByEmail(data.email);
       if (existingUser) {
         throw new BadRequestError('User with this email already exists');
@@ -78,7 +81,7 @@ export class UsersController {
 
       const passwordHash = await bcrypt.hash(data.password, 10);
       const user = await this.usersRepository.create(data, passwordHash);
-      
+
       const { password_hash, ...userWithoutPassword } = user;
       res.status(201).json({
         success: true,
@@ -116,8 +119,37 @@ export class UsersController {
       if (!user) {
         throw new NotFoundError('User not found');
       }
-      
+
       const { password_hash, ...userWithoutPassword } = user;
+      res.json({
+        success: true,
+        data: userWithoutPassword,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleActive = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      // Prevent self-deactivation
+      if (req.user && req.user.userId === id) {
+        throw new BadRequestError('You cannot deactivate your own account');
+      }
+
+      const existingUser = await this.usersRepository.findById(id);
+      if (!existingUser) {
+        throw new NotFoundError('User not found');
+      }
+
+      const updatedUser = await this.usersRepository.update(id, { is_active: !existingUser.is_active });
+      if (!updatedUser) {
+        throw new NotFoundError('User not found');
+      }
+
+      const { password_hash, ...userWithoutPassword } = updatedUser;
       res.json({
         success: true,
         data: userWithoutPassword,
@@ -130,7 +162,7 @@ export class UsersController {
   delete = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      
+
       const user = await this.usersRepository.findById(id);
       if (!user) {
         throw new NotFoundError('User not found');
@@ -146,4 +178,3 @@ export class UsersController {
     }
   };
 }
-

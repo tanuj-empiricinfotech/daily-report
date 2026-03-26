@@ -10,6 +10,7 @@ export interface User {
   name: string;
   role: UserRole;
   team_id: number | null;
+  is_active: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -76,6 +77,7 @@ export interface CreateUserDto {
   name: string;
   role: UserRole;
   team_id?: number | null;
+  is_active?: boolean;
 }
 
 export interface CreateTeamDto {

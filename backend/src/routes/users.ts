@@ -40,6 +40,7 @@ router.put(
   handleValidationErrors,
   usersController.update
 );
+router.patch('/:id/toggle-active', usersController.toggleActive);
 router.delete('/:id', usersController.delete);
 
 export default router;
