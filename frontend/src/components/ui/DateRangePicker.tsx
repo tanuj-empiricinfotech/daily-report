@@ -77,7 +77,11 @@ export function DateRangePicker({
           {label}
         </label>
       )}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(isOpen) => {
+        // Prevent popover from closing while selecting range (only first date picked)
+        if (!isOpen && date?.from && !date?.to) return
+        setOpen(isOpen)
+      }}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
