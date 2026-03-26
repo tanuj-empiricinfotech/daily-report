@@ -4,7 +4,7 @@
  * Following clean code principles - reusable, type-safe
  */
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { IconCheck, IconChevronDown, IconX, IconSearch } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,6 +53,13 @@ export function MultiSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      // Small delay to let the dropdown render before focusing
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [open]);
 
   const filteredOptions = useMemo(() => {
     if (!search.trim()) return options;
