@@ -18,6 +18,7 @@ import { TimeSeriesChart } from '@/components/dashboard/TimeSeriesChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TopProjects } from '@/components/dashboard/TopProjects';
 import { TeamPerformance } from '@/components/dashboard/TeamPerformance';
+import { TeamLeaderboard } from '@/components/dashboard/TeamLeaderboard';
 import { TeamHoursSection } from '@/components/dashboard/TeamHoursSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyLogs, useTeamLogs } from '@/lib/query/hooks/useLogs';
@@ -287,6 +288,14 @@ export function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {/* Team Leaderboard - Admin Only */}
+            {isAdmin && (
+                <TeamLeaderboard
+                    data={userChartData}
+                    loading={isLoading || usersLoading}
+                />
+            )}
 
             {/* Team Hours Tracking - Admin Only */}
             {isAdmin && (
