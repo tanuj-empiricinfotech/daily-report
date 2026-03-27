@@ -7,6 +7,7 @@
 
 import { TeamsDailySummaryJob } from './teams-daily-summary.job';
 import { VanishingMessagesCleanupJob } from './vanishing-messages-cleanup.job';
+import { MonthlyRecapJob } from './monthly-recap.job';
 import logger from '../utils/logger';
 
 /**
@@ -26,6 +27,10 @@ export function initializeJobs(): void {
     const vanishingCleanupJob = new VanishingMessagesCleanupJob();
     vanishingCleanupJob.start();
 
+    // Initialize monthly recap generation job
+    const monthlyRecapJob = new MonthlyRecapJob();
+    monthlyRecapJob.start();
+
     logger.info('All scheduled jobs initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs', { error });
@@ -36,4 +41,4 @@ export function initializeJobs(): void {
 /**
  * Export job classes for manual testing
  */
-export { TeamsDailySummaryJob, VanishingMessagesCleanupJob };
+export { TeamsDailySummaryJob, VanishingMessagesCleanupJob, MonthlyRecapJob };

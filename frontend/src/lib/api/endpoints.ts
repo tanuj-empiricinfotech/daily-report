@@ -51,6 +51,11 @@ export const endpoints = {
     send: `${API_BASE}/chat`,
     getContext: `${API_BASE}/chat/context`,
   },
+  recaps: {
+    available: `${API_BASE}/recaps/available`,
+    get: (year: number, month: number) => `${API_BASE}/recaps/${year}/${month}`,
+    updateProgress: (id: number) => `${API_BASE}/recaps/${id}/progress`,
+  },
   teamChat: {
     // Conversations
     conversations: `${API_BASE}/team-chat/conversations`,

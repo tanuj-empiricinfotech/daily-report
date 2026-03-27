@@ -148,3 +148,31 @@ export interface ChatContextMetadata {
   };
 }
 
+// Monthly Recap Types
+export type RecapSlide =
+  | { type: 'welcome'; userName: string; monthName: string; year: number; totalLogs: number }
+  | { type: 'total-hours'; totalHours: number; avgHoursPerDay: number; totalDaysLogged: number; comparisonToPrevMonth: number }
+  | { type: 'top-projects'; projects: Array<{ name: string; hours: number; percentage: number }> }
+  | { type: 'busiest-day'; date: string; dayOfWeek: string; hours: number; tasks: number; topProject: string }
+  | { type: 'streaks-patterns'; longestStreak: number; currentStreak: number; mostProductiveDayOfWeek: string }
+  | { type: 'ai-insight'; insight: string; highlights: string[]; emoji: string }
+  | { type: 'team-standing'; rank: number; totalMembers: number; userHours: number; teamAvgHours: number; percentile: number }
+  | { type: 'summary'; totalHours: number; topProject: string; daysLogged: number; funFact: string };
+
+export interface MonthlyRecap {
+  id: number;
+  user_id: number;
+  month: number;
+  year: number;
+  slides_data: RecapSlide[];
+  last_viewed_slide: number;
+  is_partial: boolean;
+  generated_at: string;
+}
+
+export interface AvailableRecapMonth {
+  month: number;
+  year: number;
+  generated: boolean;
+}
+

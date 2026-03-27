@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
+import { MonthlyRecapBanner } from '@/components/recap/MonthlyRecapBanner';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -22,6 +23,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <TopBar />
                     <main className="flex-1 overflow-auto p-4 md:p-6">
                         <div className="mx-auto max-w-7xl animate-fade-in">
+                            <MonthlyRecapBanner />
                             {children}
                         </div>
                     </main>

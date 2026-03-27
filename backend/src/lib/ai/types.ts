@@ -48,3 +48,17 @@ export interface AIProviderConfig {
   model: string;
   apiKey: string;
 }
+
+export interface MonthlyRecapContext {
+  userName: string;
+  monthName: string;
+  year: number;
+  totalHours: number;
+  totalDaysLogged: number;
+  avgHoursPerDay: number;
+  topProjects: Array<{ name: string; hours: number; percentage: number }>;
+  busiestDay: { date: string; dayOfWeek: string; hours: number };
+  longestStreak: number;
+  mostProductiveDayOfWeek: string;
+  teamRank?: { rank: number; totalMembers: number; percentile: number };
+}

@@ -115,3 +115,88 @@ export interface JwtPayload {
   role: UserRole;
 }
 
+// Monthly Recap Types
+export interface MonthlyRecap {
+  id: number;
+  user_id: number;
+  month: number;
+  year: number;
+  slides_data: RecapSlide[];
+  last_viewed_slide: number;
+  is_partial: boolean;
+  generated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RecapSlide =
+  | WelcomeSlide
+  | TotalHoursSlide
+  | TopProjectsSlide
+  | BusiestDaySlide
+  | StreaksPatternsSlide
+  | AIInsightSlide
+  | TeamStandingSlide
+  | SummarySlide;
+
+export interface WelcomeSlide {
+  type: 'welcome';
+  userName: string;
+  monthName: string;
+  year: number;
+  totalLogs: number;
+}
+
+export interface TotalHoursSlide {
+  type: 'total-hours';
+  totalHours: number;
+  avgHoursPerDay: number;
+  totalDaysLogged: number;
+  comparisonToPrevMonth: number;
+}
+
+export interface TopProjectsSlide {
+  type: 'top-projects';
+  projects: Array<{ name: string; hours: number; percentage: number }>;
+}
+
+export interface BusiestDaySlide {
+  type: 'busiest-day';
+  date: string;
+  dayOfWeek: string;
+  hours: number;
+  tasks: number;
+  topProject: string;
+}
+
+export interface StreaksPatternsSlide {
+  type: 'streaks-patterns';
+  longestStreak: number;
+  currentStreak: number;
+  mostProductiveDayOfWeek: string;
+}
+
+export interface AIInsightSlide {
+  type: 'ai-insight';
+  insight: string;
+  highlights: string[];
+  emoji: string;
+}
+
+export interface TeamStandingSlide {
+  type: 'team-standing';
+  rank: number;
+  totalMembers: number;
+  userHours: number;
+  teamAvgHours: number;
+  percentile: number;
+}
+
+export interface SummarySlide {
+  type: 'summary';
+  totalHours: number;
+  topProject: string;
+  daysLogged: number;
+  funFact: string;
+}
+

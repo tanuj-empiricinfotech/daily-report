@@ -5,7 +5,7 @@
  * incorporating user's daily logs for personalized conversations.
  */
 
-import type { ChatContext, LogContext } from './types';
+import type { ChatContext, LogContext, MonthlyRecapContext } from './types';
 
 const MAX_LOGS_IN_CONTEXT = 100;
 
@@ -116,4 +116,93 @@ Currently, there are no work logs loaded for context. You can:
 - Help plan future work tasks
 
 To get personalized insights about work, ask ${userName} to select a date range to load their logs.`;
+}
+
+/**
+ * Format the top projects list for inclusion in the monthly recap prompt
+ */
+function formatTopProjects(
+  projects: MonthlyRecapContext['topProjects'],
+): string {
+  return projects
+    .map(
+      (project, index) =>
+        `  ${index + 1}. ${project.name}: ${project.hours}h (${project.percentage}%)`,
+    )
+    .join('\n');
+}
+
+/**
+ * Format optional team ranking info for the monthly recap prompt
+ */
+function formatTeamRank(
+  teamRank: MonthlyRecapContext['teamRank'],
+): string {
+  if (!teamRank) return '';
+
+  return `
+## Team Ranking
+- Rank: #${teamRank.rank} out of ${teamRank.totalMembers} members
+- Percentile: Top ${teamRank.percentile}%`;
+}
+
+/**
+ * Build a prompt for generating a fun monthly work recap (Spotify Wrapped style)
+ *
+ * @param context - Monthly statistics and user info for the recap
+ * @returns Prompt string for the AI model
+ */
+export function buildMonthlyRecapPrompt(context: MonthlyRecapContext): string {
+  const {
+    userName,
+    monthName,
+    year,
+    totalHours,
+    totalDaysLogged,
+    avgHoursPerDay,
+    topProjects,
+    busiestDay,
+    longestStreak,
+    mostProductiveDayOfWeek,
+    teamRank,
+  } = context;
+
+  return `You are generating a fun, personalized monthly work recap in the style of Spotify Wrapped. Make it celebratory, encouraging, and data-driven.
+
+## User
+Name: ${userName}
+Month: ${monthName} ${year}
+
+## Stats
+- Total hours logged: ${totalHours}h
+- Days logged: ${totalDaysLogged}
+- Average hours per day: ${avgHoursPerDay}h
+- Longest streak of consecutive days: ${longestStreak} days
+- Most productive day of the week: ${mostProductiveDayOfWeek}
+
+## Top Projects
+${formatTopProjects(topProjects)}
+
+## Busiest Day
+- Date: ${busiestDay.date} (${busiestDay.dayOfWeek})
+- Hours: ${busiestDay.hours}h
+${formatTeamRank(teamRank)}
+
+## Instructions
+Generate a fun monthly recap based on the stats above. Return ONLY valid JSON with no markdown formatting, no code fences, and no extra text. Use this exact shape:
+
+{
+  "insight": "2-3 sentences of personalized narrative about the user's month",
+  "highlights": ["highlight 1", "highlight 2", "highlight 3"],
+  "funFact": "One witty, fun observation comparing their stats to something relatable",
+  "emoji": "single emoji that represents their month"
+}
+
+## Tone Guidelines
+- Be encouraging and celebratory — this is their monthly highlight reel
+- Use second person ("You") to address the user directly
+- Reference their specific data (project names, hours, days, streaks)
+- Keep it fun and lighthearted — think Spotify Wrapped energy
+- The funFact should compare their stats to something unexpected and relatable (e.g., movies watched, books read, marathons run)
+- Each highlight should be a concise, punchy observation about a standout stat`;
 }
