@@ -292,7 +292,8 @@ export function Dashboard() {
             {/* Team Leaderboard - Admin Only */}
             {isAdmin && (
                 <TeamLeaderboard
-                    data={userChartData}
+                    users={users}
+                    logs={currentPeriodLogs}
                     loading={isLoading || usersLoading}
                 />
             )}

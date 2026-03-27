@@ -1,8 +1,8 @@
 /**
  * TeamLeaderboard Component
  *
- * Full leaderboard table showing all team members ranked by hours logged.
- * Displays rank, name, hours, and percentage of team total.
+ * Full leaderboard table showing ALL team members ranked by hours logged.
+ * Members with 0 hours are included at the bottom.
  */
 
 import { useMemo } from 'react';
@@ -10,10 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { IconTrophy, IconMedal, IconAward } from '@tabler/icons-react';
 import { formatDuration, getUserInitials } from '@/utils/analytics';
-import type { UserChartData } from '@/utils/chart';
+import { parseTimeInput } from '@/utils/time';
+import { generateChartColors } from '@/lib/theme';
+import type { DailyLog } from '@/lib/api/types';
+
+interface LeaderboardUser {
+  id: number;
+  name: string;
+}
 
 interface TeamLeaderboardProps {
-  data: UserChartData[];
+  users: LeaderboardUser[];
+  logs: DailyLog[];
   loading?: boolean;
 }
 
@@ -23,14 +31,31 @@ const RANK_STYLES = [
   { icon: IconAward, color: 'text-amber-600', bg: 'bg-amber-600/10', border: 'border-amber-600/20' },
 ] as const;
 
-export function TeamLeaderboard({ data, loading = false }: TeamLeaderboardProps) {
-  const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => b.hours - a.hours);
-  }, [data]);
+export function TeamLeaderboard({ users, logs, loading = false }: TeamLeaderboardProps) {
+  const rankedMembers = useMemo(() => {
+    // Aggregate hours per user from logs
+    const hoursMap = new Map<number, number>();
+    for (const log of logs) {
+      const hours = parseTimeInput(log.actual_time_spent);
+      hoursMap.set(log.user_id, (hoursMap.get(log.user_id) ?? 0) + hours);
+    }
+
+    const colors = generateChartColors(users.length);
+
+    // Build entries for ALL users, including those with 0 hours
+    return users
+      .map((user, i) => ({
+        id: user.id,
+        name: user.name,
+        hours: hoursMap.get(user.id) ?? 0,
+        fill: colors[i % colors.length],
+      }))
+      .sort((a, b) => b.hours - a.hours);
+  }, [users, logs]);
 
   const totalHours = useMemo(() => {
-    return sortedData.reduce((sum, u) => sum + u.hours, 0);
-  }, [sortedData]);
+    return rankedMembers.reduce((sum, u) => sum + u.hours, 0);
+  }, [rankedMembers]);
 
   if (loading) {
     return (
@@ -48,18 +73,20 @@ export function TeamLeaderboard({ data, loading = false }: TeamLeaderboardProps)
     );
   }
 
-  if (sortedData.length === 0) {
+  if (users.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-medium">Team Leaderboard</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-6">No activity data available</p>
+          <p className="text-sm text-muted-foreground text-center py-6">No team members found</p>
         </CardContent>
       </Card>
     );
   }
+
+  const maxHours = rankedMembers[0]?.hours ?? 0;
 
   return (
     <Card>
@@ -68,19 +95,20 @@ export function TeamLeaderboard({ data, loading = false }: TeamLeaderboardProps)
           <IconTrophy className="h-5 w-5 text-yellow-500" />
           Team Leaderboard
         </CardTitle>
-        <CardDescription>Members ranked by hours logged (last 30 days)</CardDescription>
+        <CardDescription>All members ranked by hours logged (last 30 days)</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {sortedData.map((member, index) => {
+          {rankedMembers.map((member, index) => {
             const rank = index + 1;
             const percentage = totalHours > 0 ? (member.hours / totalHours) * 100 : 0;
-            const rankStyle = index < 3 ? RANK_STYLES[index] : null;
+            const barWidth = maxHours > 0 ? (member.hours / maxHours) * 100 : 0;
+            const rankStyle = index < 3 && member.hours > 0 ? RANK_STYLES[index] : null;
             const RankIcon = rankStyle?.icon;
 
             return (
               <div
-                key={member.name}
+                key={member.id}
                 className={`flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50 ${
                   rankStyle ? rankStyle.border : 'border-border'
                 }`}
@@ -103,12 +131,16 @@ export function TeamLeaderboard({ data, loading = false }: TeamLeaderboardProps)
                 {/* Name */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}% of team total</p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.hours > 0 ? `${percentage.toFixed(1)}% of team total` : 'No activity'}
+                  </p>
                 </div>
 
                 {/* Hours */}
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold">{formatDuration(member.hours)}</p>
+                  <p className={`text-sm font-semibold ${member.hours === 0 ? 'text-muted-foreground' : ''}`}>
+                    {member.hours > 0 ? formatDuration(member.hours) : '0h'}
+                  </p>
                 </div>
 
                 {/* Bar indicator */}
@@ -117,7 +149,7 @@ export function TeamLeaderboard({ data, loading = false }: TeamLeaderboardProps)
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
-                        width: `${percentage}%`,
+                        width: `${barWidth}%`,
                         backgroundColor: member.fill,
                       }}
                     />
