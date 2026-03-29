@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_monthly_recaps_user_id ON monthly_recaps(user_id)
 CREATE INDEX IF NOT EXISTS idx_monthly_recaps_user_month_year ON monthly_recaps(user_id, month, year);
 
 -- Auto-update updated_at on row modification
+DROP TRIGGER IF EXISTS update_monthly_recaps_updated_at ON monthly_recaps;
 CREATE TRIGGER update_monthly_recaps_updated_at
     BEFORE UPDATE ON monthly_recaps
     FOR EACH ROW

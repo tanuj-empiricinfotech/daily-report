@@ -9,12 +9,27 @@ import { BaseRepository } from './base.repository';
 import { query } from '../connection';
 import type { Message, MessageWithSender, CreateMessageDto } from '../../types';
 import { MESSAGES_PER_PAGE } from '../../config/jobs.config';
+import { encryptMessage, decryptMessage, isEncryptionEnabled } from '../../utils/encryption';
+
+/**
+ * Decrypt message content if encryption metadata is present.
+ * Falls back to returning raw content for pre-encryption plaintext messages.
+ */
+function decryptContent(content: string, iv: string | null, authTag: string | null): string {
+  if (!iv || !authTag || !isEncryptionEnabled()) return content;
+  try {
+    return decryptMessage(content, iv, authTag);
+  } catch {
+    // If decryption fails, return raw content (likely a pre-encryption message)
+    return content;
+  }
+}
 
 export class MessagesRepository extends BaseRepository<Message> {
   protected tableName = 'messages';
 
   /**
-   * Create a new message
+   * Create a new message (encrypts content before storing)
    */
   async create(
     conversationId: number,
@@ -24,15 +39,29 @@ export class MessagesRepository extends BaseRepository<Message> {
     expiresAt: Date | null,
     replyToMessageId?: number
   ): Promise<Message> {
+    let storedContent = content;
+    let iv: string | null = null;
+    let authTag: string | null = null;
+
+    if (isEncryptionEnabled()) {
+      const encrypted = encryptMessage(content);
+      storedContent = encrypted.encryptedContent;
+      iv = encrypted.iv;
+      authTag = encrypted.authTag;
+    }
+
     const result = await query(
       `INSERT INTO ${this.tableName}
-       (conversation_id, sender_id, content, is_vanishing, expires_at, reply_to_message_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       (conversation_id, sender_id, content, is_vanishing, expires_at, reply_to_message_id, encryption_iv, auth_tag)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [conversationId, senderId, content, isVanishing, expiresAt, replyToMessageId || null]
+      [conversationId, senderId, storedContent, isVanishing, expiresAt, replyToMessageId || null, iv, authTag]
     );
 
-    return result.rows[0];
+    // Return with decrypted content
+    const row = result.rows[0];
+    row.content = content; // Use original plaintext for the response
+    return row;
   }
 
   /**
@@ -51,7 +80,9 @@ export class MessagesRepository extends BaseRepository<Message> {
         rm.id as reply_to_id,
         rm.content as reply_to_content,
         rm.sender_id as reply_to_sender_id,
-        ru.name as reply_to_sender_name
+        ru.name as reply_to_sender_name,
+        rm.encryption_iv as reply_to_encryption_iv,
+        rm.auth_tag as reply_to_auth_tag
       FROM ${this.tableName} m
       JOIN users u ON m.sender_id = u.id
       LEFT JOIN ${this.tableName} rm ON m.reply_to_message_id = rm.id
@@ -74,13 +105,13 @@ export class MessagesRepository extends BaseRepository<Message> {
     const hasMore = result.rows.length > limit;
     const rawMessages = result.rows.slice(0, limit);
 
-    // Transform to include reply_to object
+    // Transform to include reply_to object and decrypt content
     const messages: MessageWithSender[] = rawMessages.map((row) => {
       const message: MessageWithSender = {
         id: row.id,
         conversation_id: row.conversation_id,
         sender_id: row.sender_id,
-        content: row.content,
+        content: decryptContent(row.content, row.encryption_iv, row.auth_tag),
         is_vanishing: row.is_vanishing,
         expires_at: row.expires_at,
         read_at: row.read_at,
@@ -91,7 +122,7 @@ export class MessagesRepository extends BaseRepository<Message> {
         reply_to: row.reply_to_id
           ? {
               id: row.reply_to_id,
-              content: row.reply_to_content,
+              content: decryptContent(row.reply_to_content, row.reply_to_encryption_iv, row.reply_to_auth_tag),
               sender_id: row.reply_to_sender_id,
               sender_name: row.reply_to_sender_name,
             }
@@ -115,7 +146,9 @@ export class MessagesRepository extends BaseRepository<Message> {
         rm.id as reply_to_id,
         rm.content as reply_to_content,
         rm.sender_id as reply_to_sender_id,
-        ru.name as reply_to_sender_name
+        ru.name as reply_to_sender_name,
+        rm.encryption_iv as reply_to_encryption_iv,
+        rm.auth_tag as reply_to_auth_tag
        FROM ${this.tableName} m
        JOIN users u ON m.sender_id = u.id
        LEFT JOIN ${this.tableName} rm ON m.reply_to_message_id = rm.id
@@ -131,7 +164,7 @@ export class MessagesRepository extends BaseRepository<Message> {
       id: row.id,
       conversation_id: row.conversation_id,
       sender_id: row.sender_id,
-      content: row.content,
+      content: decryptContent(row.content, row.encryption_iv, row.auth_tag),
       is_vanishing: row.is_vanishing,
       expires_at: row.expires_at,
       read_at: row.read_at,
@@ -142,7 +175,7 @@ export class MessagesRepository extends BaseRepository<Message> {
       reply_to: row.reply_to_id
         ? {
             id: row.reply_to_id,
-            content: row.reply_to_content,
+            content: decryptContent(row.reply_to_content, row.reply_to_encryption_iv, row.reply_to_auth_tag),
             sender_id: row.reply_to_sender_id,
             sender_name: row.reply_to_sender_name,
           }
@@ -200,7 +233,10 @@ export class MessagesRepository extends BaseRepository<Message> {
       [conversationId]
     );
 
-    return result.rows[0] || null;
+    const row = result.rows[0];
+    if (!row) return null;
+    row.content = decryptContent(row.content, row.encryption_iv, row.auth_tag);
+    return row;
   }
 
   /**

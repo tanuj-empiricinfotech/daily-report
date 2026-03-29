@@ -14,6 +14,7 @@ import type {
   UpdateVanishingModeDto,
 } from '../../types';
 import { DEFAULT_VANISHING_DURATION_HOURS } from '../../config/jobs.config';
+import { decryptMessage, isEncryptionEnabled } from '../../utils/encryption';
 
 export class ConversationsRepository extends BaseRepository<Conversation> {
   protected tableName = 'conversations';
@@ -71,7 +72,9 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
           ELSE u1.name
         END as other_participant_name,
         COALESCE(unread.count, 0)::integer as unread_count,
-        last_msg.content as last_message_preview
+        last_msg.content as last_message_preview,
+        last_msg.encryption_iv as last_msg_iv,
+        last_msg.auth_tag as last_msg_auth_tag
       FROM ${this.tableName} c
       JOIN users u1 ON c.participant_one_id = u1.id
       JOIN users u2 ON c.participant_two_id = u2.id
@@ -82,7 +85,7 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
         GROUP BY conversation_id
       ) unread ON unread.conversation_id = c.id
       LEFT JOIN LATERAL (
-        SELECT content FROM messages
+        SELECT content, encryption_iv, auth_tag FROM messages
         WHERE conversation_id = c.id
         ORDER BY created_at DESC
         LIMIT 1
@@ -93,7 +96,16 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
       [userId]
     );
 
-    return result.rows;
+    return result.rows.map((row) => {
+      if (row.last_message_preview && row.last_msg_iv && row.last_msg_auth_tag && isEncryptionEnabled()) {
+        try {
+          row.last_message_preview = decryptMessage(row.last_message_preview, row.last_msg_iv, row.last_msg_auth_tag);
+        } catch { /* pre-encryption message, keep as-is */ }
+      }
+      delete row.last_msg_iv;
+      delete row.last_msg_auth_tag;
+      return row;
+    });
   }
 
   /**
@@ -132,7 +144,9 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
           ELSE u1.name
         END as other_participant_name,
         COALESCE(unread.count, 0)::integer as unread_count,
-        last_msg.content as last_message_preview
+        last_msg.content as last_message_preview,
+        last_msg.encryption_iv as last_msg_iv,
+        last_msg.auth_tag as last_msg_auth_tag
       FROM ${this.tableName} c
       JOIN users u1 ON c.participant_one_id = u1.id
       JOIN users u2 ON c.participant_two_id = u2.id
@@ -143,7 +157,7 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
         GROUP BY conversation_id
       ) unread ON unread.conversation_id = c.id
       LEFT JOIN LATERAL (
-        SELECT content FROM messages
+        SELECT content, encryption_iv, auth_tag FROM messages
         WHERE conversation_id = c.id
         ORDER BY created_at DESC
         LIMIT 1
@@ -152,7 +166,17 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
       [conversationId, userId]
     );
 
-    return result.rows[0] || null;
+    const row = result.rows[0];
+    if (!row) return null;
+
+    if (row.last_message_preview && row.last_msg_iv && row.last_msg_auth_tag && isEncryptionEnabled()) {
+      try {
+        row.last_message_preview = decryptMessage(row.last_message_preview, row.last_msg_iv, row.last_msg_auth_tag);
+      } catch { /* pre-encryption message */ }
+    }
+    delete row.last_msg_iv;
+    delete row.last_msg_auth_tag;
+    return row;
   }
 
   /**
