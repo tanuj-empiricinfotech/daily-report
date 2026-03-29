@@ -5,7 +5,7 @@
  * and infinite scroll.
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
@@ -34,6 +34,7 @@ import {
   setReplyingTo,
   clearReplyingTo,
   setActiveConversation,
+  setTypingUser,
   type Message,
 } from '@/store/slices/teamChatSlice';
 import {
@@ -41,6 +42,7 @@ import {
   useSendMessage,
   useUpdateVanishingMode,
   useMarkAsRead,
+  useSendTypingIndicator,
 } from '@/lib/query/hooks/useTeamChat';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -83,6 +85,63 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
   const sendMessageMutation = useSendMessage();
   const updateVanishingModeMutation = useUpdateVanishingMode();
   const markAsReadMutation = useMarkAsRead();
+  const sendTypingMutation = useSendTypingIndicator();
+
+  // Typing indicator state
+  const typingUsers = useSelector((state: RootState) => state.teamChat.typingUsers);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
+
+  const otherUserTyping = useMemo(() => {
+    if (!conversation) return false;
+    const otherUserId = conversation.other_participant_id;
+    if (!otherUserId) return false;
+    const typingInfo = typingUsers[otherUserId];
+    if (!typingInfo || typingInfo.conversationId !== conversationId) return false;
+    // Auto-expire after 4 seconds
+    return Date.now() - typingInfo.timestamp < 4000;
+  }, [typingUsers, conversationId, conversation]);
+
+  // Clear stale typing indicators every 2 seconds
+  useEffect(() => {
+    if (!otherUserTyping) return;
+    const interval = setInterval(() => {
+      const otherUserId = conversation?.other_participant_id;
+      if (!otherUserId) return;
+      const typingInfo = typingUsers[otherUserId];
+      if (typingInfo && Date.now() - typingInfo.timestamp >= 4000) {
+        dispatch(setTypingUser({ userId: otherUserId, conversationId, isTyping: false }));
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [otherUserTyping, typingUsers, conversationId, conversation?.other_participant_id, dispatch]);
+
+  // Send typing indicator with debounce
+  const handleTypingEvent = useCallback(() => {
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      sendTypingMutation.mutate({ conversationId, isTyping: true });
+    }
+
+    // Reset the stop-typing timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      sendTypingMutation.mutate({ conversationId, isTyping: false });
+    }, 2000);
+  }, [conversationId, sendTypingMutation]);
+
+  // Clean up typing state on unmount or conversation change
+  useEffect(() => {
+    return () => {
+      if (isTypingRef.current) {
+        sendTypingMutation.mutate({ conversationId, isTyping: false });
+        isTypingRef.current = false;
+      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   const messages = messagesState?.messages || [];
   const hasMore = messagesState?.hasMore ?? true;
@@ -187,6 +246,13 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     // Clear reply state after sending
     if (replyingTo) {
       dispatch(clearReplyingTo(conversationId));
+    }
+
+    // Stop typing indicator
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      sendTypingMutation.mutate({ conversationId, isTyping: false });
     }
   };
 
@@ -381,15 +447,31 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
         </div>
       )}
 
+      {/* Typing indicator */}
+      {otherUserTyping && (
+        <div className="px-4 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium">{conversation?.other_participant_name}</span>
+            <span>is typing</span>
+            <span className="flex gap-0.5">
+              <span className="animate-bounce [animation-delay:0ms]">.</span>
+              <span className="animate-bounce [animation-delay:150ms]">.</span>
+              <span className="animate-bounce [animation-delay:300ms]">.</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Composer */}
       <div className="p-4 border-t">
         <div className="flex gap-2 items-end">
           <Textarea
             placeholder="Type a message..."
             value={draft}
-            onChange={(e) =>
-              dispatch(setDraft({ conversationId, content: e.target.value }))
-            }
+            onChange={(e) => {
+              dispatch(setDraft({ conversationId, content: e.target.value }));
+              if (e.target.value.trim()) handleTypingEvent();
+            }}
             onKeyDown={handleKeyDown}
             className="min-h-[44px] max-h-[200px] resize-none"
             rows={1}
