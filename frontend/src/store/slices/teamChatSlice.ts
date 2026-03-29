@@ -103,6 +103,31 @@ interface TeamChatState {
 }
 
 // ============================================================================
+// localStorage helpers for draft persistence
+// ============================================================================
+
+const DRAFTS_STORAGE_KEY = 'team-chat-drafts';
+
+function loadDraftsFromStorage(): Record<number, string> {
+  try {
+    const stored = localStorage.getItem(DRAFTS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveDraftsToStorage(drafts: Record<number, string>): void {
+  try {
+    if (Object.keys(drafts).length === 0) {
+      localStorage.removeItem(DRAFTS_STORAGE_KEY);
+    } else {
+      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+    }
+  } catch { /* localStorage unavailable */ }
+}
+
+// ============================================================================
 // Initial State
 // ============================================================================
 
@@ -112,7 +137,7 @@ const initialState: TeamChatState = {
   conversationsLoading: false,
 
   messagesByConversation: {},
-  drafts: {},
+  drafts: loadDraftsFromStorage(),
   replyingTo: {},
   pendingMessages: {},
 
@@ -311,10 +336,12 @@ const teamChatSlice = createSlice({
       } else {
         delete state.drafts[action.payload.conversationId];
       }
+      saveDraftsToStorage(state.drafts);
     },
 
     clearDraft(state, action: PayloadAction<number>) {
       delete state.drafts[action.payload];
+      saveDraftsToStorage(state.drafts);
     },
 
     // ========================================
