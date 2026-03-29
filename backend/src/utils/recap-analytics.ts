@@ -16,31 +16,148 @@ export function parseTimeToHours(time: string | number): number {
 }
 
 /**
- * Compute consecutive-day streaks from an array of date strings (YYYY-MM-DD).
+ * Indian national and major holidays (month-day).
+ * Fixed-date holidays observed nationwide. Dates that shift yearly
+ * (e.g. Diwali, Eid, Holi) are included with their most common dates.
+ */
+const INDIAN_HOLIDAYS: Record<number, number[][]> = {
+  // [month, day] pairs grouped by year-independent fixed holidays
+  // These are checked every year
+  0: [], // placeholder — actual data is in getIndianHolidays()
+};
+
+function getIndianHolidays(year: number): Set<string> {
+  const holidays = new Set<string>();
+  const add = (m: number, d: number) =>
+    holidays.add(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+
+  // Fixed national holidays
+  add(1, 26);  // Republic Day
+  add(8, 15);  // Independence Day
+  add(10, 2);  // Gandhi Jayanti
+  add(1, 1);   // New Year's Day
+  add(5, 1);   // May Day / Labour Day
+  add(12, 25); // Christmas
+
+  // Major holidays (approximate common dates — these shift yearly)
+  // 2025 dates
+  if (year === 2025) {
+    add(3, 14);  // Holi
+    add(3, 31);  // Eid ul-Fitr (approx)
+    add(4, 10);  // Ram Navami
+    add(4, 14);  // Ambedkar Jayanti
+    add(4, 18);  // Good Friday
+    add(6, 7);   // Eid ul-Adha (approx)
+    add(7, 6);   // Muharram (approx)
+    add(8, 16);  // Janmashtami
+    add(9, 5);   // Milad-un-Nabi (approx)
+    add(10, 2);  // Gandhi Jayanti
+    add(10, 20); // Dussehra
+    add(10, 21); // Dussehra holiday
+    add(11, 1);  // Diwali (Lakshmi Puja)
+    add(11, 5);  // Guru Nanak Jayanti
+  }
+  // 2026 dates
+  if (year === 2026) {
+    add(3, 4);   // Holi
+    add(3, 20);  // Eid ul-Fitr (approx)
+    add(3, 30);  // Ram Navami
+    add(4, 3);   // Good Friday
+    add(4, 14);  // Ambedkar Jayanti
+    add(5, 27);  // Eid ul-Adha (approx)
+    add(6, 26);  // Muharram (approx)
+    add(8, 6);   // Janmashtami
+    add(8, 25);  // Milad-un-Nabi (approx)
+    add(10, 9);  // Dussehra
+    add(10, 21); // Diwali (Lakshmi Puja)
+    add(10, 22); // Diwali holiday
+    add(11, 24); // Guru Nanak Jayanti
+  }
+  // 2027 dates
+  if (year === 2027) {
+    add(3, 22);  // Holi
+    add(3, 10);  // Eid ul-Fitr (approx)
+    add(3, 26);  // Good Friday
+    add(4, 14);  // Ambedkar Jayanti
+    add(4, 18);  // Ram Navami
+    add(5, 17);  // Eid ul-Adha (approx)
+    add(6, 15);  // Muharram (approx)
+    add(8, 25);  // Janmashtami
+    add(8, 14);  // Milad-un-Nabi (approx)
+    add(9, 28);  // Dussehra
+    add(10, 10); // Diwali
+    add(11, 14); // Guru Nanak Jayanti
+  }
+
+  return holidays;
+}
+
+/** Check if a date is a weekend (Saturday or Sunday). */
+function isWeekend(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+/** Check if a date string (YYYY-MM-DD) is a non-working day (weekend or Indian holiday). */
+function isNonWorkingDay(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  if (isWeekend(date)) return true;
+  const year = date.getUTCFullYear();
+  return getIndianHolidays(year).has(dateStr);
+}
+
+/**
+ * Check if all days between two dates (exclusive) are non-working days.
+ * Returns true if the gap between dateA and dateB contains only weekends/holidays.
+ */
+function isGapAllNonWorking(dateA: string, dateB: string): boolean {
+  const start = new Date(dateA);
+  const end = new Date(dateB);
+  const cursor = new Date(start);
+  cursor.setUTCDate(cursor.getUTCDate() + 1);
+
+  while (cursor < end) {
+    const cursorStr = cursor.toISOString().split('T')[0];
+    if (!isNonWorkingDay(cursorStr)) return false;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return true;
+}
+
+/**
+ * Compute working-day streaks from an array of date strings (YYYY-MM-DD).
+ * Weekends and Indian holidays do NOT break a streak — only missed working days do.
  * "current" streak counts backwards from the last date in the array.
  */
 export function computeStreaks(dates: string[]): { longest: number; current: number } {
   if (dates.length === 0) return { longest: 0, current: 0 };
 
   const unique = [...new Set(dates)].sort();
-  const sortedDates = unique.map((d) => new Date(d).getTime());
 
   let longest = 1;
   let currentStreak = 1;
 
-  for (let i = 1; i < sortedDates.length; i++) {
-    const diffDays = (sortedDates[i] - sortedDates[i - 1]) / MILLISECONDS_PER_DAY;
+  for (let i = 1; i < unique.length; i++) {
+    const prev = unique[i - 1];
+    const curr = unique[i];
+    const diffDays = (new Date(curr).getTime() - new Date(prev).getTime()) / MILLISECONDS_PER_DAY;
+
+    // Consecutive day — streak continues
     if (diffDays === 1) {
       currentStreak++;
-      longest = Math.max(longest, currentStreak);
-    } else {
+    }
+    // Gap exists — check if all gap days are non-working
+    else if (isGapAllNonWorking(prev, curr)) {
+      currentStreak++;
+    }
+    // Working day was missed — streak breaks
+    else {
       currentStreak = 1;
     }
+
+    longest = Math.max(longest, currentStreak);
   }
 
-  // "current" streak is the streak ending at the last date
-  // We already have it from the loop above since currentStreak was last reset
-  // at the final break, or carries through to the end.
   return { longest, current: currentStreak };
 }
 
