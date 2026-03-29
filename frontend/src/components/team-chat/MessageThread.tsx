@@ -16,6 +16,7 @@ import {
   IconGhostOff,
   IconLoader2,
   IconArrowBackUp,
+  IconArrowLeft,
   IconX,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
@@ -26,11 +27,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useNavigate } from 'react-router';
 import type { RootState } from '@/store/store';
 import {
   setDraft,
   setReplyingTo,
   clearReplyingTo,
+  setActiveConversation,
   type Message,
 } from '@/store/slices/teamChatSlice';
 import {
@@ -48,7 +51,13 @@ interface MessageThreadProps {
 
 export function MessageThread({ conversationId, className }: MessageThreadProps) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const handleBack = useCallback(() => {
+    dispatch(setActiveConversation(null));
+    navigate('/messages', { replace: true });
+  }, [dispatch, navigate]);
   const parentRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const lastMarkedAsReadMessageIdRef = useRef<number | null>(null);
@@ -238,6 +247,14 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="md:hidden shrink-0"
+          >
+            <IconArrowLeft className="h-5 w-5" />
+          </Button>
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <IconUser className="w-5 h-5 text-primary" />
           </div>

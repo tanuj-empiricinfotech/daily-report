@@ -58,13 +58,13 @@ export function MessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background">
-      {/* Conversation List Sidebar */}
-      <div className="w-80 border-r flex-shrink-0 hidden md:block">
+      {/* Conversation List Sidebar — always visible on desktop, shown on mobile only when no conversation selected */}
+      <div className={`w-full md:w-80 border-r flex-shrink-0 ${activeConversationId ? 'hidden md:block' : 'block'}`}>
         <ConversationList onNewConversation={() => setIsNewConversationOpen(true)} />
       </div>
 
-      {/* Message Thread */}
-      <div className="flex-1 flex flex-col">
+      {/* Message Thread — always visible on desktop, shown on mobile only when conversation selected */}
+      <div className={`flex-1 flex flex-col ${activeConversationId ? 'block' : 'hidden md:flex'}`}>
         {activeConversationId ? (
           <MessageThread conversationId={activeConversationId} />
         ) : (
