@@ -88,7 +88,7 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
         LIMIT 1
       ) last_msg ON true
       WHERE (c.participant_one_id = $1 OR c.participant_two_id = $1)
-        AND c.last_message_at IS NOT NULL
+        AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id)
       ORDER BY c.last_message_at DESC, c.created_at DESC`,
       [userId]
     );
