@@ -108,8 +108,6 @@ export const useConversations = () => {
  * Create or get a conversation with another user
  */
 export const useCreateConversation = () => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (participantId: number) => {
       const response = await fetchWithCredentials<ApiResponse<Conversation & { created: boolean }>>(
@@ -121,9 +119,10 @@ export const useCreateConversation = () => {
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: teamChatKeys.conversations() });
-    },
+    // No query invalidation here — new conversations have no messages yet,
+    // so a refetch would exclude them from the list. The conversation is
+    // added to Redux directly in NewConversationDialog. It will appear
+    // in the API response once a message is sent.
   });
 };
 

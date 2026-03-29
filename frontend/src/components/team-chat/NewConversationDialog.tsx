@@ -44,16 +44,15 @@ export function NewConversationDialog({ open, onOpenChange }: NewConversationDia
     try {
       const result = await createConversationMutation.mutateAsync(memberId);
 
-      // Add conversation to store if newly created
-      if (result.created) {
-        dispatch(addConversation({
-          ...result,
-          other_participant_id: memberId,
-          other_participant_name: memberName,
-          unread_count: 0,
-          last_message_preview: null,
-        }));
-      }
+      // Always ensure conversation is in the Redux store.
+      // It may not be in the API-fetched list if it has no messages yet.
+      dispatch(addConversation({
+        ...result,
+        other_participant_id: memberId,
+        other_participant_name: memberName,
+        unread_count: 0,
+        last_message_preview: null,
+      }));
 
       // Set as active conversation
       dispatch(setActiveConversation(result.id));
