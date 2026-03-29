@@ -40,23 +40,6 @@ function getIndianHolidays(year: number): Set<string> {
   add(12, 25); // Christmas
 
   // Major holidays (approximate common dates — these shift yearly)
-  // 2025 dates
-  if (year === 2025) {
-    add(3, 14);  // Holi
-    add(3, 31);  // Eid ul-Fitr (approx)
-    add(4, 10);  // Ram Navami
-    add(4, 14);  // Ambedkar Jayanti
-    add(4, 18);  // Good Friday
-    add(6, 7);   // Eid ul-Adha (approx)
-    add(7, 6);   // Muharram (approx)
-    add(8, 16);  // Janmashtami
-    add(9, 5);   // Milad-un-Nabi (approx)
-    add(10, 2);  // Gandhi Jayanti
-    add(10, 20); // Dussehra
-    add(10, 21); // Dussehra holiday
-    add(11, 1);  // Diwali (Lakshmi Puja)
-    add(11, 5);  // Guru Nanak Jayanti
-  }
   // 2026 dates
   if (year === 2026) {
     add(3, 4);   // Holi
