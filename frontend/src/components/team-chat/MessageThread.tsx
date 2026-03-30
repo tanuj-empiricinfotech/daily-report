@@ -554,13 +554,16 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
       onTouchEnd={handleTouchEnd}
       onTouchMove={clearLongPress}
     >
-      <div className="flex items-end gap-1 max-w-[75%]">
-        {/* Reply button (left side for own messages) */}
-        {isOwn && showActions && !isPending && (
+      <div className="relative max-w-[75%]">
+        {/* Reply button — absolutely positioned outside the bubble */}
+        {showActions && !isPending && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 shrink-0"
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background shadow-sm border z-10',
+              isOwn ? '-left-9' : '-right-9'
+            )}
             onClick={onReply}
           >
             <IconArrowBackUp className="h-4 w-4" />
@@ -632,18 +635,6 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
             {isFailed && <span className="text-destructive">Failed to send</span>}
           </div>
         </div>
-
-        {/* Reply button (right side for others' messages) */}
-        {!isOwn && showActions && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0"
-            onClick={onReply}
-          >
-            <IconArrowBackUp className="h-4 w-4" />
-          </Button>
-        )}
       </div>
     </div>
   );
