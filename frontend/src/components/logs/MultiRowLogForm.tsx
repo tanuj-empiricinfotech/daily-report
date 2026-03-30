@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/DatePicker';
+import { CalendarDatePicker } from '@/components/ui/CalendarDatePicker';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import {
   Table,
@@ -398,11 +398,16 @@ export function MultiRowLogForm({
             </div>
           )}
 
-          <DatePicker
+          <CalendarDatePicker
             label="Date"
             value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
+            onChange={(selectedDate) => {
+              if (selectedDate) {
+                const year = selectedDate.getFullYear();
+                const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(selectedDate.getDate()).padStart(2, '0');
+                setDate(`${year}-${month}-${day}`);
+              }
               if (validationErrors.date) {
                 setValidationErrors({ ...validationErrors, date: undefined });
               }
