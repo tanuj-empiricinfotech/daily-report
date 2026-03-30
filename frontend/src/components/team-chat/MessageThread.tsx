@@ -507,33 +507,64 @@ interface MessageBubbleProps {
   onReplyClick: (messageId: number) => void;
 }
 
+const LONG_PRESS_DURATION_MS = 500;
+
 function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleProps) {
   const isPending = message.status === 'pending';
   const isFailed = message.status === 'failed';
   const [showActions, setShowActions] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchStart = () => {
+    if (isPending) return;
+    longPressTimerRef.current = setTimeout(() => {
+      setShowActions(true);
+    }, LONG_PRESS_DURATION_MS);
+  };
+
+  const handleTouchEnd = () => {
+    clearLongPress();
+  };
+
+  // Dismiss actions when tapping elsewhere
+  useEffect(() => {
+    if (!showActions) return;
+    const dismiss = () => setShowActions(false);
+    // Small delay so the reply button click registers before dismiss
+    const timer = setTimeout(() => document.addEventListener('touchstart', dismiss, { once: true }), 100);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('touchstart', dismiss);
+    };
+  }, [showActions]);
 
   return (
     <div
       className={cn('flex group', isOwn ? 'justify-end' : 'justify-start')}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={clearLongPress}
     >
       <div className="flex items-end gap-1 max-w-[75%]">
         {/* Reply button (left side for own messages) */}
         {isOwn && showActions && !isPending && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={onReply}
-              >
-                <IconArrowBackUp className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reply</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            onClick={onReply}
+          >
+            <IconArrowBackUp className="h-4 w-4" />
+          </Button>
         )}
 
         <div
@@ -544,7 +575,8 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
               ? 'bg-primary text-primary-foreground rounded-tr-sm'
               : 'bg-muted rounded-tl-sm',
             isPending && 'opacity-70',
-            isFailed && 'border border-destructive'
+            isFailed && 'border border-destructive',
+            showActions && 'ring-2 ring-primary/30'
           )}
         >
           {/* Reply preview */}
@@ -603,19 +635,14 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
 
         {/* Reply button (right side for others' messages) */}
         {!isOwn && showActions && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={onReply}
-              >
-                <IconArrowBackUp className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reply</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0"
+            onClick={onReply}
+          >
+            <IconArrowBackUp className="h-4 w-4" />
+          </Button>
         )}
       </div>
     </div>
