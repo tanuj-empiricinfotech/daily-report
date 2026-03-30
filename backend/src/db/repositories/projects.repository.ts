@@ -41,6 +41,15 @@ export class ProjectsRepository extends BaseRepository<Project> {
     return result.rows[0] || null;
   }
 
+  async findByIds(ids: number[]): Promise<Project[]> {
+    if (ids.length === 0) return [];
+    const result = await query(
+      `SELECT * FROM ${this.tableName} WHERE id = ANY($1)`,
+      [ids]
+    );
+    return result.rows;
+  }
+
   async findByTeamId(teamId: number): Promise<Project[]> {
     const result = await query(
       `SELECT * FROM ${this.tableName} WHERE team_id = $1`,

@@ -130,7 +130,7 @@ export function TeamLeaderboard({ users, logs, loading = false }: TeamLeaderboar
 
                 {/* Name */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{member.name}</p>
+                  <p className="text-sm font-medium truncate" title={member.name}>{member.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {member.hours > 0 ? `${percentage.toFixed(1)}% of team total` : 'No activity'}
                   </p>
@@ -145,7 +145,12 @@ export function TeamLeaderboard({ users, logs, loading = false }: TeamLeaderboar
 
                 {/* Bar indicator */}
                 <div className="w-20 shrink-0 hidden sm:block">
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-2 rounded-full bg-muted overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={Math.round(barWidth)}
+                    aria-valuemax={100}
+                  >
                     <div
                       className="h-full rounded-full transition-all"
                       style={{

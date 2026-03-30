@@ -10,13 +10,20 @@ import crypto from 'crypto';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // 128 bits
 const AUTH_TAG_LENGTH = 16; // 128 bits
+const REQUIRED_KEY_LENGTH_BYTES = 32; // 256 bits for AES-256
 
 function getEncryptionKey(): Buffer {
   const key = process.env.MESSAGE_ENCRYPTION_KEY;
   if (!key) {
     throw new Error('MESSAGE_ENCRYPTION_KEY environment variable is required for message encryption');
   }
-  return Buffer.from(key, 'hex');
+  const keyBuffer = Buffer.from(key, 'hex');
+  if (keyBuffer.length !== REQUIRED_KEY_LENGTH_BYTES) {
+    throw new Error(
+      `MESSAGE_ENCRYPTION_KEY must be exactly ${REQUIRED_KEY_LENGTH_BYTES} bytes (${REQUIRED_KEY_LENGTH_BYTES * 2} hex characters), got ${keyBuffer.length} bytes`
+    );
+  }
+  return keyBuffer;
 }
 
 /**

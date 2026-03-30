@@ -11,11 +11,7 @@ import { IconSparkles, IconX } from '@tabler/icons-react';
 import { useAvailableRecaps, useMonthlyRecap, useUpdateRecapProgress } from '@/lib/query/hooks/useRecaps';
 import { RecapViewer } from './RecapViewer';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+import { MONTH_NAMES } from './constants';
 
 export function MonthlyRecapBanner() {
   const [dismissed, setDismissed] = useState(false);

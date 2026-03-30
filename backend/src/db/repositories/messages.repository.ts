@@ -10,6 +10,7 @@ import { query } from '../connection';
 import type { Message, MessageWithSender, CreateMessageDto } from '../../types';
 import { MESSAGES_PER_PAGE } from '../../config/jobs.config';
 import { encryptMessage, decryptMessage, isEncryptionEnabled } from '../../utils/encryption';
+import logger from '../../utils/logger';
 
 /**
  * Decrypt message content if encryption metadata is present.
@@ -20,7 +21,7 @@ function decryptContent(content: string, iv: string | null, authTag: string | nu
   try {
     return decryptMessage(content, iv, authTag);
   } catch {
-    // If decryption fails, return raw content (likely a pre-encryption message)
+    logger.warn('Message decryption failed, returning raw content (likely pre-encryption message)');
     return content;
   }
 }
@@ -106,30 +107,7 @@ export class MessagesRepository extends BaseRepository<Message> {
     const rawMessages = result.rows.slice(0, limit);
 
     // Transform to include reply_to object and decrypt content
-    const messages: MessageWithSender[] = rawMessages.map((row) => {
-      const message: MessageWithSender = {
-        id: row.id,
-        conversation_id: row.conversation_id,
-        sender_id: row.sender_id,
-        content: decryptContent(row.content, row.encryption_iv, row.auth_tag),
-        is_vanishing: row.is_vanishing,
-        expires_at: row.expires_at,
-        read_at: row.read_at,
-        reply_to_message_id: row.reply_to_message_id,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        sender_name: row.sender_name,
-        reply_to: row.reply_to_id
-          ? {
-              id: row.reply_to_id,
-              content: decryptContent(row.reply_to_content, row.reply_to_encryption_iv, row.reply_to_auth_tag),
-              sender_id: row.reply_to_sender_id,
-              sender_name: row.reply_to_sender_name,
-            }
-          : null,
-      };
-      return message;
-    });
+    const messages: MessageWithSender[] = rawMessages.map((row) => this.transformRow(row));
 
     // Reverse to show oldest first in the UI
     return { messages: messages.reverse(), hasMore };
@@ -160,6 +138,14 @@ export class MessagesRepository extends BaseRepository<Message> {
     const row = result.rows[0];
     if (!row) return null;
 
+    return this.transformRow(row);
+  }
+
+  /**
+   * Transform a raw database row into a MessageWithSender object.
+   * Handles decryption of both main content and reply_to content.
+   */
+  private transformRow(row: any): MessageWithSender {
     return {
       id: row.id,
       conversation_id: row.conversation_id,

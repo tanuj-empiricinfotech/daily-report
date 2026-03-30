@@ -38,11 +38,25 @@ import {
 } from '@/utils/chart';
 import { generateChartColors } from '@/lib/theme';
 
+const DEFAULT_DATE_RANGE = '30d';
+const RECENT_LOGS_LIMIT = 10;
+const RECENT_ACTIVITY_DISPLAY_LIMIT = 5;
+const TEAM_PERFORMANCE_LIMIT = 8;
+
+function filterLogsByDateRange(logs: DailyLog[], start: string, end: string): DailyLog[] {
+    return logs.filter((log) => {
+        const logDate = typeof log.date === 'string'
+            ? log.date.split('T')[0]
+            : new Date(log.date).toISOString().split('T')[0];
+        return logDate >= start && logDate <= end;
+    });
+}
+
 export function Dashboard() {
     const { user, isAdmin } = useAuth();
 
     // Calculate date ranges
-    const { startDate, endDate } = getDateRange('30d');
+    const { startDate, endDate } = getDateRange(DEFAULT_DATE_RANGE);
 
     // Fetch data based on role
     const { data: myLogs = [], isLoading: myLogsLoading } = useMyLogs(
@@ -83,21 +97,11 @@ export function Dashboard() {
 
     // Filter logs by date range
     const currentPeriodLogs = useMemo(() => {
-        return logs.filter((log: DailyLog) => {
-            const logDate = typeof log.date === 'string'
-                ? log.date.split('T')[0]
-                : new Date(log.date).toISOString().split('T')[0];
-            return logDate >= startDate && logDate <= endDate;
-        });
+        return filterLogsByDateRange(logs, startDate, endDate);
     }, [logs, startDate, endDate]);
 
     const previousPeriodLogs = useMemo(() => {
-        return logs.filter((log: DailyLog) => {
-            const logDate = typeof log.date === 'string'
-                ? log.date.split('T')[0]
-                : new Date(log.date).toISOString().split('T')[0];
-            return logDate >= prevStartDate && logDate <= prevEndDate;
-        });
+        return filterLogsByDateRange(logs, prevStartDate, prevEndDate);
     }, [logs, prevStartDate, prevEndDate]);
 
     // Calculate KPI metrics
@@ -251,11 +255,11 @@ export function Dashboard() {
             {/* Recent Activity & Team Performance */}
             <div className="grid gap-4 md:grid-cols-2">
                 <RecentActivity
-                    logs={logs.slice(0, 10)}
+                    logs={logs.slice(0, RECENT_LOGS_LIMIT)}
                     projectNames={projectNameMap}
                     userNames={userNameMap}
                     showUser={isAdmin}
-                    limit={5}
+                    limit={RECENT_ACTIVITY_DISPLAY_LIMIT}
                     loading={isLoading}
                 />
 
@@ -263,7 +267,7 @@ export function Dashboard() {
                 {isAdmin ? (
                     <TeamPerformance
                         data={userChartData}
-                        limit={8}
+                        limit={TEAM_PERFORMANCE_LIMIT}
                         loading={isLoading || usersLoading}
                     />
                 ) : (

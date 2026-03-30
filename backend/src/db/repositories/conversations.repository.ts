@@ -15,6 +15,7 @@ import type {
 } from '../../types';
 import { DEFAULT_VANISHING_DURATION_HOURS } from '../../config/jobs.config';
 import { decryptMessage, isEncryptionEnabled } from '../../utils/encryption';
+import logger from '../../utils/logger';
 
 export class ConversationsRepository extends BaseRepository<Conversation> {
   protected tableName = 'conversations';
@@ -97,13 +98,7 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
     );
 
     return result.rows.map((row) => {
-      if (row.last_message_preview && row.last_msg_iv && row.last_msg_auth_tag && isEncryptionEnabled()) {
-        try {
-          row.last_message_preview = decryptMessage(row.last_message_preview, row.last_msg_iv, row.last_msg_auth_tag);
-        } catch { /* pre-encryption message, keep as-is */ }
-      }
-      delete row.last_msg_iv;
-      delete row.last_msg_auth_tag;
+      this.decryptLastMessagePreview(row);
       return row;
     });
   }
@@ -169,14 +164,24 @@ export class ConversationsRepository extends BaseRepository<Conversation> {
     const row = result.rows[0];
     if (!row) return null;
 
+    this.decryptLastMessagePreview(row);
+    return row;
+  }
+
+  /**
+   * Decrypt the last message preview and clean up temporary encryption fields.
+   * Falls back to raw content for pre-encryption plaintext messages.
+   */
+  private decryptLastMessagePreview(row: any): void {
     if (row.last_message_preview && row.last_msg_iv && row.last_msg_auth_tag && isEncryptionEnabled()) {
       try {
         row.last_message_preview = decryptMessage(row.last_message_preview, row.last_msg_iv, row.last_msg_auth_tag);
-      } catch { /* pre-encryption message */ }
+      } catch {
+        logger.debug('Failed to decrypt last message preview, keeping raw content (likely pre-encryption message)');
+      }
     }
     delete row.last_msg_iv;
     delete row.last_msg_auth_tag;
-    return row;
   }
 
   /**

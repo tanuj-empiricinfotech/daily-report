@@ -10,3 +10,9 @@ export const SLIDE_GRADIENTS: Record<string, string> = {
 };
 
 export const TOTAL_SLIDES = 8;
+
+export const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+

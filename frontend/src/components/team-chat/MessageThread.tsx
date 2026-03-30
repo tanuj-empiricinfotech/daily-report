@@ -46,6 +46,18 @@ import {
 } from '@/lib/query/hooks/useTeamChat';
 import { useAuth } from '@/hooks/useAuth';
 
+const TYPING_INDICATOR_EXPIRY_MS = 4000;
+const TYPING_CHECK_INTERVAL_MS = 2000;
+const TYPING_STOP_TIMEOUT_MS = 2000;
+const VIRTUAL_MESSAGE_ESTIMATED_HEIGHT = 80;
+const VIRTUALIZER_OVERSCAN = 5;
+const SCROLL_BOTTOM_THRESHOLD = 100;
+const LOAD_MORE_SCROLL_THRESHOLD = 100;
+
+function generateLocalId(): string {
+  return `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 interface MessageThreadProps {
   conversationId: number;
   className?: string;
@@ -98,8 +110,8 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     if (!otherUserId) return false;
     const typingInfo = typingUsers[otherUserId];
     if (!typingInfo || typingInfo.conversationId !== conversationId) return false;
-    // Auto-expire after 4 seconds
-    return Date.now() - typingInfo.timestamp < 4000;
+    // Auto-expire after timeout
+    return Date.now() - typingInfo.timestamp < TYPING_INDICATOR_EXPIRY_MS;
   }, [typingUsers, conversationId, conversation]);
 
   // Clear stale typing indicators every 2 seconds
@@ -109,10 +121,10 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       const otherUserId = conversation?.other_participant_id;
       if (!otherUserId) return;
       const typingInfo = typingUsers[otherUserId];
-      if (typingInfo && Date.now() - typingInfo.timestamp >= 4000) {
+      if (typingInfo && Date.now() - typingInfo.timestamp >= TYPING_INDICATOR_EXPIRY_MS) {
         dispatch(setTypingUser({ userId: otherUserId, conversationId, isTyping: false }));
       }
-    }, 2000);
+    }, TYPING_CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [otherUserTyping, typingUsers, conversationId, conversation?.other_participant_id, dispatch]);
 
@@ -128,7 +140,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     typingTimeoutRef.current = setTimeout(() => {
       isTypingRef.current = false;
       sendTypingMutation.mutate({ conversationId, isTyping: false });
-    }, 2000);
+    }, TYPING_STOP_TIMEOUT_MS);
   }, [conversationId, sendTypingMutation]);
 
   // Clean up typing state on unmount or conversation change
@@ -154,8 +166,8 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 80, // Estimated message height
-    overscan: 5,
+    estimateSize: () => VIRTUAL_MESSAGE_ESTIMATED_HEIGHT,
+    overscan: VIRTUALIZER_OVERSCAN,
   });
 
   // Scroll to bottom on new messages
@@ -198,10 +210,10 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     const { scrollTop, scrollHeight, clientHeight } = parentRef.current;
 
     // Check if at bottom
-    setIsAtBottom(scrollHeight - scrollTop - clientHeight < 100);
+    setIsAtBottom(scrollHeight - scrollTop - clientHeight < SCROLL_BOTTOM_THRESHOLD);
 
     // Load more when near top
-    if (scrollTop < 100 && hasMore && !isFetchingNextPage) {
+    if (scrollTop < LOAD_MORE_SCROLL_THRESHOLD && hasMore && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [hasMore, isFetchingNextPage, fetchNextPage]);
@@ -228,7 +240,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     const content = draft.trim();
     if (!content) return;
 
-    const localId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const localId = generateLocalId();
 
     sendMessageMutation.mutate({
       conversationId,
@@ -292,7 +304,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       return;
     }
 
-    const localId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const localId = generateLocalId();
     sendMessageMutation.mutate({
       conversationId,
       content: '👉🏻',
@@ -449,7 +461,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
 
       {/* Typing indicator */}
       {otherUserTyping && (
-        <div className="px-4 py-1.5">
+        <div className="px-4 py-1.5" aria-live="polite">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium">{conversation?.other_participant_name}</span>
             <span>is typing</span>

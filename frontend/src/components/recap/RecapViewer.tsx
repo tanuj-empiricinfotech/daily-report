@@ -119,6 +119,7 @@ export function RecapViewer({ slides, initialSlide = 0, onClose, onSlideChange }
           <button
             key={i}
             onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
             className="relative h-1 flex-1 rounded-full bg-white/30 overflow-hidden"
           >
             <motion.div
@@ -134,6 +135,7 @@ export function RecapViewer({ slides, initialSlide = 0, onClose, onSlideChange }
       {/* Close button */}
       <button
         onClick={onClose}
+        aria-label="Close recap"
         className="absolute top-4 right-4 z-10 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition"
       >
         <IconX className="h-5 w-5" />
@@ -167,9 +169,23 @@ export function RecapViewer({ slides, initialSlide = 0, onClose, onSlideChange }
 
         {/* Tap zones */}
         <div className="absolute inset-0 flex pointer-events-none">
-          <div className="w-[30%] pointer-events-auto cursor-pointer" onClick={goPrev} />
+          <div
+            className="w-[30%] pointer-events-auto cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label="Previous slide"
+            onClick={goPrev}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goPrev(); } }}
+          />
           <div className="flex-1" />
-          <div className="w-[30%] pointer-events-auto cursor-pointer" onClick={goNext} />
+          <div
+            className="w-[30%] pointer-events-auto cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label="Next slide"
+            onClick={goNext}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goNext(); } }}
+          />
         </div>
       </div>
 
