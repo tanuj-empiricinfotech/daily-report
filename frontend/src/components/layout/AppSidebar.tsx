@@ -3,6 +3,7 @@
  * Uses shadcn sidebar primitives with app-specific navigation
  */
 
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     IconLayoutDashboard,
@@ -107,8 +108,13 @@ export function AppSidebar() {
     const location = useLocation();
     const { user, isAdmin } = useAuth();
     const { mutate: logout } = useLogout();
-    const { state } = useSidebar();
+    const { state, setOpenMobile } = useSidebar();
     const isCollapsed = state === 'collapsed';
+
+    // Close sidebar on mobile after navigation
+    useEffect(() => {
+        setOpenMobile(false);
+    }, [location.pathname, setOpenMobile]);
 
     const isActiveRoute = (url: string) => {
         if (url === '/') {
