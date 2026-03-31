@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { IconWifi, IconWifiOff, IconLoader2 } from '@tabler/icons-react';
 import type { RootState } from '@/store/store';
 
-const CONNECTED_DISMISS_MS = 2500;
+const CONNECTED_DISMISS_MS = 2000;
 
 interface ToastConfig {
   message: string;
@@ -23,26 +23,26 @@ interface ToastConfig {
 const TOAST_CONFIGS: Record<string, ToastConfig> = {
   connecting: {
     message: 'Connecting...',
-    icon: <IconLoader2 className="h-4 w-4 animate-spin" />,
-    className: 'bg-yellow-500 text-white',
+    icon: <IconLoader2 className="h-3 w-3 animate-spin" />,
+    className: 'bg-muted text-muted-foreground border border-border',
     autoDismiss: false,
   },
   reconnecting: {
     message: 'Reconnecting...',
-    icon: <IconLoader2 className="h-4 w-4 animate-spin" />,
-    className: 'bg-yellow-500 text-white',
+    icon: <IconLoader2 className="h-3 w-3 animate-spin" />,
+    className: 'bg-muted text-muted-foreground border border-border',
     autoDismiss: false,
   },
   disconnected: {
-    message: 'You are offline',
-    icon: <IconWifiOff className="h-4 w-4" />,
-    className: 'bg-destructive text-destructive-foreground',
+    message: 'Offline',
+    icon: <IconWifiOff className="h-3 w-3" />,
+    className: 'bg-muted text-destructive border border-border',
     autoDismiss: false,
   },
   connected: {
-    message: 'Back online',
-    icon: <IconWifi className="h-4 w-4" />,
-    className: 'bg-emerald-500 text-white',
+    message: 'Online',
+    icon: <IconWifi className="h-3 w-3" />,
+    className: 'bg-muted text-emerald-500 border border-border',
     autoDismiss: true,
   },
 };
@@ -109,11 +109,11 @@ export function ConnectionToast() {
           initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          transition={{ type: 'spring', damping: 30, stiffness: 400 }}
           className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60]"
         >
           <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-sm font-medium ${currentConfig.className}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm text-xs font-medium ${currentConfig.className}`}
           >
             {currentConfig.icon}
             <span>{currentConfig.message}</span>

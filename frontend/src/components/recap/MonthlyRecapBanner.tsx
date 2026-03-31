@@ -13,30 +13,42 @@ import { RecapViewer } from './RecapViewer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MONTH_NAMES } from './constants';
 
+const DAYS_BEFORE_MONTH_END = 2;
+
 export function MonthlyRecapBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const { data: availableMonths } = useAvailableRecaps();
 
-  // Find the most recent month with data
-  const latestMonth = useMemo(() => {
-    if (!availableMonths?.length) return null;
-    return availableMonths[0]; // Already sorted desc
-  }, [availableMonths]);
+  // Visibility window: only show 2 days before month end
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const lastDayOfMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate();
+  const daysUntilMonthEnd = lastDayOfMonth - now.getDate();
+  const isInVisibilityWindow = daysUntilMonthEnd <= DAYS_BEFORE_MONTH_END;
 
-  // Fetch recap data when viewer is opened
+  // Check if the current month has any log data
+  const currentMonthHasData = useMemo(() => {
+    if (!availableMonths?.length) return false;
+    return availableMonths.some(
+      (m) => m.month === currentMonth && m.year === currentYear,
+    );
+  }, [availableMonths, currentMonth, currentYear]);
+
+  // Fetch recap data for current month when viewer is opened
   const { data: recap, isLoading: recapLoading } = useMonthlyRecap(
-    latestMonth?.year ?? 0,
-    latestMonth?.month ?? 0,
-    viewerOpen && !!latestMonth,
+    currentYear,
+    currentMonth,
+    viewerOpen && currentMonthHasData,
   );
 
   const progressMutation = useUpdateRecapProgress();
 
-  if (!latestMonth || dismissed) return null;
+  if (!isInVisibilityWindow || !currentMonthHasData || dismissed) return null;
 
-  const monthName = MONTH_NAMES[latestMonth.month - 1];
+  const monthName = MONTH_NAMES[currentMonth - 1];
 
   return (
     <>
@@ -53,7 +65,7 @@ export function MonthlyRecapBanner() {
           >
             <IconSparkles className="h-5 w-5 animate-pulse" />
             <span className="text-sm font-medium">
-              Your {monthName} {latestMonth.year} Recap is ready!
+              Your {monthName} {currentYear} Recap is ready!
             </span>
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
               View now
