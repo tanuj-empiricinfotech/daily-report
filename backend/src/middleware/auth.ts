@@ -12,7 +12,20 @@ export interface AuthRequest extends Request {
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
   try {
-    const token = req.cookies?.token;
+    // Try cookie first, then Authorization header, then query param (fallback for iOS Safari)
+    let token = req.cookies?.token;
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.slice(7);
+      }
+    }
+
+    // Query param fallback for SSE connections (EventSource can't set headers)
+    if (!token && req.query.token) {
+      token = req.query.token as string;
+    }
 
     if (!token) {
       throw new UnauthorizedError('No token provided');

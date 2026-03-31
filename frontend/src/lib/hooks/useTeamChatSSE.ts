@@ -226,7 +226,13 @@ export function useTeamChatSSE(enabled: boolean = true) {
 
     dispatch(setConnectionStatus('connecting'));
 
-    const eventSource = new EventSource(endpoints.teamChat.events, {
+    // Append token as query param for iOS Safari where cookies are blocked
+    const token = localStorage.getItem('auth_token');
+    const sseUrl = token
+      ? `${endpoints.teamChat.events}${endpoints.teamChat.events.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+      : endpoints.teamChat.events;
+
+    const eventSource = new EventSource(sseUrl, {
       withCredentials: true,
     });
 

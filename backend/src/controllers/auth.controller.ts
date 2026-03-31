@@ -99,6 +99,7 @@ export class AuthController {
       res.status(201).json({
         success: true,
         data: result.user,
+        token: result.token,
       });
     } catch (error) {
       next(error);
@@ -115,6 +116,7 @@ export class AuthController {
       res.json({
         success: true,
         data: result.user,
+        token: result.token,
       });
     } catch (error) {
       next(error);

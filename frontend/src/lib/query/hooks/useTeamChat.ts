@@ -52,11 +52,13 @@ interface UnreadResponse {
 // ============================================================================
 
 const fetchWithCredentials = async <T>(url: string, options?: RequestInit): Promise<T> => {
+  const token = localStorage.getItem('auth_token');
   const response = await fetch(url, {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
