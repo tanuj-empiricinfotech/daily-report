@@ -9,12 +9,15 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 import { MonthlyRecapBanner } from '@/components/recap/MonthlyRecapBanner';
+import { useVersionCheck } from '@/hooks/useVersionCheck';
 
 interface DashboardLayoutProps {
     children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+    useVersionCheck();
+
     return (
         <TooltipProvider delayDuration={0}>
             <SidebarProvider defaultOpen={true}>
