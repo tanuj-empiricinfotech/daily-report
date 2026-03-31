@@ -19,6 +19,7 @@ import {
   MessageThread,
   NewConversationDialog,
 } from '@/components/team-chat';
+import { ConnectionToast } from '@/components/team-chat/ConnectionToast';
 
 export function MessagesPage() {
   const { conversationId } = useParams<{ conversationId?: string }>();
@@ -57,7 +58,10 @@ export function MessagesPage() {
   }, [activeConversationId, navigate]); // Removed conversationId from deps to break the cycle
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background">
+    <div className="relative flex h-[calc(100vh-4rem)] bg-background">
+      {/* Connection status toast */}
+      <ConnectionToast />
+
       {/* Conversation List Sidebar — always visible on desktop, shown on mobile only when no conversation selected */}
       <div className={`w-full md:w-80 border-r flex-shrink-0 ${activeConversationId ? 'hidden md:block' : 'block'}`}>
         <ConversationList onNewConversation={() => setIsNewConversationOpen(true)} />
