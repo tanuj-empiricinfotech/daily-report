@@ -548,9 +548,14 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
   // Dismiss actions when tapping elsewhere
   useEffect(() => {
     if (!showActions) return;
-    const dismiss = () => setShowActions(false);
-    // Small delay so the reply button click registers before dismiss
-    const timer = setTimeout(() => document.addEventListener('touchstart', dismiss, { once: true }), 100);
+    const dismiss = (e: TouchEvent) => {
+      // Don't dismiss if tapping the reply button itself
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-reply-button]')) return;
+      setShowActions(false);
+    };
+    // Use a longer delay to ensure the reply button is fully interactive
+    const timer = setTimeout(() => document.addEventListener('touchstart', dismiss, { once: true }), 300);
     return () => {
       clearTimeout(timer);
       document.removeEventListener('touchstart', dismiss);
@@ -570,13 +575,24 @@ function MessageBubble({ message, isOwn, onReply, onReplyClick }: MessageBubbleP
         {/* Reply button — absolutely positioned outside the bubble */}
         {showActions && !isPending && (
           <Button
+            data-reply-button
             variant="ghost"
             size="icon"
             className={cn(
               'absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background shadow-sm border z-10',
               isOwn ? '-left-9' : '-right-9'
             )}
-            onClick={onReply}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReply();
+              setShowActions(false);
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onReply();
+              setShowActions(false);
+            }}
           >
             <IconArrowBackUp className="h-4 w-4" />
           </Button>
