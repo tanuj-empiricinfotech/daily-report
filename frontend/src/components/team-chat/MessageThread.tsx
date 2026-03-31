@@ -438,10 +438,10 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
 
       {/* Reply Preview */}
       {replyingTo && (
-        <div className="px-4 pt-2 border-t bg-muted/30">
-          <div className="flex items-start gap-2 p-2 rounded bg-muted/50">
+        <div className="px-4 pt-2 border-t bg-muted/30 overflow-hidden">
+          <div className="flex items-start gap-2 p-2 rounded bg-muted/50 overflow-hidden">
             <IconArrowBackUp className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <p className="text-xs font-medium text-muted-foreground">
                 Replying to {replyingTo.sender_name || 'Unknown'}
               </p>
