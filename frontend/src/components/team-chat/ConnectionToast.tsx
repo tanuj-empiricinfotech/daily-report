@@ -110,7 +110,7 @@ export function ConnectionToast() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50"
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60]"
         >
           <div
             className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-sm font-medium ${currentConfig.className}`}
