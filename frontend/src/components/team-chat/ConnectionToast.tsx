@@ -106,11 +106,11 @@ export function ConnectionToast() {
     <AnimatePresence>
       {visible && currentConfig && (
         <motion.div
-          initial={{ y: -60, opacity: 0 }}
+          initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -60, opacity: 0 }}
+          exit={{ y: 60, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="absolute top-14 left-1/2 -translate-x-1/2 z-50"
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50"
         >
           <div
             className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-sm font-medium ${currentConfig.className}`}
