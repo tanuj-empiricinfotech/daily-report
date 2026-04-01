@@ -129,10 +129,10 @@ export function DailyLog() {
   // April Fools' — runaway button + confetti (only on April 1st)
   const isAprilFools = new Date().getMonth() === 3 && new Date().getDate() === 1;
   const dodgeCountRef = useRef(0);
+  const maxDodgesRef = useRef(Math.floor(Math.random() * 5) + 3); // Random 3-7 dodges per session
   const [buttonOffset, setButtonOffset] = useState({ x: 0, y: 0 });
   const [showFoolsToast, setShowFoolsToast] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState<Array<{ id: number; x: number; color: string; delay: number }>>([]);
-  const MAX_DODGES = 3;
 
   const triggerConfetti = useCallback(() => {
     const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
@@ -147,17 +147,20 @@ export function DailyLog() {
   }, []);
 
   const handleNewLog = () => {
-    if (isAprilFools && dodgeCountRef.current < MAX_DODGES) {
+    if (isAprilFools && dodgeCountRef.current < maxDodgesRef.current) {
       dodgeCountRef.current++;
-      const x = (Math.random() - 0.5) * 200;
-      const y = (Math.random() - 0.5) * 80;
+      // Increase dodge distance as attempts grow — gets more frantic
+      const intensity = 1 + dodgeCountRef.current * 0.3;
+      const x = (Math.random() - 0.5) * 200 * intensity;
+      const y = (Math.random() - 0.5) * 100 * intensity;
       setButtonOffset({ x, y });
-      // Snap back to original position after a short delay
-      setTimeout(() => setButtonOffset({ x: 0, y: 0 }), 600);
+      // Random snap-back delay (400-800ms)
+      const snapDelay = 400 + Math.random() * 400;
+      setTimeout(() => setButtonOffset({ x: 0, y: 0 }), snapDelay);
       return;
     }
 
-    if (isAprilFools && dodgeCountRef.current === MAX_DODGES) {
+    if (isAprilFools && dodgeCountRef.current === maxDodgesRef.current) {
       dodgeCountRef.current++;
       setButtonOffset({ x: 0, y: 0 });
       setShowFoolsToast(true);
