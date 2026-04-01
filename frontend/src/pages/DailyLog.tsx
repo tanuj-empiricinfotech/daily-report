@@ -1,4 +1,6 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useSeasonalEvent } from '@/lib/seasonal';
+import { ConfettiEffect } from '@/lib/seasonal/effects/ConfettiEffect';
 import { useNavigate } from 'react-router-dom';
 import { LogsDataTable } from '@/components/logs/LogsDataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,28 +128,21 @@ export function DailyLog() {
     return filtered;
   }, [allLogs, dateRange, isAdmin, selectedProjectId, selectedProjectIds, selectedUserIds]);
 
-  // April Fools' — runaway button + confetti (only on April 1st)
-  const isAprilFools = new Date().getMonth() === 3 && new Date().getDate() === 1;
+  // Seasonal event — runaway button + confetti
+  const seasonalEvent = useSeasonalEvent();
+  const hasButtonPrank = seasonalEvent?.buttonPrank?.enabled ?? false;
   const dodgeCountRef = useRef(0);
-  const maxDodgesRef = useRef(Math.floor(Math.random() * 5) + 3); // Random 3-7 dodges per session
+  const maxDodgesRef = useRef(
+    hasButtonPrank
+      ? Math.floor(Math.random() * ((seasonalEvent?.buttonPrank?.maxDodges ?? 7) - (seasonalEvent?.buttonPrank?.minDodges ?? 3) + 1)) + (seasonalEvent?.buttonPrank?.minDodges ?? 3)
+      : 0
+  );
   const [buttonOffset, setButtonOffset] = useState({ x: 0, y: 0 });
   const [showFoolsToast, setShowFoolsToast] = useState(false);
-  const [confettiPieces, setConfettiPieces] = useState<Array<{ id: number; x: number; color: string; delay: number }>>([]);
-
-  const triggerConfetti = useCallback(() => {
-    const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
-    const pieces = Array.from({ length: 40 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      color: colors[i % colors.length],
-      delay: Math.random() * 0.5,
-    }));
-    setConfettiPieces(pieces);
-    setTimeout(() => setConfettiPieces([]), 3000);
-  }, []);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const handleNewLog = () => {
-    if (isAprilFools && dodgeCountRef.current < maxDodgesRef.current) {
+    if (hasButtonPrank && dodgeCountRef.current < maxDodgesRef.current) {
       dodgeCountRef.current++;
       // Increase dodge distance as attempts grow — gets more frantic
       const intensity = 1 + dodgeCountRef.current * 0.3;
@@ -160,11 +155,11 @@ export function DailyLog() {
       return;
     }
 
-    if (isAprilFools && dodgeCountRef.current === maxDodgesRef.current) {
+    if (hasButtonPrank && dodgeCountRef.current === maxDodgesRef.current) {
       dodgeCountRef.current++;
       setButtonOffset({ x: 0, y: 0 });
       setShowFoolsToast(true);
-      triggerConfetti();
+      setShowConfetti(true);
       setTimeout(() => {
         setShowFoolsToast(false);
         navigate('/logs/create');
@@ -192,7 +187,7 @@ export function DailyLog() {
         <h1 className="text-2xl font-bold">Daily Log</h1>
         <Button
           onClick={handleNewLog}
-          style={isAprilFools ? {
+          style={hasButtonPrank ? {
             transform: `translate(${buttonOffset.x}px, ${buttonOffset.y}px)`,
             transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           } : undefined}
@@ -202,38 +197,14 @@ export function DailyLog() {
         </Button>
       </div>
 
-      {/* April Fools' confetti */}
-      {confettiPieces.length > 0 && (
-        <div className="fixed inset-0 pointer-events-none z-[200] overflow-hidden">
-          {confettiPieces.map((piece) => (
-            <div
-              key={piece.id}
-              className="absolute animate-bounce"
-              style={{
-                left: `${piece.x}%`,
-                top: '-10px',
-                width: '8px',
-                height: '8px',
-                borderRadius: piece.id % 2 === 0 ? '50%' : '0',
-                backgroundColor: piece.color,
-                animation: `fall ${1.5 + piece.delay}s ease-in ${piece.delay}s forwards`,
-              }}
-            />
-          ))}
-          <style>{`
-            @keyframes fall {
-              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-              100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-            }
-          `}</style>
-        </div>
-      )}
+      {/* Seasonal event confetti */}
+      {showConfetti && <ConfettiEffect />}
 
-      {/* April Fools' toast */}
+      {/* Seasonal event toast */}
       {showFoolsToast && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] bg-background border rounded-2xl shadow-2xl px-8 py-6 text-center">
           <p className="text-3xl mb-2">🎉</p>
-          <p className="text-lg font-bold">Happy April Fools!</p>
+          <p className="text-lg font-bold">Happy {seasonalEvent?.name}!</p>
           <p className="text-sm text-muted-foreground">Gotcha! Redirecting you now...</p>
         </div>
       )}

@@ -10,6 +10,8 @@ import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 import { MonthlyRecapBanner } from '@/components/recap/MonthlyRecapBanner';
 import { useVersionCheck } from '@/hooks/useVersionCheck';
+import { useSeasonalEvent } from '@/lib/seasonal';
+import { SeasonalBanner, SeasonalEffectRenderer } from '@/lib/seasonal/components';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -17,6 +19,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     useVersionCheck();
+    const seasonalEvent = useSeasonalEvent();
 
     return (
         <TooltipProvider delayDuration={0}>
@@ -26,6 +29,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <TopBar />
                     <main className="flex-1 overflow-auto p-4 md:p-6">
                         <div className="mx-auto max-w-7xl animate-fade-in">
+                            {seasonalEvent?.banner && (
+                                <SeasonalBanner banner={seasonalEvent.banner} eventName={seasonalEvent.name} />
+                            )}
+                            {seasonalEvent?.effects && (
+                                <SeasonalEffectRenderer effect={seasonalEvent.effects} />
+                            )}
                             <MonthlyRecapBanner />
                             {children}
                         </div>
