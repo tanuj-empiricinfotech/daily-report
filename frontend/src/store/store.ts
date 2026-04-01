@@ -16,7 +16,6 @@ import projectsReducer from './slices/projectsSlice';
 import logFormReducer from './slices/logFormSlice';
 import chatReducer from './slices/chatSlice';
 import teamChatReducer from './slices/teamChatSlice';
-import gameReducer from '@/features/games/core/store/gameSlice';
 
 const authPersistConfig = {
   key: 'auth',
@@ -64,7 +63,6 @@ export const store = configureStore({
     logForm: persistedLogFormReducer,
     chat: persistedChatReducer,
     teamChat: persistedTeamChatReducer,
-    game: gameReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

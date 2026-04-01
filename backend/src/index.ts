@@ -9,7 +9,6 @@ import { initializeJobs } from './jobs';
 import { validateEnvironmentVariables, envConfig } from './config/env.config';
 import logger from './utils/logger';
 import { SERVER_CONFIG } from './config/app.config';
-import { initializeGamesModule, initializeGameSocket } from './games';
 
 dotenv.config();
 
@@ -126,11 +125,6 @@ app.get('/health', (req, res) => {
 
 app.use(errorHandler);
 
-// Initialize games module (registers all games)
-initializeGamesModule();
-
-// Initialize Socket.io for games
-initializeGameSocket(httpServer, corsOrigin);
 
 httpServer.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);

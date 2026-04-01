@@ -33,6 +33,7 @@ const client = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'X-Pinggy-No-Screen': 'true'
   },
 });
 
