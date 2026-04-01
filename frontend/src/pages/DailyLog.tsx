@@ -152,6 +152,8 @@ export function DailyLog() {
       const x = (Math.random() - 0.5) * 200;
       const y = (Math.random() - 0.5) * 80;
       setButtonOffset({ x, y });
+      // Snap back to original position after a short delay
+      setTimeout(() => setButtonOffset({ x: 0, y: 0 }), 600);
       return;
     }
 
