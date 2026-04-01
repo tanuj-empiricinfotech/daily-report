@@ -13,7 +13,7 @@ import { RecapViewer } from './RecapViewer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MONTH_NAMES } from './constants';
 
-const DAYS_BEFORE_MONTH_END = 2;
+const VISIBILITY_DAYS = 5;
 
 export function MonthlyRecapBanner() {
   const [dismissed, setDismissed] = useState(false);
@@ -21,34 +21,34 @@ export function MonthlyRecapBanner() {
 
   const { data: availableMonths } = useAvailableRecaps();
 
-  // Visibility window: only show 2 days before month end
+  // Visibility window: show during first 5 days of the month for last month's recap
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-  const lastDayOfMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate();
-  const daysUntilMonthEnd = lastDayOfMonth - now.getDate();
-  const isInVisibilityWindow = daysUntilMonthEnd <= DAYS_BEFORE_MONTH_END;
+  const isInVisibilityWindow = now.getDate() <= VISIBILITY_DAYS;
 
-  // Check if the current month has any log data
-  const currentMonthHasData = useMemo(() => {
+  // Previous month (the recap we're showing)
+  const recapMonth = now.getMonth() === 0 ? 12 : now.getMonth(); // 1-based, previous month
+  const recapYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+  // Check if previous month has any log data
+  const prevMonthHasData = useMemo(() => {
     if (!availableMonths?.length) return false;
     return availableMonths.some(
-      (m) => m.month === currentMonth && m.year === currentYear,
+      (m) => m.month === recapMonth && m.year === recapYear,
     );
-  }, [availableMonths, currentMonth, currentYear]);
+  }, [availableMonths, recapMonth, recapYear]);
 
-  // Fetch recap data for current month when viewer is opened
+  // Fetch recap data for previous month when viewer is opened
   const { data: recap, isLoading: recapLoading } = useMonthlyRecap(
-    currentYear,
-    currentMonth,
-    viewerOpen && currentMonthHasData,
+    recapYear,
+    recapMonth,
+    viewerOpen && prevMonthHasData,
   );
 
   const progressMutation = useUpdateRecapProgress();
 
-  if (!isInVisibilityWindow || !currentMonthHasData || dismissed) return null;
+  if (!isInVisibilityWindow || !prevMonthHasData || dismissed) return null;
 
-  const monthName = MONTH_NAMES[currentMonth - 1];
+  const monthName = MONTH_NAMES[recapMonth - 1];
 
   return (
     <>
@@ -65,7 +65,7 @@ export function MonthlyRecapBanner() {
           >
             <IconSparkles className="h-5 w-5 animate-pulse" />
             <span className="text-sm font-medium">
-              Your {monthName} {currentYear} Recap is ready!
+              Your {monthName} {recapYear} Recap is ready!
             </span>
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
               View now
