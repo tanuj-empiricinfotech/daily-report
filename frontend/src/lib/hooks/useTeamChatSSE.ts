@@ -14,7 +14,6 @@ import {
   addConversation,
   updateConversation,
   setTypingUser,
-  setConnectionStatus,
   incrementUnreadCount,
   updateLastMessage,
   setActiveConversation,
@@ -224,8 +223,6 @@ export function useTeamChatSSE(enabled: boolean = true) {
       eventSourceRef.current.close();
     }
 
-    dispatch(setConnectionStatus('connecting'));
-
     // Append token as query param for iOS Safari where cookies are blocked
     const token = localStorage.getItem('auth_token');
     const sseUrl = token
@@ -238,7 +235,6 @@ export function useTeamChatSSE(enabled: boolean = true) {
 
     eventSource.onopen = () => {
       console.log('SSE: Connected');
-      dispatch(setConnectionStatus('connected'));
       reconnectAttemptRef.current = 0;
 
       // Request notification permission
@@ -249,8 +245,6 @@ export function useTeamChatSSE(enabled: boolean = true) {
       console.log('SSE: Connection error');
       eventSource.close();
       eventSourceRef.current = null;
-      dispatch(setConnectionStatus('disconnected'));
-
       // Attempt reconnection with backoff
       if (reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
         const delay = RECONNECT_DELAYS[
@@ -258,7 +252,6 @@ export function useTeamChatSSE(enabled: boolean = true) {
         ];
         console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current + 1})`);
 
-        dispatch(setConnectionStatus('reconnecting'));
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectAttemptRef.current++;
           connect();
@@ -326,7 +319,6 @@ export function useTeamChatSSE(enabled: boolean = true) {
       eventSourceRef.current = null;
     }
 
-    dispatch(setConnectionStatus('disconnected'));
   }, [dispatch]);
 
   // Connect on mount, disconnect on unmount

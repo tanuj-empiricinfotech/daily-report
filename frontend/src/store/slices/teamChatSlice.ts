@@ -63,8 +63,6 @@ export interface ChatNotification {
   dismissed: boolean;
 }
 
-export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting';
-
 // ============================================================================
 // State Interface
 // ============================================================================
@@ -94,8 +92,6 @@ interface TeamChatState {
   // Presence
   onlineUsers: Record<number, boolean>;
   typingUsers: Record<number, { conversationId: number; timestamp: number }>;
-  connectionStatus: ConnectionStatus;
-
   // Notifications
   notifications: ChatNotification[];
   totalUnreadCount: number;
@@ -143,8 +139,6 @@ const initialState: TeamChatState = {
 
   onlineUsers: {},
   typingUsers: {},
-  connectionStatus: 'disconnected',
-
   notifications: [],
   totalUnreadCount: 0,
   isMuted: false,
@@ -383,10 +377,6 @@ const teamChatSlice = createSlice({
       }
     },
 
-    setConnectionStatus(state, action: PayloadAction<ConnectionStatus>) {
-      state.connectionStatus = action.payload;
-    },
-
     // ========================================
     // Notification Actions
     // ========================================
@@ -458,8 +448,6 @@ export const {
   // Presence
   setUserOnline,
   setTypingUser,
-  setConnectionStatus,
-
   // Notifications
   addNotification,
   dismissNotification,
