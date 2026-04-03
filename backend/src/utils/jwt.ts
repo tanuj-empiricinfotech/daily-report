@@ -1,12 +1,12 @@
 /**
  * JWT Token Utilities
- * Uses HS512 algorithm for stronger token signing.
+ * Uses HS256 algorithm for token signing.
  */
 
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-this';
-const ALGORITHM = 'HS512';
+const ALGORITHM = 'HS256';
 
 interface TokenPayload {
   userId: number;
