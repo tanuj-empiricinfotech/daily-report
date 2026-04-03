@@ -366,7 +366,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
           <TooltipContent>
             {conversation.vanishing_mode
               ? 'Disable vanishing mode'
-              : 'Enable vanishing mode (messages delete after 24h)'}
+              : `Enable vanishing mode (messages delete after ${conversation.vanishing_duration_hours}h)`}
           </TooltipContent>
         </Tooltip>
       </div>
