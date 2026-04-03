@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     participant_two_id INTEGER NOT NULL,
     team_id INTEGER NOT NULL,
     vanishing_mode BOOLEAN DEFAULT FALSE,
-    vanishing_duration_hours INTEGER DEFAULT 24,
+    vanishing_duration_hours INTEGER DEFAULT 12,
     last_message_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
