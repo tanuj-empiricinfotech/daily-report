@@ -28,6 +28,26 @@ export function clearStoredToken(): void {
   } catch { /* localStorage unavailable */ }
 }
 
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/refresh`,
+      {},
+      { withCredentials: true }
+    );
+    const newToken = response.data.token;
+    if (newToken) {
+      setStoredToken(newToken);
+    }
+    return newToken;
+  } catch {
+    return null;
+  }
+}
+
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   withCredentials: true,
@@ -53,14 +73,35 @@ client.interceptors.request.use(
 
 client.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Prevent multiple refresh calls
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = refreshAccessToken();
+      }
+
+      const newToken = await refreshPromise;
+      isRefreshing = false;
+      refreshPromise = null;
+
+      if (newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return client(originalRequest);
+      }
+
+      // Refresh failed — clear auth
       clearStoredToken();
       store.dispatch(clearUser());
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
+
     return Promise.reject(error);
   }
 );

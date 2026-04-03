@@ -11,6 +11,7 @@ const authController = new AuthController();
 router.post('/register', registerValidator, handleValidationErrors, authController.register);
 router.post('/login', loginValidator, handleValidationErrors, authController.login);
 router.post('/logout', authController.logout);
+router.post('/refresh', authController.refresh);
 router.put(
   '/password',
   authenticate,

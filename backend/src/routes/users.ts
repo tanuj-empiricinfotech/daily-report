@@ -41,6 +41,7 @@ router.put(
   usersController.update
 );
 router.patch('/:id/toggle-active', usersController.toggleActive);
+router.post('/:id/terminate-sessions', usersController.terminateSessions);
 router.delete('/:id', usersController.delete);
 
 export default router;

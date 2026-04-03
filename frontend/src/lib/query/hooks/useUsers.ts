@@ -119,3 +119,16 @@ export const useToggleUserActive = () => {
     },
   });
 };
+
+export const useTerminateSessions = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await client.post(endpoints.users.terminateSessions(userId));
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};

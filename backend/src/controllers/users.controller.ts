@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { Response, NextFunction } from 'express';
 import { UsersRepository } from '../db/repositories/users.repository';
+import { AuthService } from '../services/auth.service';
 import { AuthRequest } from '../middleware/auth';
 import { CreateUserDto } from '../types';
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/errors';
@@ -153,6 +154,32 @@ export class UsersController {
       res.json({
         success: true,
         data: userWithoutPassword,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  terminateSessions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      // Prevent self-termination
+      if (req.user && req.user.userId === id) {
+        throw new BadRequestError('You cannot terminate your own sessions');
+      }
+
+      const existingUser = await this.usersRepository.findById(id);
+      if (!existingUser) {
+        throw new NotFoundError('User not found');
+      }
+
+      const authService = new AuthService();
+      const count = await authService.revokeAllUserSessions(id);
+
+      res.json({
+        success: true,
+        message: `Terminated ${count} active session(s) for ${existingUser.name}`,
       });
     } catch (error) {
       next(error);

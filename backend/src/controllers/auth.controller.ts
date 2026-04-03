@@ -5,6 +5,7 @@ import { CreateUserDto } from '../types';
 import { COOKIE_CONFIG } from '../config/app.config';
 import logger from '../utils/logger';
 import { envConfig } from '../config/env.config';
+import { UnauthorizedError } from '../utils/errors';
 
 interface CookieOptions {
   httpOnly: boolean;
@@ -92,14 +93,17 @@ export class AuthController {
   register = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data: CreateUserDto = req.body;
-      const result = await this.authService.register(data);
+      const deviceInfo = req.headers['user-agent'] || undefined;
+      const result = await this.authService.register(data, deviceInfo);
 
-      res.cookie('token', result.token, getCookieOptions(req));
+      const cookieOptions = getCookieOptions(req);
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
 
       res.status(201).json({
         success: true,
         data: result.user,
-        token: result.token,
+        token: result.accessToken,
       });
     } catch (error) {
       next(error);
@@ -109,14 +113,17 @@ export class AuthController {
   login = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email, password } = req.body;
-      const result = await this.authService.login(email, password);
+      const deviceInfo = req.headers['user-agent'] || undefined;
+      const result = await this.authService.login(email, password, deviceInfo);
 
-      res.cookie('token', result.token, getCookieOptions(req));
+      const cookieOptions = getCookieOptions(req);
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
 
       res.json({
         success: true,
         data: result.user,
-        token: result.token,
+        token: result.accessToken,
       });
     } catch (error) {
       next(error);
@@ -125,16 +132,50 @@ export class AuthController {
 
   logout = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const refreshToken = req.cookies?.refresh_token;
+      if (refreshToken) {
+        await this.authService.revokeRefreshToken(refreshToken);
+      }
+
       const cookieOptions = getCookieOptions(req);
       res.clearCookie('token', {
         httpOnly: cookieOptions.httpOnly,
         secure: cookieOptions.secure,
         sameSite: cookieOptions.sameSite,
       });
+      res.clearCookie('refresh_token', {
+        httpOnly: cookieOptions.httpOnly,
+        secure: cookieOptions.secure,
+        sameSite: cookieOptions.sameSite,
+        path: '/api/auth',
+      });
 
       res.json({
         success: true,
         message: 'Logged out successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  refresh = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const refreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
+
+      if (!refreshToken) {
+        throw new UnauthorizedError('No refresh token provided');
+      }
+
+      const result = await this.authService.refreshAccessToken(refreshToken);
+
+      const cookieOptions = getCookieOptions(req);
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
+
+      res.json({
+        success: true,
+        token: result.accessToken,
       });
     } catch (error) {
       next(error);

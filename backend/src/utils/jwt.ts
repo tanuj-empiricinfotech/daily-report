@@ -1,25 +1,33 @@
-import jwt from 'jsonwebtoken';
-import type { JwtPayload } from '../types';
-import { envConfig } from '../config/env.config';
-
 /**
- * Get JWT secret with validation
- * Uses validated environment configuration
+ * JWT Token Utilities
+ * Uses HS512 algorithm for stronger token signing.
  */
-const JWT_SECRET: string = envConfig.jwtSecret;
-const JWT_EXPIRES_IN: string = envConfig.jwtExpiresIn;
 
-export const generateToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  } as jwt.SignOptions);
-};
+import jwt from 'jsonwebtoken';
 
-export const verifyToken = (token: string): JwtPayload => {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
-  } catch (error) {
-    throw new Error('Invalid or expired token');
-  }
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-this';
+const ALGORITHM = 'HS512';
 
+interface TokenPayload {
+  userId: number;
+  email: string;
+  role: string;
+}
+
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
+
+export function generateAccessToken(payload: TokenPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { algorithm: ALGORITHM, expiresIn: ACCESS_TOKEN_EXPIRY });
+}
+
+export function generateRefreshToken(payload: TokenPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { algorithm: ALGORITHM, expiresIn: REFRESH_TOKEN_EXPIRY });
+}
+
+export function verifyToken(token: string): TokenPayload {
+  return jwt.verify(token, JWT_SECRET, { algorithms: [ALGORITHM] }) as TokenPayload;
+}
+
+// Keep old function name for backward compatibility during transition
+export { generateAccessToken as generateToken };

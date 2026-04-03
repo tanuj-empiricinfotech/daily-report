@@ -6,6 +6,7 @@ export const endpoints = {
     login: `${API_BASE}/auth/login`,
     logout: `${API_BASE}/auth/logout`,
     changePassword: `${API_BASE}/auth/password`,
+    refresh: `${API_BASE}/auth/refresh`,
   },
   teams: {
     list: `${API_BASE}/teams`,
@@ -31,6 +32,7 @@ export const endpoints = {
     update: (id: number) => `${API_BASE}/users/${id}`,
     delete: (id: number) => `${API_BASE}/users/${id}`,
     toggleActive: (id: number) => `${API_BASE}/users/${id}/toggle-active`,
+    terminateSessions: (id: number) => `${API_BASE}/users/${id}/terminate-sessions`,
   },
   assignments: {
     create: `${API_BASE}/assignments`,

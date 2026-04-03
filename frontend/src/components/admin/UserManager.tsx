@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { IconEye, IconEyeOff } from '@tabler/icons-react';
-import { useUsersByTeam, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/query/hooks/useUsers';
+import { IconEye, IconEyeOff, IconLogout } from '@tabler/icons-react';
+import { useUsersByTeam, useCreateUser, useUpdateUser, useDeleteUser, useTerminateSessions } from '@/lib/query/hooks/useUsers';
 import { useProjects } from '@/lib/query/hooks/useProjects';
 import { useCreateAssignment, useDeleteAssignment, useUserAssignments } from '@/lib/query/hooks/useAssignments';
 import { useTeams } from '@/lib/query/hooks/useTeams';
@@ -32,9 +32,12 @@ interface UserCardProps {
   onUnassign: (userId: number, projectId: number) => void;
   onEdit: (user: User) => void;
   onDelete: (userId: number) => void;
+  onTerminateSessions: (userId: number) => void;
+  isTerminating: boolean;
+  isCurrentUser: boolean;
 }
 
-function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProps) {
+function UserCard({ user, projects, onUnassign, onEdit, onDelete, onTerminateSessions, isTerminating, isCurrentUser }: UserCardProps) {
   const { data: assignments = [], isLoading: assignmentsLoading } = useUserAssignments(user.id);
 
   const assignedProjects = assignments
@@ -62,6 +65,19 @@ function UserCard({ user, projects, onUnassign, onEdit, onDelete }: UserCardProp
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => onEdit(user)}>
               Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Terminate all sessions"
+              disabled={isCurrentUser || isTerminating}
+              onClick={() => {
+                if (window.confirm(`Terminate all sessions for ${user.name}? They will be logged out immediately.`)) {
+                  onTerminateSessions(user.id);
+                }
+              }}
+            >
+              <IconLogout className="h-4 w-4" />
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -151,8 +167,10 @@ export function UserManager() {
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const terminateSessionsMutation = useTerminateSessions();
   const createAssignmentMutation = useCreateAssignment();
   const deleteAssignmentMutation = useDeleteAssignment();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
@@ -473,6 +491,9 @@ export function UserManager() {
               onUnassign={handleUnassign}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onTerminateSessions={(userId) => terminateSessionsMutation.mutate(userId)}
+              isTerminating={terminateSessionsMutation.isPending}
+              isCurrentUser={currentUser?.id === user.id}
             />
           ))
         )}
