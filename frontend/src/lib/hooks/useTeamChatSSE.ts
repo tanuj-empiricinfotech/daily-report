@@ -9,6 +9,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
 import { refreshAccessToken } from '@/lib/api/client';
+import { getAuthToken } from '@/lib/storage.service';
 import type { RootState } from '@/store/store';
 import {
   addMessage,
@@ -130,7 +131,7 @@ export function useTeamChatSSE(enabled: boolean = true) {
       if (!conversationExists && !fetchingConversationsRef.current.has(conversation_id)) {
         fetchingConversationsRef.current.add(conversation_id);
         try {
-          const token = localStorage.getItem('auth_token');
+          const token = getAuthToken();
           const response = await fetch(endpoints.teamChat.conversation(conversation_id), {
             credentials: 'include',
             headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -227,7 +228,7 @@ export function useTeamChatSSE(enabled: boolean = true) {
     }
 
     // Append token as query param for iOS Safari where cookies are blocked
-    const token = localStorage.getItem('auth_token');
+    const token = getAuthToken();
     const sseUrl = token
       ? `${endpoints.teamChat.events}${endpoints.teamChat.events.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
       : endpoints.teamChat.events;

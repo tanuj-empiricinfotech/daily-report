@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { THEMES, type ThemeName } from '../lib/theme-config';
+import { getThemeMode, setThemeMode, getThemeName, setThemeName as saveThemeName, migrateLegacyTheme } from '@/lib/storage.service';
 
 type Mode = 'light' | 'dark' | 'system';
 
@@ -16,23 +17,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>(() => {
-    // Check for old schema (migration)
-    const oldTheme = localStorage.getItem('theme');
-    const storedMode = localStorage.getItem('mode');
-
-    if (oldTheme && !storedMode) {
-      // Migrate old schema
-      localStorage.setItem('mode', oldTheme);
-      localStorage.removeItem('theme');
-      return oldTheme as Mode;
-    }
-
-    return (storedMode as Mode) || 'system';
+    const migrated = migrateLegacyTheme();
+    if (migrated) return migrated as Mode;
+    return (getThemeMode() as Mode) || 'system';
   });
 
   const [themeName, setThemeName] = useState<ThemeName>(() => {
-    const stored = localStorage.getItem('themeName');
-    return (stored as ThemeName) || 'default';
+    return (getThemeName() as ThemeName) || 'default';
   });
 
   const [effectiveMode, setEffectiveMode] = useState<'light' | 'dark'>('dark');
@@ -87,9 +78,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.dataset.theme = themeName;
     }
 
-    // Save to localStorage
-    localStorage.setItem('mode', mode);
-    localStorage.setItem('themeName', themeName);
+    // Save to storage
+    setThemeMode(mode);
+    saveThemeName(themeName);
   }, [mode, themeName]);
 
   // Listen to system theme changes when in 'system' mode

@@ -99,29 +99,13 @@ interface TeamChatState {
 }
 
 // ============================================================================
-// localStorage helpers for draft persistence
+// Draft persistence via storage service
 // ============================================================================
 
-const DRAFTS_STORAGE_KEY = 'team-chat-drafts';
+import { getChatDrafts, saveChatDrafts } from '@/lib/storage.service';
 
-function loadDraftsFromStorage(): Record<number, string> {
-  try {
-    const stored = localStorage.getItem(DRAFTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveDraftsToStorage(drafts: Record<number, string>): void {
-  try {
-    if (Object.keys(drafts).length === 0) {
-      localStorage.removeItem(DRAFTS_STORAGE_KEY);
-    } else {
-      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
-    }
-  } catch { /* localStorage unavailable */ }
-}
+const loadDraftsFromStorage = getChatDrafts;
+const saveDraftsToStorage = saveChatDrafts;
 
 // ============================================================================
 // Initial State

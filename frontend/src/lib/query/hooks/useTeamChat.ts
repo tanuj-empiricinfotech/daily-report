@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { useDispatch } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
 import { refreshAccessToken } from '@/lib/api/client';
+import { getAuthToken } from '@/lib/storage.service';
 import {
   setConversations,
   setMessages,
@@ -53,7 +54,7 @@ interface UnreadResponse {
 // ============================================================================
 
 const buildFetchOptions = (options?: RequestInit): RequestInit => {
-  const token = localStorage.getItem('auth_token');
+  const token = getAuthToken();
   return {
     ...options,
     credentials: 'include',

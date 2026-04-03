@@ -2,31 +2,16 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { endpoints } from './endpoints';
 import { store } from '@/store/store';
 import { clearUser } from '@/store/slices/authSlice';
+import {
+  getAuthToken,
+  setAuthToken,
+  clearAuthToken,
+} from '@/lib/storage.service';
 
-const AUTH_TOKEN_KEY = 'auth_token';
-
-/** Store token in localStorage (fallback for iOS Safari where cookies are blocked). */
-export function setStoredToken(token: string): void {
-  try {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-  } catch { /* localStorage unavailable */ }
-}
-
-/** Get stored token from localStorage. */
-export function getStoredToken(): string | null {
-  try {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/** Clear stored token. */
-export function clearStoredToken(): void {
-  try {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-  } catch { /* localStorage unavailable */ }
-}
+// Re-export for backward compatibility
+export const getStoredToken = getAuthToken;
+export const setStoredToken = setAuthToken;
+export const clearStoredToken = clearAuthToken;
 
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
