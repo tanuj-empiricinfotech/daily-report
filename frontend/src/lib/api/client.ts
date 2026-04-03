@@ -31,7 +31,7 @@ export function clearStoredToken(): void {
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/refresh`,

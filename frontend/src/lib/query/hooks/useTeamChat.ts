@@ -7,6 +7,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
+import { refreshAccessToken } from '@/lib/api/client';
 import {
   setConversations,
   setMessages,
@@ -51,9 +52,9 @@ interface UnreadResponse {
 // API Functions
 // ============================================================================
 
-const fetchWithCredentials = async <T>(url: string, options?: RequestInit): Promise<T> => {
+const buildFetchOptions = (options?: RequestInit): RequestInit => {
   const token = localStorage.getItem('auth_token');
-  const response = await fetch(url, {
+  return {
     ...options,
     credentials: 'include',
     headers: {
@@ -61,7 +62,27 @@ const fetchWithCredentials = async <T>(url: string, options?: RequestInit): Prom
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
-  });
+  };
+};
+
+const fetchWithCredentials = async <T>(url: string, options?: RequestInit): Promise<T> => {
+  const response = await fetch(url, buildFetchOptions(options));
+
+  // On 401, attempt a single token refresh and retry
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      const retryResponse = await fetch(url, buildFetchOptions(options));
+      if (!retryResponse.ok) {
+        const error = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(error.error || 'Request failed');
+      }
+      return retryResponse.json();
+    }
+    // Refresh failed — redirect to login
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));

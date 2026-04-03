@@ -8,6 +8,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
+import { refreshAccessToken } from '@/lib/api/client';
 import type { RootState } from '@/store/store';
 import {
   addMessage,
@@ -129,8 +130,10 @@ export function useTeamChatSSE(enabled: boolean = true) {
       if (!conversationExists && !fetchingConversationsRef.current.has(conversation_id)) {
         fetchingConversationsRef.current.add(conversation_id);
         try {
+          const token = localStorage.getItem('auth_token');
           const response = await fetch(endpoints.teamChat.conversation(conversation_id), {
             credentials: 'include',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           });
           if (response.ok) {
             const result = await response.json();
@@ -245,15 +248,22 @@ export function useTeamChatSSE(enabled: boolean = true) {
       console.log('SSE: Connection error');
       eventSource.close();
       eventSourceRef.current = null;
-      // Attempt reconnection with backoff
+
+      // Attempt reconnection with backoff, refreshing token first
       if (reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
         const delay = RECONNECT_DELAYS[
           Math.min(reconnectAttemptRef.current, RECONNECT_DELAYS.length - 1)
         ];
         console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current + 1})`);
 
-        reconnectTimeoutRef.current = setTimeout(() => {
+        reconnectTimeoutRef.current = setTimeout(async () => {
           reconnectAttemptRef.current++;
+          // Refresh token before reconnecting so SSE gets a fresh token
+          try {
+            await refreshAccessToken();
+          } catch {
+            // Refresh failed — still attempt reconnect with existing token/cookie
+          }
           connect();
         }, delay);
       }
