@@ -68,7 +68,7 @@ export const MAX_MESSAGE_LENGTH = 5000;
 /**
  * Default vanishing mode duration in hours
  */
-export const DEFAULT_VANISHING_DURATION_HOURS = 12;
+export const DEFAULT_VANISHING_DURATION_HOURS = 24;
 
 /**
  * Number of messages to fetch per page
