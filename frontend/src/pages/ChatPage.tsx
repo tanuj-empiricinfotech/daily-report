@@ -86,12 +86,12 @@ export function ChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <IconMessageCircle className="w-5 h-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">Chat with Logs</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold">Chat with Logs</h1>
+            <p className="text-xs md:text-sm text-muted-foreground truncate">
               Ask questions about your work logs using AI
             </p>
           </div>
@@ -99,20 +99,9 @@ export function ChatPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-4 flex-1 min-h-0">
-        {/* Chat Area */}
-        <Card className="flex-1 flex flex-col min-h-0">
-          <CardContent className="flex-1 p-0 min-h-0">
-            <ChatThread
-              apiEndpoint={endpoints.chat.send}
-              context={chatContext}
-              className="h-full"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Context Panel */}
-        <div className="w-80 shrink-0 space-y-4">
+      <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
+        {/* Context Panel — top on mobile, right sidebar on desktop */}
+        <div className="w-full md:w-80 shrink-0 md:order-2 space-y-4 overflow-y-auto max-h-[40vh] md:max-h-none">
           {/* Date Range Filter */}
           <Card>
             <CardHeader className="pb-3">
@@ -224,7 +213,7 @@ export function ChatPage() {
           </Card>
 
           {/* Tips Card */}
-          <Card className="bg-muted/50">
+          <Card className="bg-muted/50 hidden md:block">
             <CardContent className="pt-4">
               <h4 className="text-sm font-medium mb-2">Try asking:</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
@@ -236,6 +225,17 @@ export function ChatPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Chat Area */}
+        <Card className="flex-1 flex flex-col min-h-0 md:order-1">
+          <CardContent className="flex-1 p-0 min-h-0">
+            <ChatThread
+              apiEndpoint={endpoints.chat.send}
+              context={chatContext}
+              className="h-full"
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
