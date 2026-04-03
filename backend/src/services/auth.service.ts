@@ -159,6 +159,9 @@ export class AuthService {
 
     const newPasswordHash = await bcrypt.hash(newPassword, PASSWORD_CONFIG.BCRYPT_SALT_ROUNDS);
     await this.usersRepository.update(userId, { password_hash: newPasswordHash });
+
+    // Revoke all sessions so user must log in with new password
+    await this.refreshTokensRepository.deleteAllByUserId(userId);
   }
 }
 

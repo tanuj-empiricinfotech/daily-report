@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
-import { useChangePassword } from '@/lib/query/hooks/useAuth';
+import { useChangePassword, useLogout } from '@/lib/query/hooks/useAuth';
 
 interface ChangePasswordModalProps {
   open: boolean;
@@ -23,6 +23,7 @@ export function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalP
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const changePasswordMutation = useChangePassword();
+  const { mutate: logout } = useLogout();
 
   const resetForm = () => {
     setCurrentPassword('');
@@ -67,11 +68,12 @@ export function ChangePasswordModal({ open, onOpenChange }: ChangePasswordModalP
         newPassword,
       });
 
-      setSuccessMessage('Password updated successfully');
+      setSuccessMessage('Password updated. Redirecting to login...');
 
-      // Close modal after a short delay to show success message
+      // Logout and redirect after a short delay to show success message
       setTimeout(() => {
-        handleClose();
+        logout();
+        window.location.href = '/login';
       }, 1500);
     } catch (error) {
       // Error will be displayed via changePasswordMutation.error
