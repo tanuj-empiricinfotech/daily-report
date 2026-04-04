@@ -7,6 +7,9 @@ export const endpoints = {
     logout: `${API_BASE}/auth/logout`,
     changePassword: `${API_BASE}/auth/password`,
     refresh: `${API_BASE}/auth/refresh`,
+    sessions: `${API_BASE}/auth/sessions`,
+    revokeSession: (sessionId: number) => `${API_BASE}/auth/sessions/${sessionId}`,
+    revokeOtherSessions: `${API_BASE}/auth/sessions`,
   },
   teams: {
     list: `${API_BASE}/teams`,

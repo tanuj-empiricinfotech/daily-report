@@ -131,6 +131,35 @@ export class AuthService {
     return this.refreshTokensRepository.deleteAllByUserId(userId);
   }
 
+  async getUserSessions(userId: number, currentRefreshToken?: string): Promise<Array<{ id: number; device_info: string | null; created_at: Date; is_current: boolean }>> {
+    const tokens = await this.refreshTokensRepository.findByUserId(userId);
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+
+    return tokens.map(t => ({
+      id: t.id,
+      device_info: t.device_info,
+      created_at: t.created_at,
+      is_current: currentHash ? t.token_hash === currentHash : false,
+    }));
+  }
+
+  async revokeSession(sessionId: number, userId: number): Promise<boolean> {
+    return this.refreshTokensRepository.deleteById(sessionId, userId);
+  }
+
+  async revokeOtherSessions(userId: number, currentRefreshToken: string): Promise<number> {
+    const currentHash = hashToken(currentRefreshToken);
+    const tokens = await this.refreshTokensRepository.findByUserId(userId);
+    let revoked = 0;
+    for (const token of tokens) {
+      if (token.token_hash !== currentHash) {
+        await this.refreshTokensRepository.deleteById(token.id, userId);
+        revoked++;
+      }
+    }
+    return revoked;
+  }
+
   async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this.usersRepository.findById(userId);
     if (!user) {

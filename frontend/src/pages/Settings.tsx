@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
+import { SessionsManager } from '@/components/settings/SessionsManager';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -187,6 +188,9 @@ export function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Active Sessions */}
+      <SessionsManager />
 
       {/* Account Information */}
       <Card>

@@ -60,6 +60,14 @@ export class RefreshTokensRepository extends BaseRepository<RefreshTokenRow> {
     return result.rows;
   }
 
+  async deleteById(id: number, userId: number): Promise<boolean> {
+    const result = await query(
+      `DELETE FROM ${this.tableName} WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async deleteExpired(): Promise<number> {
     const result = await query(
       `DELETE FROM ${this.tableName} WHERE expires_at < CURRENT_TIMESTAMP`

@@ -21,5 +21,9 @@ router.put(
   authController.changePassword
 );
 
+router.get('/sessions', authenticate, authController.getSessions);
+router.delete('/sessions/:sessionId', authenticate, authController.revokeSession);
+router.delete('/sessions', authenticate, authController.revokeOtherSessions);
+
 export default router;
 

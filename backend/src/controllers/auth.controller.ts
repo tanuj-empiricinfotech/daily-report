@@ -5,7 +5,7 @@ import { CreateUserDto } from '../types';
 import { COOKIE_CONFIG } from '../config/app.config';
 import logger from '../utils/logger';
 import { envConfig } from '../config/env.config';
-import { UnauthorizedError } from '../utils/errors';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../utils/errors';
 
 const ACCESS_TOKEN_COOKIE_MAX_AGE = 15 * 60 * 1000; // 15 minutes
 const REFRESH_TOKEN_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -179,6 +179,57 @@ export class AuthController {
         success: true,
         token: result.accessToken,
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getSessions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError('Not authenticated');
+
+      const currentRefreshToken = req.cookies?.refresh_token;
+      const sessions = await this.authService.getUserSessions(userId, currentRefreshToken);
+
+      res.json({ success: true, data: sessions });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  revokeSession = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError('Not authenticated');
+
+      const sessionId = parseInt(req.params.sessionId, 10);
+      if (isNaN(sessionId)) {
+        throw new BadRequestError('Invalid session ID');
+      }
+
+      const revoked = await this.authService.revokeSession(sessionId, userId);
+      if (!revoked) {
+        throw new NotFoundError('Session not found');
+      }
+
+      res.json({ success: true, message: 'Session revoked' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  revokeOtherSessions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError('Not authenticated');
+
+      const currentRefreshToken = req.cookies?.refresh_token;
+      if (!currentRefreshToken) throw new UnauthorizedError('No active session');
+
+      const count = await this.authService.revokeOtherSessions(userId, currentRefreshToken);
+
+      res.json({ success: true, message: `Revoked ${count} other session(s)` });
     } catch (error) {
       next(error);
     }

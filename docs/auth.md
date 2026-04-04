@@ -1,6 +1,6 @@
 # Authentication and Authorization
 
-> Last updated: 2026-04-04
+> Last updated: 2026-04-04 (sessions management added)
 
 ## Overview
 
@@ -110,6 +110,20 @@ All endpoints are prefixed with `/api/auth`.
 | `POST` | `/logout` | No | Revoke refresh token, clear cookies |
 | `POST` | `/refresh` | No | Rotate tokens (refresh token in cookie or body) |
 | `PUT` | `/password` | Yes | Change password (rate limited), revokes all sessions |
+| `GET` | `/sessions` | Yes | List active sessions for current user |
+| `DELETE` | `/sessions/:id` | Yes | Revoke a specific session |
+| `DELETE` | `/sessions` | Yes | Revoke all sessions except current |
+
+### Session Management
+
+Users can view and manage their active sessions under **Settings > Security**. Each session shows:
+- Browser and OS (parsed from User-Agent)
+- Login time (relative)
+- "This device" badge for the current session
+- "Revoke" button (disabled for current session)
+- "Revoke all other sessions" button
+
+Admins can also terminate all sessions for any user from the Team management page.
 
 ### Request/Response Examples
 
@@ -126,7 +140,13 @@ Set-Cookie: token=...; refresh_token=...
 POST /api/auth/refresh
 Cookie: refresh_token=...
 Response: { "success": true, "token": "new_access_token" }
-Set-Cookie: token=...; refresh_token=...  (both rotated)
+Set-Cookie: token=...; refresh_token=...
+```
+
+**List Sessions**:
+```
+GET /api/auth/sessions
+Response: { "success": true, "data": [{ "id": 1, "device_info": "Mozilla/5.0 ...", "created_at": "...", "is_current": true }, ...] }
 ```
 
 ## iOS Considerations

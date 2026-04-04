@@ -176,3 +176,10 @@ export interface AvailableRecapMonth {
   generated: boolean;
 }
 
+export interface UserSession {
+  id: number;
+  device_info: string | null;
+  created_at: string;
+  is_current: boolean;
+}
+
