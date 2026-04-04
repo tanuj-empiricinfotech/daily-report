@@ -7,6 +7,9 @@ import logger from '../utils/logger';
 import { envConfig } from '../config/env.config';
 import { UnauthorizedError } from '../utils/errors';
 
+const ACCESS_TOKEN_COOKIE_MAX_AGE = 15 * 60 * 1000; // 15 minutes
+const REFRESH_TOKEN_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 interface CookieOptions {
   httpOnly: boolean;
   secure: boolean;
@@ -97,8 +100,8 @@ export class AuthController {
       const result = await this.authService.register(data, deviceInfo);
 
       const cookieOptions = getCookieOptions(req);
-      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: ACCESS_TOKEN_COOKIE_MAX_AGE });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE });
 
       res.status(201).json({
         success: true,
@@ -117,8 +120,8 @@ export class AuthController {
       const result = await this.authService.login(email, password, deviceInfo);
 
       const cookieOptions = getCookieOptions(req);
-      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: ACCESS_TOKEN_COOKIE_MAX_AGE });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE });
 
       res.json({
         success: true,
@@ -147,7 +150,6 @@ export class AuthController {
         httpOnly: cookieOptions.httpOnly,
         secure: cookieOptions.secure,
         sameSite: cookieOptions.sameSite,
-        path: '/api/auth',
       });
 
       res.json({
@@ -170,8 +172,8 @@ export class AuthController {
       const result = await this.authService.refreshAccessToken(refreshToken);
 
       const cookieOptions = getCookieOptions(req);
-      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000, path: '/api/auth' });
+      res.cookie('token', result.accessToken, { ...cookieOptions, maxAge: ACCESS_TOKEN_COOKIE_MAX_AGE });
+      res.cookie('refresh_token', result.refreshToken, { ...cookieOptions, maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE });
 
       res.json({
         success: true,
