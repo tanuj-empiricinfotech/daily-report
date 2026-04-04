@@ -26,49 +26,65 @@ function processQueue(token: string | null, error?: unknown): void {
   failedQueue = [];
 }
 
+const MAX_REFRESH_RETRIES = 2;
+
 export async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/refresh`,
-      {},
-      { withCredentials: true }
-    );
-    const newToken = response.data.token;
-    if (newToken) {
-      setAuthToken(newToken);
+  for (let attempt = 0; attempt < MAX_REFRESH_RETRIES; attempt++) {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      );
+      const newToken = response.data.token;
+      if (newToken) {
+        setAuthToken(newToken);
+        return newToken;
+      }
+    } catch {
+      // On last attempt, give up
+      if (attempt === MAX_REFRESH_RETRIES - 1) return null;
+      // Wait briefly before retrying (500ms)
+      await new Promise((r) => setTimeout(r, 500));
     }
-    return newToken;
-  } catch {
-    return null;
   }
+  return null;
 }
 
-/**
- * Proactively refresh the access token on app load.
- * Called once when the app initializes to ensure a valid token exists.
- */
-export async function refreshTokenOnLoad(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return; // Not logged in — nothing to refresh
+const BACKGROUND_REFRESH_INTERVAL_MS = 12 * 60 * 1000; // 12 minutes (before 15min expiry)
+const TOKEN_EXPIRY_BUFFER_MS = 2 * 60 * 1000; // Refresh if expiring within 2 minutes
 
-  // Try to decode and check expiry (without verification — just checking the exp claim)
+/** Check if the stored access token is expired or about to expire. */
+function isTokenExpiredOrExpiring(): boolean {
+  const token = getAuthToken();
+  if (!token) return false;
+
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const expiresAt = payload.exp * 1000;
-    const bufferMs = 60_000; // Refresh if expiring within 1 minute
-
-    if (Date.now() >= expiresAt - bufferMs) {
-      const newToken = await refreshAccessToken();
-      if (!newToken) {
-        // Refresh failed — clear auth silently (user will be redirected on next API call)
-        clearAuthToken();
-        store.dispatch(clearUser());
-      }
-    }
+    return Date.now() >= expiresAt - TOKEN_EXPIRY_BUFFER_MS;
   } catch {
-    // Token is malformed — try refreshing anyway
-    await refreshAccessToken();
+    return true; // Malformed token — treat as expired
   }
+}
+
+/** Silently refresh the token if it's expired or about to expire. */
+async function silentRefresh(): Promise<void> {
+  if (!getAuthToken()) return; // Not logged in
+  if (!isTokenExpiredOrExpiring()) return; // Token still valid
+
+  await refreshAccessToken();
+}
+
+/**
+ * Proactively refresh the access token on app load and set up
+ * a background interval to keep the session alive.
+ */
+export async function refreshTokenOnLoad(): Promise<void> {
+  await silentRefresh();
+
+  // Set up periodic background refresh to keep the token alive during idle time
+  setInterval(silentRefresh, BACKGROUND_REFRESH_INTERVAL_MS);
 }
 
 const client = axios.create({
