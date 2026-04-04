@@ -110,26 +110,16 @@ export class AuthService {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
-    // Delete old refresh token (rotation)
-    await this.refreshTokensRepository.deleteByTokenHash(tokenHash);
-
-    const tokenPayload = {
+    // Issue a new access token without rotating the refresh token.
+    // This avoids race conditions with concurrent refresh calls
+    // (e.g. background interval + 401 retry, or multiple devices).
+    const newAccessToken = generateAccessToken({
       userId: payload.userId,
       email: payload.email,
       role: payload.role,
-    };
+    });
 
-    const newAccessToken = generateAccessToken(tokenPayload);
-    const newRefreshToken = generateRefreshToken(tokenPayload);
-
-    await this.refreshTokensRepository.create(
-      payload.userId,
-      hashToken(newRefreshToken),
-      storedToken.device_info,
-      getRefreshTokenExpiryDate()
-    );
-
-    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+    return { accessToken: newAccessToken, refreshToken };
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<void> {

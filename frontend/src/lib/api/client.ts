@@ -72,6 +72,7 @@ function isTokenExpiredOrExpiring(): boolean {
 async function silentRefresh(): Promise<void> {
   if (!getAuthToken()) return; // Not logged in
   if (!isTokenExpiredOrExpiring()) return; // Token still valid
+  if (isRefreshing) return; // Already refreshing — skip this cycle
 
   await refreshAccessToken();
 }
