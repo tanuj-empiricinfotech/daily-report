@@ -3,7 +3,7 @@
  * Main layout wrapper combining Sidebar + TopBar + Content
  */
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
@@ -17,13 +17,20 @@ interface DashboardLayoutProps {
     children: ReactNode;
 }
 
+const SIDEBAR_COLLAPSE_BREAKPOINT = 1440;
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     useVersionCheck();
     const seasonalEvent = useSeasonalEvent();
 
+    const defaultSidebarOpen = useMemo(
+        () => window.innerWidth >= SIDEBAR_COLLAPSE_BREAKPOINT,
+        []
+    );
+
     return (
         <TooltipProvider delayDuration={0}>
-            <SidebarProvider defaultOpen={true}>
+            <SidebarProvider defaultOpen={defaultSidebarOpen}>
                 <AppSidebar />
                 <SidebarInset>
                     <TopBar />
