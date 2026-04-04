@@ -51,7 +51,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   return null;
 }
 
-const BACKGROUND_REFRESH_INTERVAL_MS = 12 * 60 * 1000; // 12 minutes (before 15min expiry)
+const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 1000; // 1 minute
 const TOKEN_EXPIRY_BUFFER_MS = 2 * 60 * 1000; // Refresh if expiring within 2 minutes
 
 /** Check if the stored access token is expired or about to expire. */
