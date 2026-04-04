@@ -8,10 +8,6 @@ import {
   clearAuthToken,
 } from '@/lib/storage.service';
 
-// Re-export for backward compatibility
-export const getStoredToken = getAuthToken;
-export const setStoredToken = setAuthToken;
-export const clearStoredToken = clearAuthToken;
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -39,7 +35,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     );
     const newToken = response.data.token;
     if (newToken) {
-      setStoredToken(newToken);
+      setAuthToken(newToken);
     }
     return newToken;
   } catch {
@@ -65,7 +61,7 @@ export async function refreshTokenOnLoad(): Promise<void> {
       const newToken = await refreshAccessToken();
       if (!newToken) {
         // Refresh failed — clear auth silently (user will be redirected on next API call)
-        clearStoredToken();
+        clearAuthToken();
         store.dispatch(clearUser());
       }
     }
@@ -86,7 +82,7 @@ const client = axios.create({
 
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getStoredToken();
+    const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -135,7 +131,7 @@ client.interceptors.response.use(
         }
 
         // Refresh failed — clear auth
-        clearStoredToken();
+        clearAuthToken();
         store.dispatch(clearUser());
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
@@ -143,7 +139,7 @@ client.interceptors.response.use(
       } catch (refreshError) {
         processQueue(null, refreshError);
         isRefreshing = false;
-        clearStoredToken();
+        clearAuthToken();
         store.dispatch(clearUser());
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

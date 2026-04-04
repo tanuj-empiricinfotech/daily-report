@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import client, { endpoints, setStoredToken, clearStoredToken } from '../../api/client';
+import client, { endpoints } from '../../api/client';
+import { setAuthToken, clearAuthToken } from '@/lib/storage.service';
 import type { CreateUserDto, ApiResponse, User, ChangePasswordDto } from '../../api/types';
 import { useDispatch } from 'react-redux';
 import { setUser, clearUser } from '../../../store/slices/authSlice';
@@ -12,7 +13,7 @@ export const useLogin = () => {
     mutationFn: async (data: { email: string; password: string }) => {
       const response = await client.post<ApiResponse<User> & { token?: string }>(endpoints.auth.login, data);
       if (response.data.token) {
-        setStoredToken(response.data.token);
+        setAuthToken(response.data.token);
       }
       return response.data.data;
     },
@@ -31,7 +32,7 @@ export const useRegister = () => {
     mutationFn: async (data: CreateUserDto) => {
       const response = await client.post<ApiResponse<User> & { token?: string }>(endpoints.auth.register, data);
       if (response.data.token) {
-        setStoredToken(response.data.token);
+        setAuthToken(response.data.token);
       }
       return response.data.data;
     },
@@ -51,7 +52,7 @@ export const useLogout = () => {
       await client.post(endpoints.auth.logout);
     },
     onSuccess: () => {
-      clearStoredToken();
+      clearAuthToken();
       dispatch(clearUser());
       queryClient.clear();
     },
