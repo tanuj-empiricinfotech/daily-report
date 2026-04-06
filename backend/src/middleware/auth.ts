@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
+import { AuthService } from '../services/auth.service';
 import { UnauthorizedError } from '../utils/errors';
 
 export interface AuthRequest extends Request {
@@ -7,10 +8,13 @@ export interface AuthRequest extends Request {
     userId: number;
     email: string;
     role: string;
+    sessionId: number;
   };
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
+const authService = new AuthService();
+
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Try cookie first, then Authorization header, then query param (fallback for iOS Safari)
     let token = req.cookies?.token;
@@ -32,6 +36,13 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     }
 
     const decoded = verifyToken(token);
+
+    // Verify session still exists in DB (enables immediate revocation)
+    const sessionValid = await authService.isSessionValid(decoded.sessionId);
+    if (!sessionValid) {
+      throw new UnauthorizedError('Session has been revoked');
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
@@ -50,13 +61,8 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
 /**
  * Helper function to get authenticated user from request
  * Throws UnauthorizedError if user is not authenticated
- * Use this instead of non-null assertions (req.user!)
- * 
- * @param req - Authenticated request
- * @returns Authenticated user object
- * @throws UnauthorizedError if user is not authenticated
  */
-export function getAuthenticatedUser(req: AuthRequest): { userId: number; email: string; role: string } {
+export function getAuthenticatedUser(req: AuthRequest): { userId: number; email: string; role: string; sessionId: number } {
   if (!req.user) {
     throw new UnauthorizedError('User not authenticated');
   }

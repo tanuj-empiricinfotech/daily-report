@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
@@ -21,7 +20,6 @@ import { ChatPage } from './pages/ChatPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { refreshTokenOnLoad } from './lib/api/client';
 
 function RootRedirect() {
   const { isAuthenticated } = useAuth();
@@ -172,11 +170,6 @@ function AppRoutes() {
 }
 
 export function App() {
-  // Proactively refresh expired access token on app load
-  useEffect(() => {
-    refreshTokenOnLoad();
-  }, []);
-
   return (
     <ThemeProvider>
       <Provider store={store}>

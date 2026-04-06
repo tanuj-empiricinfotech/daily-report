@@ -68,6 +68,14 @@ export class RefreshTokensRepository extends BaseRepository<RefreshTokenRow> {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async existsById(id: number): Promise<boolean> {
+    const result = await query(
+      `SELECT 1 FROM ${this.tableName} WHERE id = $1 AND expires_at > CURRENT_TIMESTAMP LIMIT 1`,
+      [id]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async deleteExpired(): Promise<number> {
     const result = await query(
       `DELETE FROM ${this.tableName} WHERE expires_at < CURRENT_TIMESTAMP`

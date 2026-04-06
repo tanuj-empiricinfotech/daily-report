@@ -8,7 +8,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
-import { refreshAccessToken } from '@/lib/api/client';
 import { getAuthToken } from '@/lib/storage.service';
 import type { RootState } from '@/store/store';
 import {
@@ -257,14 +256,8 @@ export function useTeamChatSSE(enabled: boolean = true) {
         ];
         console.log(`SSE: Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current + 1})`);
 
-        reconnectTimeoutRef.current = setTimeout(async () => {
+        reconnectTimeoutRef.current = setTimeout(() => {
           reconnectAttemptRef.current++;
-          // Refresh token before reconnecting so SSE gets a fresh token
-          try {
-            await refreshAccessToken();
-          } catch {
-            // Refresh failed — still attempt reconnect with existing token/cookie
-          }
           connect();
         }, delay);
       }

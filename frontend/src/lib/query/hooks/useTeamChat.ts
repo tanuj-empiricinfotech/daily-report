@@ -7,7 +7,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { endpoints } from '@/lib/api/endpoints';
-import { refreshAccessToken } from '@/lib/api/client';
 import { getAuthToken } from '@/lib/storage.service';
 import {
   setConversations,
@@ -69,18 +68,7 @@ const buildFetchOptions = (options?: RequestInit): RequestInit => {
 const fetchWithCredentials = async <T>(url: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(url, buildFetchOptions(options));
 
-  // On 401, attempt a single token refresh and retry
   if (response.status === 401) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      const retryResponse = await fetch(url, buildFetchOptions(options));
-      if (!retryResponse.ok) {
-        const error = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || 'Request failed');
-      }
-      return retryResponse.json();
-    }
-    // Refresh failed — redirect to login
     window.location.href = '/login';
     throw new Error('Session expired');
   }
