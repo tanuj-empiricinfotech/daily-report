@@ -45,6 +45,7 @@ import {
   useSendTypingIndicator,
 } from '@/lib/query/hooks/useTeamChat';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsCoarsePointer } from '@/lib/hooks/useIsCoarsePointer';
 
 const TYPING_INDICATOR_EXPIRY_MS = 4000;
 const TYPING_CHECK_INTERVAL_MS = 2000;
@@ -103,6 +104,8 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
   const typingUsers = useSelector((state: RootState) => state.teamChat.typingUsers);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isCoarsePointer = useIsCoarsePointer();
 
   const otherUserTyping = useMemo(() => {
     if (!conversation) return false;
@@ -266,10 +269,18 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       sendTypingMutation.mutate({ conversationId, isTyping: false });
     }
+
+    // Keep focus in the composer so the mobile keyboard stays open and the
+    // user can immediately type the next message. Calling focus synchronously
+    // inside the user gesture is required on iOS Safari — deferring with
+    // setTimeout would dismiss the keyboard.
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // On touch devices Enter should insert a newline; sending is done via
+    // the send button. Otherwise Enter sends and Shift+Enter inserts a newline.
+    if (e.key === 'Enter' && !e.shiftKey && !isCoarsePointer) {
       e.preventDefault();
       handleSend();
     }
@@ -478,6 +489,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
       <div className="p-4 border-t">
         <div className="flex gap-2 items-end">
           <Textarea
+            ref={textareaRef}
             placeholder="Type a message..."
             value={draft}
             onChange={(e) => {
