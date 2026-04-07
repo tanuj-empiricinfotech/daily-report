@@ -9,7 +9,7 @@ import { query } from '../connection';
 export interface RefreshTokenRow {
   id: number;
   user_id: number;
-  token_hash: string;
+  token_hash: string | null;
   device_info: string | null;
   expires_at: Date;
   created_at: Date;
@@ -18,7 +18,7 @@ export interface RefreshTokenRow {
 export class RefreshTokensRepository extends BaseRepository<RefreshTokenRow> {
   protected tableName = 'refresh_tokens';
 
-  async create(userId: number, tokenHash: string, deviceInfo: string | null, expiresAt: Date): Promise<RefreshTokenRow> {
+  async create(userId: number, tokenHash: string | null, deviceInfo: string | null, expiresAt: Date): Promise<RefreshTokenRow> {
     const result = await query(
       `INSERT INTO ${this.tableName} (user_id, token_hash, device_info, expires_at)
        VALUES ($1, $2, $3, $4)

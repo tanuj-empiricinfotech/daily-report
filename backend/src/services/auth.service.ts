@@ -38,7 +38,7 @@ export class AuthService {
     // Create session record
     const session = await this.sessionsRepository.create(
       user.id,
-      '', // No token hash needed — session ID is in the JWT
+      null, // Session is identified by its row id (carried in the JWT)
       deviceInfo ?? null,
       getSessionExpiryDate()
     );
