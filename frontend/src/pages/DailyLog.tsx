@@ -16,6 +16,7 @@ import { useUsers, useUsersByTeam } from '@/lib/query/hooks/useUsers';
 import { useTeams } from '@/lib/query/hooks/useTeams';
 import { useAuth } from '@/hooks/useAuth';
 import { IconPlus } from '@tabler/icons-react';
+import { ProjectProgressSummary } from '@/components/projects/ProjectProgressSummary';
 
 export function DailyLog() {
   const navigate = useNavigate();
@@ -208,6 +209,8 @@ export function DailyLog() {
           <p className="text-sm text-muted-foreground">Gotcha! Redirecting you now...</p>
         </div>
       )}
+
+      <ProjectProgressSummary projects={projects} />
 
       <Card>
         <CardHeader>

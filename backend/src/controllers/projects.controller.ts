@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { ProjectsService } from '../services/projects.service';
 import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
-import { CreateProjectDto } from '../types';
+import { CreateProjectDto, UpdateProjectDto } from '../types';
 import { query } from '../db/connection';
 
 export class ProjectsController {
@@ -98,7 +98,7 @@ export class ProjectsController {
   update = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const id = parseInt(req.params.id, 10);
-      const data: Partial<CreateProjectDto> = req.body;
+      const data: UpdateProjectDto = req.body;
       const userId = getAuthenticatedUser(req).userId;
       const project = await this.projectsService.updateProject(id, data, userId);
       res.json({

@@ -1,5 +1,5 @@
 import { ProjectsRepository } from '../db/repositories/projects.repository';
-import { Project, CreateProjectDto } from '../types';
+import { Project, ProjectWithProgress, CreateProjectDto, UpdateProjectDto } from '../types';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 import { query } from '../db/connection';
 
@@ -26,37 +26,46 @@ export class ProjectsService {
     return project;
   }
 
-  async getAllProjects(userId?: number, userRole?: string, userTeamId?: number | null): Promise<Project[]> {
+  async getAllProjects(
+    userId?: number,
+    userRole?: string,
+    userTeamId?: number | null
+  ): Promise<ProjectWithProgress[]> {
     // Admins can see all projects
     if (userRole === 'admin') {
-      return await this.projectsRepository.findAll();
+      return await this.projectsRepository.findAllWithProgress();
     }
     // Members can only see projects in their team or assigned to them
     if (userId && userTeamId !== undefined) {
-      return await this.projectsRepository.findByTeamIdOrUserId(userTeamId, userId);
+      return await this.projectsRepository.findByTeamIdOrUserIdWithProgress(userTeamId, userId);
     }
-    // Fallback: if no user info provided, return all (for backward compatibility with admin-only routes)
-    return await this.projectsRepository.findAll();
+    // Fallback: if no user info provided, return all (for backward compatibility)
+    return await this.projectsRepository.findAllWithProgress();
   }
 
-  async getProjectsByTeamId(teamId: number, userId?: number, userRole?: string, userTeamId?: number | null): Promise<Project[]> {
+  async getProjectsByTeamId(
+    teamId: number,
+    _userId?: number,
+    userRole?: string,
+    userTeamId?: number | null
+  ): Promise<ProjectWithProgress[]> {
     // Admins can see all projects in any team
     if (userRole === 'admin') {
-      return await this.projectsRepository.findByTeamId(teamId);
+      return await this.projectsRepository.findByTeamIdWithProgress(teamId);
     }
     // Members can only see projects in their own team
     if (userTeamId !== null && userTeamId === teamId) {
-      return await this.projectsRepository.findByTeamId(teamId);
+      return await this.projectsRepository.findByTeamIdWithProgress(teamId);
     }
     // Members trying to access other teams' projects get empty array
     return [];
   }
 
-  async getProjectsByUserId(userId: number): Promise<Project[]> {
-    return await this.projectsRepository.findByUserId(userId);
+  async getProjectsByUserId(userId: number): Promise<ProjectWithProgress[]> {
+    return await this.projectsRepository.findByUserIdWithProgress(userId);
   }
 
-  async updateProject(id: number, data: Partial<CreateProjectDto>, userId: number): Promise<Project> {
+  async updateProject(id: number, data: UpdateProjectDto, userId: number): Promise<Project> {
     const project = await this.getProjectById(id);
     if (project.created_by !== userId) {
       throw new ForbiddenError('You can only update projects you created');
@@ -79,4 +88,3 @@ export class ProjectsService {
     }
   }
 }
-

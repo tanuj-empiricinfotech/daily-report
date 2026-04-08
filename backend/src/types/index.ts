@@ -38,8 +38,14 @@ export interface Project {
   name: string;
   description: string | null;
   created_by: number;
+  estimated_hours: number | null;
+  progress_tracking_enabled: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface ProjectWithProgress extends Project {
+  tracked_hours_total: number;
 }
 
 export interface ProjectAssignment {
@@ -90,6 +96,15 @@ export interface CreateProjectDto {
   team_id: number;
   name: string;
   description?: string;
+  estimated_hours?: number | null;
+  progress_tracking_enabled?: boolean;
+}
+
+export interface UpdateProjectDto {
+  name?: string;
+  description?: string | null;
+  estimated_hours?: number | null;
+  progress_tracking_enabled?: boolean;
 }
 
 export interface CreateLogDto {

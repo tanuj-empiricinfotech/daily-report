@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client, { endpoints } from '../../api/client';
-import type { Project, CreateProjectDto, ApiResponse } from '../../api/types';
+import type { Project, CreateProjectDto, UpdateProjectDto, ApiResponse } from '../../api/types';
 import { useDispatch } from 'react-redux';
 import { setProjects, addProject, updateProject, removeProject } from '../../../store/slices/projectsSlice';
 
@@ -46,7 +46,7 @@ export const useUpdateProject = () => {
   const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<CreateProjectDto> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: UpdateProjectDto }) => {
       const response = await client.put<ApiResponse<Project>>(endpoints.projects.update(id), data);
       return response.data.data;
     },

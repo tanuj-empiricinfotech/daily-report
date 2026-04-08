@@ -129,6 +129,9 @@ export class UsersRepository extends BaseRepository<User> {
               'description', p.description,
               'team_id', p.team_id,
               'created_by', p.created_by,
+              'estimated_hours', p.estimated_hours,
+              'progress_tracking_enabled', p.progress_tracking_enabled,
+              'tracked_hours_total', 0,
               'created_at', p.created_at,
               'updated_at', p.updated_at,
               'assigned_at', pa.assigned_at

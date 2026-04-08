@@ -25,6 +25,9 @@ export interface Project {
   name: string;
   description: string | null;
   created_by: number;
+  estimated_hours: number | null;
+  progress_tracking_enabled: boolean;
+  tracked_hours_total: number;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +54,9 @@ export interface UserWithProjects {
     description: string | null;
     team_id: number;
     created_by: number;
+    estimated_hours: number | null;
+    progress_tracking_enabled: boolean;
+    tracked_hours_total: number;
     created_at: string;
     updated_at: string;
     assigned_at: string;
@@ -97,6 +103,15 @@ export interface CreateProjectDto {
   team_id: number;
   name: string;
   description?: string;
+  estimated_hours?: number | null;
+  progress_tracking_enabled?: boolean;
+}
+
+export interface UpdateProjectDto {
+  name?: string;
+  description?: string | null;
+  estimated_hours?: number | null;
+  progress_tracking_enabled?: boolean;
 }
 
 export interface CreateLogDto {

@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import type { Project } from '@/lib/api/types';
+import { ProjectProgressBar } from '@/components/projects/ProjectProgressBar';
 
 interface DeleteProjectDialogProps {
   project: Project;
@@ -66,13 +67,36 @@ export function ProjectManager() {
   const [teamId, setTeamId] = useState<number | null>(selectedTeamId);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [progressTrackingEnabled, setProgressTrackingEnabled] = useState(false);
+  const [estimatedHoursInput, setEstimatedHoursInput] = useState('');
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setDescription('');
+    setProgressTrackingEnabled(false);
+    setEstimatedHoursInput('');
+  };
+
+  const parseEstimatedHours = (): number | null => {
+    if (!progressTrackingEnabled) return null;
+    const trimmed = estimatedHoursInput.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  };
 
   const handleCreate = async () => {
     if (!name.trim() || !teamId) return;
     try {
-      await createMutation.mutateAsync({ team_id: teamId, name, description });
-      setName('');
-      setDescription('');
+      await createMutation.mutateAsync({
+        team_id: teamId,
+        name,
+        description,
+        estimated_hours: parseEstimatedHours(),
+        progress_tracking_enabled: progressTrackingEnabled,
+      });
+      resetForm();
     } catch (error) {
       console.error('Failed to create project:', error);
     }
@@ -85,16 +109,26 @@ export function ProjectManager() {
       setTeamId(project.team_id);
       setName(project.name);
       setDescription(project.description || '');
+      setProgressTrackingEnabled(project.progress_tracking_enabled);
+      setEstimatedHoursInput(
+        project.estimated_hours !== null ? String(project.estimated_hours) : ''
+      );
     }
   };
 
   const handleUpdate = async () => {
     if (!editingId || !name.trim()) return;
     try {
-      await updateMutation.mutateAsync({ id: editingId, data: { name, description } });
-      setEditingId(null);
-      setName('');
-      setDescription('');
+      await updateMutation.mutateAsync({
+        id: editingId,
+        data: {
+          name,
+          description,
+          estimated_hours: parseEstimatedHours(),
+          progress_tracking_enabled: progressTrackingEnabled,
+        },
+      });
+      resetForm();
     } catch (error) {
       console.error('Failed to update project:', error);
     }
@@ -109,9 +143,7 @@ export function ProjectManager() {
   };
 
   const handleCancel = () => {
-    setEditingId(null);
-    setName('');
-    setDescription('');
+    resetForm();
   };
 
   if (isLoading) {
@@ -166,6 +198,36 @@ export function ProjectManager() {
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={createMutation.isPending || updateMutation.isPending}
               />
+            </div>
+            <div className="rounded-md border p-4 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input accent-primary"
+                  checked={progressTrackingEnabled}
+                  onChange={(e) => setProgressTrackingEnabled(e.target.checked)}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                />
+                <span className="text-sm font-medium">
+                  Track progress against estimated hours
+                </span>
+              </label>
+              {progressTrackingEnabled && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">
+                    Estimated hours
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="e.g. 40"
+                    value={estimatedHoursInput}
+                    onChange={(e) => setEstimatedHoursInput(e.target.value)}
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  />
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
@@ -238,9 +300,23 @@ export function ProjectManager() {
                     </div>
                   </div>
                 </CardHeader>
-                {project.description && (
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{project.description}</p>
+                {(project.description || project.progress_tracking_enabled) && (
+                  <CardContent className="space-y-3">
+                    {project.description && (
+                      <p className="text-sm text-muted-foreground">{project.description}</p>
+                    )}
+                    {project.progress_tracking_enabled && (
+                      project.estimated_hours !== null && project.estimated_hours > 0 ? (
+                        <ProjectProgressBar
+                          trackedHours={project.tracked_hours_total}
+                          estimatedHours={project.estimated_hours}
+                        />
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          Progress tracking enabled, but no estimated hours set.
+                        </p>
+                      )
+                    )}
                   </CardContent>
                 )}
               </Card>
