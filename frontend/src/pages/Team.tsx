@@ -38,6 +38,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { AssignProjectsModal } from '@/components/admin/AssignProjectsModal';
 import { CreateTeamDialog } from '@/components/admin/CreateTeamDialog';
+import { EditTeamDialog } from '@/components/admin/EditTeamDialog';
 
 // Constants
 const DIALOG_MODE = {
@@ -89,6 +90,7 @@ export function Team() {
   const [assignProjectsUserName, setAssignProjectsUserName] = useState<string | null>(null);
   const [toggleActiveUserId, setToggleActiveUserId] = useState<number | null>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [editTeamOpen, setEditTeamOpen] = useState(false);
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
@@ -452,6 +454,11 @@ export function Team() {
       </div>
 
       <CreateTeamDialog open={createTeamOpen} onOpenChange={setCreateTeamOpen} />
+      <EditTeamDialog
+        open={editTeamOpen}
+        onOpenChange={setEditTeamOpen}
+        team={teams.find((t) => t.id === selectedTeamId) ?? null}
+      />
 
       {/* Team Selector (Admin only) */}
       {isAdmin && (
@@ -472,6 +479,16 @@ export function Team() {
               </option>
             ))}
           </select>
+          {selectedTeamId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditTeamOpen(true)}
+            >
+              <IconEdit className="mr-2 h-4 w-4" />
+              Edit Team
+            </Button>
+          )}
         </div>
       )}
 
