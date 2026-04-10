@@ -37,6 +37,7 @@ import type { User, CreateUserDto, UserWithProjectsAndTeam } from '@/lib/api/typ
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { AssignProjectsModal } from '@/components/admin/AssignProjectsModal';
+import { CreateTeamDialog } from '@/components/admin/CreateTeamDialog';
 
 // Constants
 const DIALOG_MODE = {
@@ -87,6 +88,7 @@ export function Team() {
   const [assignProjectsUserId, setAssignProjectsUserId] = useState<number | null>(null);
   const [assignProjectsUserName, setAssignProjectsUserName] = useState<string | null>(null);
   const [toggleActiveUserId, setToggleActiveUserId] = useState<number | null>(null);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
@@ -437,11 +439,19 @@ export function Team() {
             Manage your team members and their roles
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <IconPlus className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setCreateTeamOpen(true)}>
+            <IconPlus className="mr-2 h-4 w-4" />
+            New Team
+          </Button>
+          <Button onClick={handleCreate}>
+            <IconPlus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </div>
       </div>
+
+      <CreateTeamDialog open={createTeamOpen} onOpenChange={setCreateTeamOpen} />
 
       {/* Team Selector (Admin only) */}
       {isAdmin && (

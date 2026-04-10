@@ -1,16 +1,26 @@
 import { useState } from 'react';
-import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from '@/lib/query/hooks/useTeams';
+import { useTeams, useUpdateTeam, useDeleteTeam } from '@/lib/query/hooks/useTeams';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 
 export function TeamManager() {
   const { isAdmin } = useAuth();
   const { data: teams = [], isLoading } = useTeams({ isAdmin });
-  const createMutation = useCreateTeam();
   const updateMutation = useUpdateTeam();
   const deleteMutation = useDeleteTeam();
 
@@ -18,14 +28,6 @@ export function TeamManager() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
-
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-    await createMutation.mutateAsync({ name, description, webhook_url: webhookUrl || undefined });
-    setName('');
-    setDescription('');
-    setWebhookUrl('');
-  };
 
   const handleEdit = (id: number) => {
     const team = teams.find((t) => t.id === id);
@@ -39,7 +41,21 @@ export function TeamManager() {
 
   const handleUpdate = async () => {
     if (!editingId || !name.trim()) return;
-    await updateMutation.mutateAsync({ id: editingId, data: { name, description, webhook_url: webhookUrl || undefined } });
+    try {
+      await updateMutation.mutateAsync({
+        id: editingId,
+        data: { name, description, webhook_url: webhookUrl || undefined },
+      });
+      setEditingId(null);
+      setName('');
+      setDescription('');
+      setWebhookUrl('');
+    } catch (error) {
+      console.error('Failed to update team:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
     setEditingId(null);
     setName('');
     setDescription('');
@@ -47,8 +63,10 @@ export function TeamManager() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this team?')) {
+    try {
       await deleteMutation.mutateAsync(id);
+    } catch (error) {
+      console.error('Failed to delete team:', error);
     }
   };
 
@@ -60,64 +78,118 @@ export function TeamManager() {
     );
   }
 
-  return (
-    <div className="space-y-6">
+  if (teams.length === 0) {
+    return (
       <Card>
-        <CardHeader>
-          <CardTitle>Create Team</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Input
-              placeholder="Team name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Textarea
-              placeholder="Description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <Input
-              placeholder="Microsoft Teams Webhook URL (optional)"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              type="url"
-            />
-            <Button onClick={editingId ? handleUpdate : handleCreate} disabled={!name.trim()}>
-              {editingId ? 'Update Team' : 'Create Team'}
-            </Button>
-            {editingId && (
-              <Button variant="ghost" onClick={() => {
-                setEditingId(null);
-                setName('');
-                setDescription('');
-                setWebhookUrl('');
-              }}>
-                Cancel
-              </Button>
-            )}
-          </div>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          No teams yet. Click &quot;New Team&quot; above to create one.
         </CardContent>
       </Card>
+    );
+  }
 
-      <div className="space-y-4">
-        {teams.map((team) => (
-          <Card key={team.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{team.name}</CardTitle>
+  return (
+    <div className="space-y-4">
+      {teams.map((team) => (
+        <Card key={team.id}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>{team.name}</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(team.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  Edit
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" disabled={deleteMutation.isPending}>
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Team</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete &quot;{team.name}&quot;? This will remove
+                        all associated projects, members, and logs.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(team.id)}
+                        variant="destructive"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </CardHeader>
+
+          {editingId === team.id ? (
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Team Name</label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={updateMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Description</label>
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={updateMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">MS Teams Webhook URL</label>
+                  <Input
+                    placeholder="https://..."
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    type="url"
+                    disabled={updateMutation.isPending}
+                  />
+                </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(team.id)}>
-                    Edit
+                  <Button
+                    onClick={handleUpdate}
+                    disabled={!name.trim() || updateMutation.isPending}
+                  >
+                    {updateMutation.isPending ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Team'
+                    )}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(team.id)}>
-                    Delete
+                  <Button variant="ghost" onClick={handleCancelEdit}>
+                    Cancel
                   </Button>
                 </div>
+                {updateMutation.isError && (
+                  <p className="text-sm text-destructive">
+                    Failed to update team. Please try again.
+                  </p>
+                )}
               </div>
-            </CardHeader>
-            {(team.description || team.webhook_url) && (
+            </CardContent>
+          ) : (
+            (team.description || team.webhook_url) && (
               <CardContent className="space-y-2">
                 {team.description && (
                   <p className="text-sm text-muted-foreground">{team.description}</p>
@@ -129,10 +201,10 @@ export function TeamManager() {
                   </div>
                 )}
               </CardContent>
-            )}
-          </Card>
-        ))}
-      </div>
+            )
+          )}
+        </Card>
+      ))}
     </div>
   );
 }

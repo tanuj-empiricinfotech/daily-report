@@ -7,7 +7,10 @@ import { TeamManager } from '@/components/admin/TeamManager';
 import { ProjectManager } from '@/components/admin/ProjectManager';
 import { UserManager } from '@/components/admin/UserManager';
 import { LogsViewer } from '@/components/admin/LogsViewer';
+import { CreateTeamDialog } from '@/components/admin/CreateTeamDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { IconPlus } from '@tabler/icons-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function AdminDashboard() {
@@ -16,28 +19,37 @@ export function AdminDashboard() {
   const selectedTeamId = useSelector((state: RootState) => state.teams.selectedTeamId);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<'teams' | 'projects' | 'users' | 'logs'>('teams');
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Select
-          value={selectedTeamId?.toString() || 'all'}
-          onValueChange={(val) => dispatch(setSelectedTeam(val === 'all' ? null : parseInt(val, 10)))}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select team" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Teams</SelectItem>
-            {teams.map((team) => (
-              <SelectItem key={team.id} value={team.id.toString()}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setCreateTeamOpen(true)}>
+            <IconPlus className="size-4 mr-2" />
+            New Team
+          </Button>
+          <Select
+            value={selectedTeamId?.toString() || 'all'}
+            onValueChange={(val) => dispatch(setSelectedTeam(val === 'all' ? null : parseInt(val, 10)))}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select team" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Teams</SelectItem>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id.toString()}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      <CreateTeamDialog open={createTeamOpen} onOpenChange={setCreateTeamOpen} />
 
       <div className="flex gap-2 border-b">
         <button
