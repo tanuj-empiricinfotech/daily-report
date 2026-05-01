@@ -121,8 +121,8 @@ export function LogsDataTable({
         };
       })
       .sort((a, b) => {
-        // Sort dates descending (newest first)
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        // Sort dates ascending (oldest first)
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
   }, [logs, getProjectName]);
 
