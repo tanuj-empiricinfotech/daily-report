@@ -6,7 +6,7 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconPlus, IconEdit, IconTrash, IconFolder, IconUsers } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconFolder, IconUsers, IconSearch } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +70,7 @@ export function Projects() {
   const [assignUsersProjectId, setAssignUsersProjectId] = useState<number | null>(null);
   const [assignUsersProjectName, setAssignUsersProjectName] = useState<string | null>(null);
   const [assignUsersTeamId, setAssignUsersTeamId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch data
   const { data: projects = [], isLoading: projectsLoading } = useProjects(user?.team_id || null, isAdmin);
@@ -270,6 +271,16 @@ export function Projects() {
     [teams, navigate]
   );
 
+  const filteredProjects = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q)
+    );
+  }, [projects, searchQuery]);
+
   const isLoading = projectsLoading || teamsLoading;
   const mutationError =
     createProjectMutation.error ||
@@ -297,9 +308,20 @@ export function Projects() {
         <ErrorDisplay error={mutationError as Error} />
       )}
 
+      {/* Search */}
+      <div className="relative w-full max-w-sm">
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search projects..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {/* Projects Table */}
       <DataTable
-        data={projects}
+        data={filteredProjects}
         columns={columns}
         loading={isLoading}
         emptyMessage="No projects found. Create your first project to get started."
