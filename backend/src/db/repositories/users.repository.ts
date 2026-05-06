@@ -127,7 +127,7 @@ export class UsersRepository extends BaseRepository<User> {
               'id', p.id,
               'name', p.name,
               'description', p.description,
-              'team_id', p.team_id,
+              'team_ids', (SELECT COALESCE(json_agg(pt.team_id ORDER BY pt.team_id), '[]'::json) FROM project_teams pt WHERE pt.project_id = p.id),
               'created_by', p.created_by,
               'estimated_hours', p.estimated_hours,
               'progress_tracking_enabled', p.progress_tracking_enabled,

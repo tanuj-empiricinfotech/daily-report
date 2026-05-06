@@ -136,8 +136,9 @@ export class LogsRepository extends BaseRepository<DailyLog> {
   async findByTeamId(teamId: number, filters?: { date?: string; startDate?: string; endDate?: string; userId?: number; projectId?: number }): Promise<DailyLog[]> {
     let sql = `
       SELECT dl.* FROM ${this.tableName} dl
-      INNER JOIN projects p ON dl.project_id = p.id
-      WHERE p.team_id = $1
+      WHERE EXISTS (
+        SELECT 1 FROM project_teams pt WHERE pt.project_id = dl.project_id AND pt.team_id = $1
+      )
     `;
     const values: any[] = [teamId];
     let paramCount = 2;

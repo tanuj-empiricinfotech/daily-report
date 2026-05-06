@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/MultiSelect';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -64,7 +64,7 @@ export function ProjectManager() {
   const deleteMutation = useDeleteProject();
 
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [teamId, setTeamId] = useState<number | null>(selectedTeamId);
+  const [teamIds, setTeamIds] = useState<number[]>(selectedTeamId ? [selectedTeamId] : []);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [progressTrackingEnabled, setProgressTrackingEnabled] = useState(false);
@@ -72,6 +72,7 @@ export function ProjectManager() {
 
   const resetForm = () => {
     setEditingId(null);
+    setTeamIds(selectedTeamId ? [selectedTeamId] : []);
     setName('');
     setDescription('');
     setProgressTrackingEnabled(false);
@@ -87,10 +88,10 @@ export function ProjectManager() {
   };
 
   const handleCreate = async () => {
-    if (!name.trim() || !teamId) return;
+    if (!name.trim() || teamIds.length === 0) return;
     try {
       await createMutation.mutateAsync({
-        team_id: teamId,
+        team_ids: teamIds,
         name,
         description,
         estimated_hours: parseEstimatedHours(),
@@ -106,7 +107,7 @@ export function ProjectManager() {
     const project = projects.find((p) => p.id === id);
     if (project) {
       setEditingId(id);
-      setTeamId(project.team_id);
+      setTeamIds(project.team_ids);
       setName(project.name);
       setDescription(project.description || '');
       setProgressTrackingEnabled(project.progress_tracking_enabled);
@@ -124,6 +125,7 @@ export function ProjectManager() {
         data: {
           name,
           description,
+          team_ids: teamIds,
           estimated_hours: parseEstimatedHours(),
           progress_tracking_enabled: progressTrackingEnabled,
         },
@@ -163,23 +165,13 @@ export function ProjectManager() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Team</label>
-              <Select
-                value={teamId?.toString() || ''}
-                onValueChange={(val) => setTeamId(parseInt(val, 10))}
-                disabled={!!editingId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id.toString()}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-2 block">Teams</label>
+              <MultiSelect
+                placeholder="Select teams..."
+                options={teams.map((t): MultiSelectOption => ({ value: t.id, label: t.name }))}
+                value={teamIds}
+                onChange={(vals) => setTeamIds(vals.map(Number))}
+              />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Project Name</label>
@@ -232,7 +224,7 @@ export function ProjectManager() {
             <div className="flex gap-2">
               <Button
                 onClick={editingId ? handleUpdate : handleCreate}
-                disabled={!name.trim() || !teamId || createMutation.isPending || updateMutation.isPending}
+                disabled={!name.trim() || teamIds.length === 0 || createMutation.isPending || updateMutation.isPending}
               >
                 {createMutation.isPending || updateMutation.isPending ? (
                   <>
@@ -273,16 +265,18 @@ export function ProjectManager() {
           </Card>
         ) : (
           projects.map((project) => {
-            const projectTeam = teams.find((t) => t.id === project.team_id);
+            const projectTeams = project.team_ids
+              .map((id) => teams.find((t) => t.id === id))
+              .filter(Boolean);
             return (
               <Card key={project.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle>{project.name}</CardTitle>
-                      {projectTeam && (
-                        <Badge variant="outline">{projectTeam.name}</Badge>
-                      )}
+                      {projectTeams.map((team) => (
+                        <Badge key={team!.id} variant="outline">{team!.name}</Badge>
+                      ))}
                     </div>
                     <div className="flex gap-2">
                       <Button

@@ -11,9 +11,15 @@ export class ProjectsService {
   }
 
   async createProject(data: CreateProjectDto, createdBy: number): Promise<Project> {
-    const teamCheck = await query('SELECT id FROM teams WHERE id = $1', [data.team_id]);
-    if (teamCheck.rows.length === 0) {
-      throw new NotFoundError('Team not found');
+    if (!data.team_ids || data.team_ids.length === 0) {
+      throw new NotFoundError('At least one team is required');
+    }
+    const teamCheck = await query(
+      'SELECT id FROM teams WHERE id = ANY($1)',
+      [data.team_ids]
+    );
+    if (teamCheck.rows.length !== data.team_ids.length) {
+      throw new NotFoundError('One or more teams not found');
     }
     return await this.projectsRepository.create(data, createdBy);
   }

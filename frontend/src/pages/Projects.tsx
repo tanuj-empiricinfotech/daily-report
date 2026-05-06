@@ -31,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/MultiSelect';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/lib/query/hooks/useProjects';
 import { useTeams } from '@/lib/query/hooks/useTeams';
@@ -51,13 +52,13 @@ type DialogMode = typeof DIALOG_MODE[keyof typeof DIALOG_MODE];
 interface ProjectFormData {
   name: string;
   description: string;
-  team_id: number | null;
+  team_ids: number[];
 }
 
 const INITIAL_FORM_DATA: ProjectFormData = {
   name: '',
   description: '',
-  team_id: null,
+  team_ids: [],
 };
 
 export function Projects() {
@@ -69,7 +70,7 @@ export function Projects() {
   const [formData, setFormData] = useState<ProjectFormData>(INITIAL_FORM_DATA);
   const [assignUsersProjectId, setAssignUsersProjectId] = useState<number | null>(null);
   const [assignUsersProjectName, setAssignUsersProjectName] = useState<string | null>(null);
-  const [assignUsersTeamId, setAssignUsersTeamId] = useState<number | null>(null);
+  const [assignUsersTeamIds, setAssignUsersTeamIds] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch data
@@ -96,7 +97,7 @@ export function Projects() {
   const handleCreate = () => {
     setFormData({
       ...INITIAL_FORM_DATA,
-      team_id: user?.team_id || null,
+      team_ids: user?.team_id ? [user.team_id] : [],
     });
     setSelectedProject(null);
     setDialogMode(DIALOG_MODE.CREATE);
@@ -106,7 +107,7 @@ export function Projects() {
     setFormData({
       name: project.name,
       description: project.description || '',
-      team_id: project.team_id,
+      team_ids: project.team_ids,
     });
     setSelectedProject(project);
     setDialogMode(DIALOG_MODE.EDIT);
@@ -122,14 +123,14 @@ export function Projects() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.team_id) {
+    if (formData.team_ids.length === 0) {
       return;
     }
 
     const projectData: CreateProjectDto = {
       name: formData.name,
       description: formData.description || undefined,
-      team_id: formData.team_id,
+      team_ids: formData.team_ids,
     };
 
     try {
@@ -138,7 +139,7 @@ export function Projects() {
       } else if (dialogMode === DIALOG_MODE.EDIT && selectedProject) {
         await updateProjectMutation.mutateAsync({
           id: selectedProject.id,
-          data: projectData,
+          data: { ...projectData },
         });
       }
       handleCloseDialog();
@@ -167,14 +168,14 @@ export function Projects() {
   const handleAssignUsers = (project: Project) => {
     setAssignUsersProjectId(project.id);
     setAssignUsersProjectName(project.name);
-    setAssignUsersTeamId(project.team_id);
+    setAssignUsersTeamIds(project.team_ids);
   };
 
   const handleCloseAssignUsersModal = (open: boolean) => {
     if (!open) {
       setAssignUsersProjectId(null);
       setAssignUsersProjectName(null);
-      setAssignUsersTeamId(null);
+      setAssignUsersTeamIds([]);
     }
   };
 
@@ -208,17 +209,24 @@ export function Projects() {
       },
       {
         id: 'team',
-        header: 'Team',
-        accessorFn: (row) => {
-          const team = teams.find((t) => t.id === row.team_id);
-          return team?.name || 'Unknown';
-        },
+        header: 'Teams',
+        accessorFn: (row) =>
+          row.team_ids
+            .map((id) => teams.find((t) => t.id === id)?.name)
+            .filter(Boolean)
+            .join(', ') || 'Unknown',
         cell: (row) => {
-          const team = teams.find((t) => t.id === row.team_id);
-          return team ? (
-            <Badge variant="secondary">{team.name}</Badge>
+          const projectTeams = row.team_ids
+            .map((id) => teams.find((t) => t.id === id))
+            .filter(Boolean);
+          return projectTeams.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {projectTeams.map((team) => (
+                <Badge key={team!.id} variant="secondary">{team!.name}</Badge>
+              ))}
+            </div>
           ) : (
-            <span className="text-muted-foreground">Unknown</span>
+            <span className="text-muted-foreground">No team</span>
           );
         },
       },
@@ -367,23 +375,13 @@ export function Projects() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="team">Team *</Label>
-              <select
-                id="team"
-                value={formData.team_id || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, team_id: parseInt(e.target.value) })
-                }
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                required
-              >
-                <option value="">Select a team</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
+              <Label>Teams *</Label>
+              <MultiSelect
+                placeholder="Select teams..."
+                options={teams.map((t): MultiSelectOption => ({ value: t.id, label: t.name }))}
+                value={formData.team_ids}
+                onChange={(vals) => setFormData({ ...formData, team_ids: vals.map(Number) })}
+              />
             </div>
 
             <DialogFooter>
@@ -393,7 +391,9 @@ export function Projects() {
               <Button
                 type="submit"
                 disabled={
-                  createProjectMutation.isPending || updateProjectMutation.isPending
+                  formData.team_ids.length === 0 ||
+                  createProjectMutation.isPending ||
+                  updateProjectMutation.isPending
                 }
               >
                 {createProjectMutation.isPending || updateProjectMutation.isPending ? (
@@ -437,7 +437,7 @@ export function Projects() {
         onOpenChange={handleCloseAssignUsersModal}
         projectId={assignUsersProjectId}
         projectName={assignUsersProjectName}
-        teamId={assignUsersTeamId}
+        teamIds={assignUsersTeamIds}
       />
     </div>
   );

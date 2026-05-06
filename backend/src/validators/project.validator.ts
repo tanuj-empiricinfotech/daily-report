@@ -1,7 +1,12 @@
 import { body } from 'express-validator';
 
 export const createProjectValidator = [
-  body('team_id').isInt({ min: 1 }).withMessage('Valid team_id is required'),
+  body('team_ids')
+    .isArray({ min: 1 })
+    .withMessage('At least one team_id is required'),
+  body('team_ids.*')
+    .isInt({ min: 1 })
+    .withMessage('Each team_id must be a positive integer'),
   body('name').trim().notEmpty().withMessage('Project name is required'),
   body('description').optional().isString(),
   body('estimated_hours')
@@ -17,6 +22,14 @@ export const createProjectValidator = [
 export const updateProjectValidator = [
   body('name').optional().trim().notEmpty().withMessage('Project name cannot be empty'),
   body('description').optional({ nullable: true }).isString(),
+  body('team_ids')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('team_ids must be a non-empty array'),
+  body('team_ids.*')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Each team_id must be a positive integer'),
   body('estimated_hours')
     .optional({ nullable: true })
     .isFloat({ min: 0 })

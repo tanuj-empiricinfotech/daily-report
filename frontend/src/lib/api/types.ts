@@ -21,7 +21,7 @@ export interface Team {
 
 export interface Project {
   id: number;
-  team_id: number;
+  team_ids: number[];
   name: string;
   description: string | null;
   created_by: number;
@@ -52,7 +52,7 @@ export interface UserWithProjects {
     id: number;
     name: string;
     description: string | null;
-    team_id: number;
+    team_ids: number[];
     created_by: number;
     estimated_hours: number | null;
     progress_tracking_enabled: boolean;
@@ -100,7 +100,7 @@ export interface CreateTeamDto {
 }
 
 export interface CreateProjectDto {
-  team_id: number;
+  team_ids: number[];
   name: string;
   description?: string;
   estimated_hours?: number | null;
@@ -110,6 +110,7 @@ export interface CreateProjectDto {
 export interface UpdateProjectDto {
   name?: string;
   description?: string | null;
+  team_ids?: number[];
   estimated_hours?: number | null;
   progress_tracking_enabled?: boolean;
 }

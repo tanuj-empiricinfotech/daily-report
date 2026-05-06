@@ -25,7 +25,7 @@ interface AssignUsersModalProps {
   onOpenChange: (open: boolean) => void;
   projectId: number | null;
   projectName: string | null;
-  teamId: number | null;
+  teamIds: number[];
 }
 
 export function AssignUsersModal({
@@ -33,13 +33,15 @@ export function AssignUsersModal({
   onOpenChange,
   projectId,
   projectName,
-  teamId,
+  teamIds,
 }: AssignUsersModalProps) {
+  // Single team → filter to that team; multiple teams → show all users
+  const effectiveTeamId = teamIds.length === 1 ? teamIds[0] : null;
   const queryClient = useQueryClient();
   const [selectedUserIds, setSelectedUserIds] = useState<(string | number)[]>([]);
 
-  // Fetch available users (filtered by team)
-  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(teamId, true);
+  // Fetch available users (filtered by team, or all if multi-team)
+  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(effectiveTeamId, true);
 
   // Fetch project's current assignments
   const { data: currentAssignments = [], isLoading: assignmentsLoading } = useProjectAssignments(projectId);
