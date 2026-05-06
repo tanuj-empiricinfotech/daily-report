@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder, IconUserCheck, IconUserOff } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder, IconUserCheck, IconUserOff, IconSearch } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +91,7 @@ export function Team() {
   const [toggleActiveUserId, setToggleActiveUserId] = useState<number | null>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [editTeamOpen, setEditTeamOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
@@ -424,6 +425,16 @@ export function Team() {
     [user?.id, copiedEmail]
   );
 
+  const filteredUsers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+    );
+  }, [users, searchQuery]);
+
   const isLoading = usersLoading || teamsLoading;
   const mutationError =
     createUserMutation.error ||
@@ -497,6 +508,19 @@ export function Team() {
         <ErrorDisplay error={mutationError as Error} />
       )}
 
+      {/* Search */}
+      {teamIdForQuery !== null && (
+        <div className="relative w-full max-w-sm">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search members..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {/* Team Members Table */}
       {teamIdForQuery === null && isAdmin ? (
         <div className="flex items-center justify-center h-64">
@@ -506,7 +530,7 @@ export function Team() {
         </div>
       ) : (
         <DataTable
-          data={users}
+          data={filteredUsers}
           columns={columns}
           loading={isLoading}
           emptyMessage="No team members found. Add your first member to get started."
