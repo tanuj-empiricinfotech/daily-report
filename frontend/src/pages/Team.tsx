@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder, IconUserCheck, IconUserOff, IconSearch } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconShield, IconCopy, IconCheck, IconFolder, IconUserCheck, IconUserOff, IconSearch, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +92,7 @@ export function Team() {
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [editTeamOpen, setEditTeamOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Determine which team to fetch users for
   const teamIdForQuery = isAdmin ? selectedTeamId : user?.team_id || null;
@@ -149,6 +150,7 @@ export function Team() {
     setDialogMode(DIALOG_MODE.CLOSED);
     setSelectedUser(null);
     setFormData(INITIAL_FORM_DATA);
+    setShowPassword(false);
   };
 
   // Handle form submit
@@ -581,15 +583,26 @@ export function Team() {
               <Label htmlFor="password">
                 Password {dialogMode === DIALOG_MODE.EDIT && '(leave empty to keep current)'}
               </Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Enter password"
-                required={dialogMode === DIALOG_MODE.CREATE}
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Enter password"
+                  required={dialogMode === DIALOG_MODE.CREATE}
+                  minLength={6}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </button>
+              </div>
               {dialogMode === DIALOG_MODE.CREATE && (
                 <p className="text-xs text-muted-foreground">
                   Minimum 6 characters
