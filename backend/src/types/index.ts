@@ -65,6 +65,40 @@ export interface UserWithProjectsAndTeam extends UserWithProjects {
   team_name: string | null;
 }
 
+export interface Feedback {
+  id: number;
+  from_user_id: number;
+  to_user_id: number;
+  content: string;
+  rating: number | null;
+  is_read: boolean;
+  created_at: Date;
+}
+
+// Feedback as seen by recipient — sender identity stripped
+export interface FeedbackReceived {
+  id: number;
+  content: string;
+  rating: number | null;
+  is_read: boolean;
+  created_at: Date;
+}
+
+// Feedback as seen by sender — no from_user_id needed (they know it's theirs)
+export interface FeedbackSent {
+  id: number;
+  to_user_id: number;
+  content: string;
+  rating: number | null;
+  created_at: Date;
+}
+
+export interface CreateFeedbackDto {
+  to_user_id: number;
+  content: string;
+  rating?: number | null;
+}
+
 export interface DailyLog {
   id: number;
   user_id: number;

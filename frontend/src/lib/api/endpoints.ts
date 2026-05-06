@@ -60,6 +60,12 @@ export const endpoints = {
     get: (year: number, month: number) => `${API_BASE}/recaps/${year}/${month}`,
     updateProgress: (id: number) => `${API_BASE}/recaps/${id}/progress`,
   },
+  feedback: {
+    submit: `${API_BASE}/feedback`,
+    received: `${API_BASE}/feedback/received`,
+    sent: `${API_BASE}/feedback/sent`,
+    unreadCount: `${API_BASE}/feedback/unread-count`,
+  },
   teamChat: {
     // Conversations
     conversations: `${API_BASE}/team-chat/conversations`,

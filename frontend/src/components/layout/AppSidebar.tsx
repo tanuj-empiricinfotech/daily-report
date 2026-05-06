@@ -16,6 +16,7 @@ import {
     IconPlus,
     IconMessageCircle,
     IconMessages,
+    IconStar,
 } from '@tabler/icons-react';
 import {
     Sidebar,
@@ -69,6 +70,12 @@ const mainNavItems = [
         url: '/messages',
         icon: IconMessages,
         description: 'Team messaging',
+    },
+    {
+        title: 'Feedback',
+        url: '/feedback',
+        icon: IconStar,
+        description: 'Anonymous peer feedback',
     },
 ];
 

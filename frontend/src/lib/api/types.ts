@@ -115,6 +115,28 @@ export interface UpdateProjectDto {
   progress_tracking_enabled?: boolean;
 }
 
+export interface FeedbackReceived {
+  id: number;
+  content: string;
+  rating: number | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface FeedbackSent {
+  id: number;
+  to_user_id: number;
+  content: string;
+  rating: number | null;
+  created_at: string;
+}
+
+export interface CreateFeedbackDto {
+  to_user_id: number;
+  content: string;
+  rating?: number | null;
+}
+
 export interface CreateLogDto {
   project_id: number;
   date: string;

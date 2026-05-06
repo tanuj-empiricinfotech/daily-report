@@ -9,6 +9,7 @@ import chatRoutes from './chat';
 import teamChatRoutes from './team-chat';
 import recapsRoutes from './recaps';
 import errorLogsRoutes from './error-logs';
+import feedbackRoutes from './feedback';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/chat', chatRoutes);
 router.use('/team-chat', teamChatRoutes);
 router.use('/recaps', recapsRoutes);
 router.use('/error-logs', errorLogsRoutes);
+router.use('/feedback', feedbackRoutes);
 
 export default router;
 

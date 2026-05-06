@@ -6,26 +6,82 @@ import pool from './connection';
 async function runMigrations() {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    // Ensure tracking table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS dr_migrations (
+        filename VARCHAR(255) PRIMARY KEY,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-    // Get all migration files and sort them
     const migrationsDir = join(__dirname, 'migrations');
     const migrationFiles = readdirSync(migrationsDir)
       .filter(file => file.endsWith('.sql'))
-      .sort(); // Sorts alphabetically (001_, 002_, etc.)
+      .sort();
 
-    // Run each migration file sequentially
-    for (const migrationFile of migrationFiles) {
-      console.log(`Running migration: ${migrationFile}`);
-      const migrationSQL = readFileSync(
-        join(migrationsDir, migrationFile),
-        'utf-8'
+    // Bootstrap: if tracking table is empty but projects table exists without team_id
+    // (i.e. migrations 001–015 already applied before runner was updated),
+    // mark all existing migration files up to 015 as applied.
+    const trackingCount = await client.query('SELECT COUNT(*) FROM dr_migrations');
+    if (parseInt(trackingCount.rows[0].count, 10) === 0) {
+      // Check if the DB is already initialised by looking for the users table
+      const dbInitCheck = await client.query(
+        `SELECT EXISTS (
+           SELECT 1 FROM information_schema.tables WHERE table_name = 'users'
+         ) AS exists`
       );
-      await client.query(migrationSQL);
-      console.log(`Completed migration: ${migrationFile}`);
+      if (dbInitCheck.rows[0].exists) {
+        // Seed all migration files that already exist on disk as "applied"
+        // We'll skip ones that aren't actually applied by checking a sentinel:
+        // project_teams table presence = 015 ran
+        const pt = await client.query(
+          `SELECT EXISTS (
+             SELECT 1 FROM information_schema.tables WHERE table_name = 'project_teams'
+           ) AS exists`
+        );
+        if (pt.rows[0].exists) {
+          // All migrations up to and including 015 were applied by old runner
+          const alreadyApplied = migrationFiles.filter(f => f <= '015_project_multi_team.sql');
+          for (const f of alreadyApplied) {
+            await client.query(
+              'INSERT INTO dr_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING',
+              [f]
+            );
+          }
+          console.log(`Bootstrapped dr_migrations with ${alreadyApplied.length} pre-existing migrations`);
+        }
+      }
     }
 
-    // Create default admin user if it doesn't exist
+    // Fetch already-applied migrations
+    const appliedResult = await client.query('SELECT filename FROM dr_migrations');
+    const applied = new Set(appliedResult.rows.map((r: any) => r.filename));
+
+    for (const migrationFile of migrationFiles) {
+      if (applied.has(migrationFile)) {
+        console.log(`Skipping migration (already applied): ${migrationFile}`);
+        continue;
+      }
+
+      console.log(`Running migration: ${migrationFile}`);
+      await client.query('BEGIN');
+      try {
+        const migrationSQL = readFileSync(join(migrationsDir, migrationFile), 'utf-8');
+        await client.query(migrationSQL);
+        await client.query(
+          'INSERT INTO dr_migrations (filename) VALUES ($1)',
+          [migrationFile]
+        );
+        await client.query('COMMIT');
+        console.log(`Completed migration: ${migrationFile}`);
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    }
+
+    // Seed default admin
+    await client.query('BEGIN');
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@gm.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Test@123';
     const adminName = process.env.ADMIN_NAME || 'Admin User';
@@ -48,10 +104,8 @@ async function runMigrations() {
     }
 
     await client.query('COMMIT');
-
     console.log('All migrations completed successfully');
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Migration failed:', error);
     throw error;
   } finally {
@@ -61,9 +115,7 @@ async function runMigrations() {
 
 if (require.main === module) {
   runMigrations()
-    .then(() => {
-      process.exit(0);
-    })
+    .then(() => process.exit(0))
     .catch((error) => {
       console.error(error);
       process.exit(1);
@@ -71,4 +123,3 @@ if (require.main === module) {
 }
 
 export { runMigrations };
-
