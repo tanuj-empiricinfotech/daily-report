@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { Response, NextFunction } from 'express';
 import { UsersRepository } from '../db/repositories/users.repository';
 import { AuthService } from '../services/auth.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getAuthenticatedUser } from '../middleware/auth';
 import { CreateUserDto } from '../types';
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/errors';
 
@@ -33,6 +33,17 @@ export class UsersController {
   getByTeam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const teamId = parseInt(req.params.teamId, 10);
+      const authUser = getAuthenticatedUser(req);
+
+      // Members can only fetch their own team
+      if (authUser.role !== 'admin') {
+        const userRow = await this.usersRepository.findById(authUser.userId);
+        if (!userRow || userRow.team_id !== teamId) {
+          res.status(403).json({ success: false, message: 'Access denied' });
+          return;
+        }
+      }
+
       const includeInactive = req.query.includeInactive === 'true';
       const users = await this.usersRepository.findByTeamId(teamId, { includeInactive });
       const usersWithoutPassword = users.map((user) => {
