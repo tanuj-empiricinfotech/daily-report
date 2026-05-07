@@ -18,7 +18,8 @@ export function GiveFeedbackForm() {
 
   // Admins fetch all users (teamId null), members fetch own team
   const teamId = isAdmin ? null : (user?.team_id ?? null);
-  const { data: allUsers = [] } = useUsersByTeam(teamId, isAdmin);
+  // Pass true to always enable query; teamId already scopes to correct team
+  const { data: allUsers = [] } = useUsersByTeam(teamId, true);
 
   const eligibleRecipients = allUsers.filter((u: User) => u.id !== user?.id && u.is_active);
 
