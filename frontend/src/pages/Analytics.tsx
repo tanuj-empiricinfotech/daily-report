@@ -16,7 +16,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeamLogs } from '@/lib/query/hooks/useLogs';
 import { useProjects } from '@/lib/query/hooks/useProjects';
-import { useUsers } from '@/lib/query/hooks/useUsers';
+import { useUsersByTeam } from '@/lib/query/hooks/useUsers';
 import { useTeams } from '@/lib/query/hooks/useTeams';
 import type { DailyLog } from '@/lib/api/types';
 import {
@@ -71,7 +71,7 @@ export function Analytics() {
   // Fetch data
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(selectedTeamId, { startDate, endDate });
   const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId, isAdmin);
-  const { data: users = [], isLoading: usersLoading } = useUsers(isAdmin);
+  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, true);
 
   // Calculate previous period for comparison
   const { startDate: prevStartDate, endDate: prevEndDate } = useMemo(() => {
