@@ -71,7 +71,7 @@ export function Analytics() {
   // Fetch data
   const { data: logs = [], isLoading: logsLoading } = useTeamLogs(selectedTeamId, { startDate, endDate });
   const { data: projects = [], isLoading: projectsLoading } = useProjects(selectedTeamId, isAdmin);
-  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, true);
+  const { data: users = [], isLoading: usersLoading } = useUsersByTeam(selectedTeamId, isAdmin);
 
   // Calculate previous period for comparison
   const { startDate: prevStartDate, endDate: prevEndDate } = useMemo(() => {
@@ -148,12 +148,15 @@ export function Analytics() {
     return transformLogsToProjectChart(currentPeriodLogs, projectNameMap, colors);
   }, [currentPeriodLogs, projects]);
 
-  // User chart data
+  // User chart data — filter logs to team members only
+  const teamMemberIds = useMemo(() => new Set(users.map((u) => u.id)), [users]);
+
   const userChartData = useMemo(() => {
     const userInfoMap = new Map(users.map((u) => [u.id, { name: u.name }]));
     const colors = generateChartColors(users.length);
-    return transformLogsToUserChart(currentPeriodLogs, userInfoMap, colors);
-  }, [currentPeriodLogs, users]);
+    const teamLogs = currentPeriodLogs.filter((l: DailyLog) => teamMemberIds.has(l.user_id));
+    return transformLogsToUserChart(teamLogs, userInfoMap, colors);
+  }, [currentPeriodLogs, users, teamMemberIds]);
 
   // Maps for recent activity
   const projectNameMap = useMemo(() => {
