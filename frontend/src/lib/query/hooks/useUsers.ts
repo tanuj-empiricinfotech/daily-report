@@ -35,7 +35,7 @@ export const useUsersByTeam = (
       const response = await client.get<ApiResponse<User[]>>(endpoints.users.getByTeam(teamId) + params);
       return response.data.data;
     },
-    enabled: !!isAdmin
+    enabled: isAdmin === true ? true : teamId !== null,
   });
 };
 
