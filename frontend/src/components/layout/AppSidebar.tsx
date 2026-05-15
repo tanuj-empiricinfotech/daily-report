@@ -15,7 +15,6 @@ import {
     IconLogout,
     IconPlus,
     IconMessageCircle,
-    IconMessages,
     IconStar,
 } from '@tabler/icons-react';
 import {
@@ -64,12 +63,6 @@ const mainNavItems = [
         url: '/chat',
         icon: IconMessageCircle,
         description: 'AI chat with logs',
-    },
-    {
-        title: 'Messages',
-        url: '/messages',
-        icon: IconMessages,
-        description: 'Team messaging',
     },
     {
         title: 'Feedback',

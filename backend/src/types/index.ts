@@ -1,7 +1,5 @@
 export type UserRole = 'admin' | 'member';
 
-// Re-export team chat types
-export * from './team-chat.types';
 
 export interface User {
   id: number;
